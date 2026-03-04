@@ -1,21 +1,126 @@
-import { User, Menu, X, Zap } from "lucide-react";
+import { User, Menu, X, Zap, LogIn, LogOut, Copy, Check } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+
+const getInitials = (email: string | undefined) => {
+  if (!email) return "?";
+  const part = email.split("@")[0] ?? "";
+  const letters = part.replace(/[^a-z]/gi, "").slice(0, 2);
+  return (letters || "?").toUpperCase();
+};
 
 const DashboardHeader = () => {
   const [bannerVisible, setBannerVisible] = useState(true);
+  const [idCopied, setIdCopied] = useState(false);
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const copyAccountId = () => {
+    if (!user?.id) return;
+    navigator.clipboard.writeText(user.id).then(() => {
+      setIdCopied(true);
+      toast.success("ID da conta copiado. Envie ao gestor para solicitar acesso.");
+      setTimeout(() => setIdCopied(false), 2000);
+    }).catch(() => toast.error("Não foi possível copiar."));
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/");
+    } catch {
+      navigate("/");
+    }
+  };
 
   return (
     <div className="bg-header text-header-foreground">
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
-        <button className="flex items-center gap-2 rounded-full bg-header-foreground/15 px-3 py-1.5 text-sm font-medium backdrop-blur-sm">
-          <User size={16} />
-          <span>RR</span>
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-full bg-header-foreground/15 px-3 py-1.5 text-sm font-medium backdrop-blur-sm hover:bg-header-foreground/25"
+            >
+              <User size={16} />
+              <span>{user ? getInitials(user.email) : "?"}</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-44">
+            {user ? (
+              <>
+                <DropdownMenuItem disabled className="text-muted-foreground">
+                  <span className="truncate">{user.email}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <>
+                <DropdownMenuItem onClick={() => navigate("/auth")}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Entrar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/auth")}>
+                  Criar conta
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <h1 className="font-display text-xl font-bold tracking-tight">MilesHub</h1>
-        <button className="rounded-lg p-1.5">
-          <Menu size={22} />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="rounded-lg p-1.5 hover:bg-header-foreground/15"
+              aria-label="Abrir menu"
+            >
+              <Menu size={22} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-72">
+            {user ? (
+              <>
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  ID da sua conta (para o gestor solicitar acesso)
+                </div>
+                <DropdownMenuItem
+                  onClick={copyAccountId}
+                  className="cursor-pointer font-mono text-xs"
+                >
+                  <span className="truncate flex-1" title={user.id}>
+                    {user.id}
+                  </span>
+                  {idCopied ? (
+                    <Check className="ml-2 h-4 w-4 shrink-0 text-green-600" />
+                  ) : (
+                    <Copy className="ml-2 h-4 w-4 shrink-0" />
+                  )}
+                </DropdownMenuItem>
+                <div className="px-2 py-1 text-[11px] text-muted-foreground">
+                  Clique para copiar. O gestor usará este ID para solicitar acesso; você aceita no app.
+                </div>
+              </>
+            ) : (
+              <DropdownMenuItem onClick={() => navigate("/auth")}>
+                Criar conta
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Promo banner */}
