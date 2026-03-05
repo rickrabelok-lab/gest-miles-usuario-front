@@ -1,17 +1,83 @@
+import { useEffect, useMemo, useState } from "react";
 import { Plane } from "lucide-react";
 import destBrasil from "@/assets/dest-brasil.jpg";
 import destSudeste from "@/assets/dest-sudeste.jpg";
 import destUSA from "@/assets/dest-usa.jpg";
 import destPortugal from "@/assets/dest-portugal.jpg";
+import { getBestPriceByDestinationForAllModes } from "@/lib/pricing";
+import type { BestPriceByDestination } from "@/lib/pricing";
 
 const destinations = [
-  { name: "Brasil", image: destBrasil, miles: "8.000", price: "220" },
-  { name: "Sudeste", image: destSudeste, miles: "6.500", price: "180" },
-  { name: "EUA", image: destUSA, miles: "35.000", price: "1.200" },
-  { name: "Portugal", image: destPortugal, miles: "42.000", price: "1.800" },
+  { name: "Brasil", code: "BRA", image: destBrasil },
+  { name: "Sudeste", code: "SAO", image: destSudeste },
+  { name: "EUA", code: "NYC", image: destUSA },
+  { name: "Portugal", code: "LIS", image: destPortugal },
 ];
 
-const ExploreDestinations = () => {
+type ExploreDestinationsProps = {
+  origins: string[];
+  onDestinationSelect?: (destination: { code: string; name: string }) => void;
+};
+
+const formatMiles = (value: number | null) =>
+  value === null ? "--" : value.toLocaleString("pt-BR");
+
+const formatMoney = (value: number | null) =>
+  value === null ? "--" : value.toLocaleString("pt-BR", { minimumFractionDigits: 0 });
+
+const ExploreDestinations = ({
+  origins,
+  onDestinationSelect,
+}: ExploreDestinationsProps) => {
+  const [milesByDestination, setMilesByDestination] = useState<
+    Record<string, BestPriceByDestination>
+  >({});
+  const [moneyByDestination, setMoneyByDestination] = useState<
+    Record<string, BestPriceByDestination>
+  >({});
+
+  const destinationCodes = useMemo(() => destinations.map((item) => item.code), []);
+
+  useEffect(() => {
+    if (origins.length === 0) return;
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const result = await getBestPriceByDestinationForAllModes(
+          destinationCodes,
+          origins,
+        );
+
+        if (cancelled) return;
+
+        const milesMap: Record<string, BestPriceByDestination> = {};
+        const moneyMap: Record<string, BestPriceByDestination> = {};
+
+        result.miles.forEach((item) => {
+          milesMap[item.destination] = item;
+        });
+        result.money.forEach((item) => {
+          moneyMap[item.destination] = item;
+        });
+
+        setMilesByDestination(milesMap);
+        setMoneyByDestination(moneyMap);
+      } catch {
+        if (!cancelled) {
+          setMilesByDestination({});
+          setMoneyByDestination({});
+        }
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [destinationCodes, origins]);
+
   return (
     <div className="px-5 py-4">
       <div className="rounded-2xl bg-card p-5 card-miles">
@@ -32,8 +98,11 @@ const ExploreDestinations = () => {
       {/* Destination cards */}
       <div className="mt-4 flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
         {destinations.map((dest) => (
-          <div
+          <button
             key={dest.name}
+            type="button"
+            onClick={() => onDestinationSelect?.({ code: dest.code, name: dest.name })}
+            aria-label={`Buscar emissão para ${dest.name}`}
             className="shrink-0 w-40 overflow-hidden rounded-2xl bg-card card-miles"
           >
             <div className="relative h-28 overflow-hidden">
@@ -49,10 +118,17 @@ const ExploreDestinations = () => {
               </span>
             </div>
             <div className="px-3 py-2.5">
-              <p className="text-xs font-semibold text-foreground">{dest.miles} milhas</p>
-              <p className="text-xs text-muted-foreground">a partir de R$ {dest.price}</p>
+              <p className="text-xs font-semibold text-foreground">
+                {formatMiles(milesByDestination[dest.code]?.bestPrice ?? null)} pts
+              </p>
+              <p className="text-xs text-muted-foreground">
+                a partir de R$ {formatMoney(moneyByDestination[dest.code]?.bestPrice ?? null)}
+              </p>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                melhor origem: {moneyByDestination[dest.code]?.bestOrigin ?? "--"}
+              </p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

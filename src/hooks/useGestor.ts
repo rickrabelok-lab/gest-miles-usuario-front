@@ -1,5 +1,6 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
 import { parseMovimentoDate } from "@/lib/program-state";
@@ -51,7 +52,18 @@ export type GestorVencimentoItem = {
   quantidade: number;
 };
 
+export type GestorDemandaItem = {
+  id: number;
+  clienteId: string;
+  clienteNome: string;
+  tipo: "emissao" | "outros";
+  status: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+};
+
 export const useGestor = (enabled = true) => {
+  const queryClient = useQueryClient();
   const clientsQuery = useQuery({
     queryKey: ["gestor_clientes"],
     enabled,
@@ -90,6 +102,62 @@ export const useGestor = (enabled = true) => {
     },
   });
 
+  const demandasQuery = useQuery({
+    queryKey: ["gestor_demandas_cliente", clientsQuery.data],
+    enabled: enabled && !!clientsQuery.data?.length,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("demandas_cliente")
+        .select("id, cliente_id, tipo, status, payload, created_at")
+        .in("cliente_id", clientsQuery.data!)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  useEffect(() => {
+    if (!enabled || !clientsQuery.data?.length) return;
+
+    const managedClientIds = new Set(clientsQuery.data);
+    const profileNames = new Map<string, string>();
+    (profilesQuery.data ?? []).forEach((row) => {
+      profileNames.set(row.usuario_id as string, (row.nome_completo as string) ?? "Cliente");
+    });
+
+    const channel = supabase
+      .channel(`gestor-demandas-insert-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "demandas_cliente",
+        },
+        (payload) => {
+          const row = payload.new as {
+            id?: number;
+            cliente_id?: string;
+            tipo?: string;
+          };
+          const clienteId = String(row.cliente_id ?? "");
+          if (!clienteId || !managedClientIds.has(clienteId)) return;
+
+          const clienteNome = profileNames.get(clienteId) ?? "Cliente";
+          const tipoLabel = row.tipo === "emissao" ? "emissão" : "solicitação";
+          toast.info(`Nova ${tipoLabel} recebida de ${clienteNome}.`);
+
+          queryClient.invalidateQueries({ queryKey: ["gestor_demandas_cliente"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [enabled, clientsQuery.data, profilesQuery.data, queryClient]);
+
   const resumoClientes = useMemo<GestorClienteResumo[]>(() => {
     const profiles = new Map<string, string>();
     (profilesQuery.data ?? []).forEach((row) => {
@@ -122,12 +190,39 @@ export const useGestor = (enabled = true) => {
         }>;
       };
 
+    // Garante que todo cliente vinculado em gestor_clientes apareça como ativo,
+    // mesmo sem registros em programas_cliente (métricas ficam zeradas até haver dados).
+    (clientsQuery.data ?? []).forEach((clientId) => {
+      if (grouped.has(clientId)) return;
+      grouped.set(clientId, {
+        clienteId: clientId,
+        nome: profiles.get(clientId) ?? "Cliente",
+        milhas: 0,
+        valorEstimado: 0,
+        pontosVencendo90d: 0,
+        roiMedio: 0,
+        ultimaAtualizacao: null,
+        economiaTotal: 0,
+        melhorMilheiro: null,
+        ultimaMovimentacao: null,
+        concentracaoMaxima: 0,
+        scoreEstrategico: 0,
+        riscoCarteira: "baixo",
+        milhasPorPrograma: new Map<string, number>(),
+        economiaSoma: 0,
+        roiSoma: 0,
+        roiCount: 0,
+        melhorMilheiroVal: null,
+        ultimaMov: null,
+      });
+    });
+
     (programsQuery.data ?? []).forEach((row) => {
       const clientId = row.cliente_id as string;
       const programId = (row.program_id as string) ?? "";
       const current = grouped.get(clientId);
       const base = {
-        clienteId,
+        clienteId: clientId,
         nome: profiles.get(clientId) ?? "Cliente",
         milhas: 0,
         valorEstimado: 0,
@@ -254,7 +349,7 @@ export const useGestor = (enabled = true) => {
     });
 
     return result;
-  }, [profilesQuery.data, programsQuery.data]);
+  }, [clientsQuery.data, profilesQuery.data, programsQuery.data]);
 
   const vencimentosTodosClientes = useMemo<GestorVencimentoItem[]>(() => {
     const profiles = new Map<string, string>();
@@ -312,7 +407,7 @@ export const useGestor = (enabled = true) => {
         );
         if (diasRestantes < 0) return;
         items.push({
-          clienteId,
+          clienteId: clientId,
           clienteNome: clientName,
           programId,
           programName,
@@ -325,6 +420,26 @@ export const useGestor = (enabled = true) => {
 
     return items.sort((a, b) => a.diasRestantes - b.diasRestantes);
   }, [profilesQuery.data, programsQuery.data]);
+
+  const demandasGestor = useMemo<GestorDemandaItem[]>(() => {
+    const profiles = new Map<string, string>();
+    (profilesQuery.data ?? []).forEach((row) => {
+      profiles.set(row.usuario_id as string, (row.nome_completo as string) ?? "Cliente");
+    });
+
+    return (demandasQuery.data ?? []).map((row) => {
+      const clienteId = row.cliente_id as string;
+      return {
+        id: Number(row.id),
+        clienteId,
+        clienteNome: profiles.get(clienteId) ?? "Cliente",
+        tipo: (row.tipo as "emissao" | "outros") ?? "outros",
+        status: (row.status as string) ?? "pendente",
+        payload: (row.payload as Record<string, unknown>) ?? {},
+        createdAt: (row.created_at as string) ?? new Date().toISOString(),
+      };
+    });
+  }, [demandasQuery.data, profilesQuery.data]);
 
   const kpis = useMemo(() => {
     const totalClientesAtivos = resumoClientes.length;
@@ -344,8 +459,10 @@ export const useGestor = (enabled = true) => {
     const clientesComVencendo90d = resumoClientes.filter(
       (c) => c.pontosVencendo90d > 0,
     ).length;
+    // ROI médio consolidado do gestor:
+    // total economizado em todos os clientes ativos / número de clientes ativos.
     const roiMedio = totalClientesAtivos
-      ? resumoClientes.reduce((acc, c) => acc + c.roiMedio, 0) / totalClientesAtivos
+      ? economiaTotalGestao / totalClientesAtivos
       : 0;
     return {
       totalClientesAtivos,
@@ -430,11 +547,19 @@ export const useGestor = (enabled = true) => {
 
   return {
     loading:
-      clientsQuery.isLoading || profilesQuery.isLoading || programsQuery.isLoading,
-    error: clientsQuery.error || profilesQuery.error || programsQuery.error,
+      clientsQuery.isLoading ||
+      profilesQuery.isLoading ||
+      programsQuery.isLoading ||
+      demandasQuery.isLoading,
+    error:
+      clientsQuery.error ||
+      profilesQuery.error ||
+      programsQuery.error ||
+      demandasQuery.error,
     clientsIds: clientsQuery.data ?? [],
     resumoClientes,
     vencimentosTodosClientes,
+    demandasGestor,
     kpis,
     dreConsolidado,
   };

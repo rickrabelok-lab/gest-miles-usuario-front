@@ -11,9 +11,10 @@ export type GestorKpisProps = {
     economiaTotalGestao: number;
     clientesComVencendo90d: number;
   };
+  onOpenExpiringClients?: () => void;
 };
 
-const GestorKpis = ({ kpis }: GestorKpisProps) => {
+const GestorKpis = ({ kpis, onOpenExpiringClients }: GestorKpisProps) => {
   const cards = [
     {
       label: "Clientes ativos",
@@ -50,7 +51,7 @@ const GestorKpis = ({ kpis }: GestorKpisProps) => {
       className: "text-primary",
     },
     {
-      label: "ROI médio consolidado",
+      label: "Economia média gerada",
       value: kpis.roiMedio.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL",
@@ -61,6 +62,7 @@ const GestorKpis = ({ kpis }: GestorKpisProps) => {
       className: "text-muted-foreground",
     },
     {
+      id: "expiring-clients",
       label: "Clientes com milhas vencendo <90d",
       value: String(kpis.clientesComVencendo90d),
       icon: AlertTriangle,
@@ -68,6 +70,7 @@ const GestorKpis = ({ kpis }: GestorKpisProps) => {
         kpis.clientesComVencendo90d > 0
           ? "text-amber-600 dark:text-amber-400"
           : "text-muted-foreground",
+      onClick: onOpenExpiringClients,
     },
   ];
 
@@ -75,26 +78,51 @@ const GestorKpis = ({ kpis }: GestorKpisProps) => {
     <div className="grid grid-cols-2 gap-2 sm:gap-3">
       {cards.map((card) => {
         const Icon = card.icon;
+        const clickable = typeof card.onClick === "function";
         return (
           <Card
             key={card.label}
             className="overflow-hidden rounded-xl border-border/80 bg-card shadow-sm transition-shadow hover:shadow-md"
           >
-            <CardContent className="p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11px] font-medium text-muted-foreground">
-                    {card.label}
-                  </p>
-                  <p className={`mt-1 truncate text-base font-semibold tabular-nums ${card.className}`}>
-                    {card.value}
-                  </p>
+            {clickable ? (
+              <button
+                type="button"
+                onClick={card.onClick}
+                className="w-full text-left transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium leading-4 text-muted-foreground whitespace-normal break-words">
+                        {card.label}
+                      </p>
+                      <p className={`mt-1 truncate text-base font-semibold tabular-nums ${card.className}`}>
+                        {card.value}
+                      </p>
+                    </div>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/80">
+                      <Icon className={`h-4 w-4 ${card.className}`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </button>
+            ) : (
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-medium leading-4 text-muted-foreground whitespace-normal break-words">
+                      {card.label}
+                    </p>
+                    <p className={`mt-1 truncate text-base font-semibold tabular-nums ${card.className}`}>
+                      {card.value}
+                    </p>
+                  </div>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/80">
+                    <Icon className={`h-4 w-4 ${card.className}`} />
+                  </div>
                 </div>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/80">
-                  <Icon className={`h-4 w-4 ${card.className}`} />
-                </div>
-              </div>
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
         );
       })}

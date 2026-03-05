@@ -1733,7 +1733,7 @@ const LoyaltyProgramDetails = () => {
                       onChange={(event) =>
                         setEmitMilhas(Number(event.target.value) || 0)
                       }
-                      className="h-8 border-slate-800 bg-slate-950 text-xs"
+                      className="no-spinner h-8 border-slate-800 bg-slate-950 text-xs"
                     />
                   </div>
                   <div>
@@ -1747,7 +1747,7 @@ const LoyaltyProgramDetails = () => {
                       onChange={(event) =>
                         setEmitTaxas(Number(event.target.value) || 0)
                       }
-                      className="h-8 border-slate-800 bg-slate-950 text-xs"
+                      className="no-spinner h-8 border-slate-800 bg-slate-950 text-xs"
                     />
                   </div>
                 </div>
@@ -1762,7 +1762,7 @@ const LoyaltyProgramDetails = () => {
                     onChange={(event) =>
                       setEmitTarifaPagante(Number(event.target.value) || 0)
                     }
-                    className="h-8 border-slate-800 bg-slate-950 text-xs"
+                    className="no-spinner h-8 border-slate-800 bg-slate-950 text-xs"
                   />
                 </div>
               </div>

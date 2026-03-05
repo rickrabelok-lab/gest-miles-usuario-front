@@ -9,8 +9,14 @@ import LoyaltyProgramDetails from "./pages/LoyaltyProgramDetails";
 import Auth from "./pages/Auth";
 import Me from "./pages/Me";
 import GestorDashboard from "./pages/GestorDashboard";
+import ClientProfile from "./pages/ClientProfile";
+import SearchFlightsScreen from "./pages/SearchFlightsScreen";
+import PriceCalendarScreen from "./pages/PriceCalendarScreen";
+import BonusOffersScreen from "./pages/BonusOffersScreen";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
 import ProtectedByRole from "@/components/RequireRole";
+import RequireAuth from "@/components/RequireAuth";
 
 const queryClient = new QueryClient();
 
@@ -20,24 +26,44 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/me" element={<Me />} />
-            <Route
-              path="/gestor"
-              element={
-                <ProtectedByRole allow={["gestor", "admin"]}>
-                  <GestorDashboard />
-                </ProtectedByRole>
-              }
-            />
-            <Route path="/program/:programId" element={<LoyaltyProgramDetails />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <SearchFlightsProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <RequireAuth>
+                    <Index />
+                  </RequireAuth>
+                }
+              />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/me" element={<Me />} />
+              <Route path="/search-flights" element={<SearchFlightsScreen />} />
+              <Route path="/price-calendar" element={<PriceCalendarScreen />} />
+              <Route path="/bonus-offers" element={<BonusOffersScreen />} />
+              <Route
+                path="/perfil"
+                element={
+                  <RequireAuth>
+                    <ClientProfile />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/gestor"
+                element={
+                  <ProtectedByRole allow={["gestor", "admin"]}>
+                    <GestorDashboard />
+                  </ProtectedByRole>
+                }
+              />
+              <Route path="/program/:programId" element={<LoyaltyProgramDetails />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </SearchFlightsProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

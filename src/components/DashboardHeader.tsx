@@ -1,5 +1,5 @@
 import { User, Menu, X, Zap, LogIn, LogOut, Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 const getInitials = (email: string | undefined) => {
@@ -21,8 +22,127 @@ const getInitials = (email: string | undefined) => {
 const DashboardHeader = () => {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [idCopied, setIdCopied] = useState(false);
+  const [managedClientIds, setManagedClientIds] = useState<string[]>([]);
+  const [managedClientNames, setManagedClientNames] = useState<Record<string, string>>({});
+  const [demandSummary, setDemandSummary] = useState({
+    openCount: 0,
+    pendingCount: 0,
+    inProgressCount: 0,
+    lastClientName: null as string | null,
+  });
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
+  const isGestorView = role === "gestor" || role === "admin";
+
+  useEffect(() => {
+    if (!isGestorView || !user?.id) {
+      setManagedClientIds([]);
+      setManagedClientNames({});
+      setDemandSummary({
+        openCount: 0,
+        pendingCount: 0,
+        inProgressCount: 0,
+        lastClientName: null,
+      });
+      return;
+    }
+
+    let cancelled = false;
+    const loadManagedClients = async () => {
+      const { data, error } = await supabase
+        .from("gestor_clientes")
+        .select("cliente_id")
+        .eq("gestor_id", user.id);
+      if (error || cancelled) return;
+      const ids = (data ?? []).map((row) => row.cliente_id as string).filter(Boolean);
+      setManagedClientIds(ids);
+      if (ids.length === 0) {
+        setManagedClientNames({});
+        return;
+      }
+      const { data: perfisData } = await supabase
+        .from("perfis")
+        .select("usuario_id, nome_completo")
+        .in("usuario_id", ids);
+      if (cancelled) return;
+      const names: Record<string, string> = {};
+      (perfisData ?? []).forEach((row) => {
+        names[row.usuario_id as string] = (row.nome_completo as string) || "Cliente";
+      });
+      setManagedClientNames(names);
+    };
+
+    void loadManagedClients();
+    return () => {
+      cancelled = true;
+    };
+  }, [isGestorView, user?.id]);
+
+  useEffect(() => {
+    if (!isGestorView || managedClientIds.length === 0) {
+      setDemandSummary({
+        openCount: 0,
+        pendingCount: 0,
+        inProgressCount: 0,
+        lastClientName: null,
+      });
+      return;
+    }
+
+    const managedIds = new Set(managedClientIds);
+    let active = true;
+
+    const loadDemandSummary = async () => {
+      const { data, error } = await supabase
+        .from("demandas_cliente")
+        .select("cliente_id,status,created_at")
+        .in("cliente_id", managedClientIds)
+        .in("status", ["pendente", "em_andamento"])
+        .order("created_at", { ascending: false });
+
+      if (!active || error) return;
+
+      const rows = (data ?? []) as Array<{
+        cliente_id?: string;
+        status?: string;
+      }>;
+      const pendingCount = rows.filter((row) => row.status === "pendente").length;
+      const inProgressCount = rows.filter((row) => row.status === "em_andamento").length;
+      const lastClientId = rows[0]?.cliente_id ? String(rows[0].cliente_id) : null;
+      const lastClientName = lastClientId
+        ? managedClientNames[lastClientId] ?? "Cliente"
+        : null;
+
+      setDemandSummary({
+        openCount: rows.length,
+        pendingCount,
+        inProgressCount,
+        lastClientName,
+      });
+    };
+
+    void loadDemandSummary();
+
+    const channel = supabase
+      .channel(`header-demandas-open-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "demandas_cliente" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { cliente_id?: string } | null;
+          const clienteId = String(row?.cliente_id ?? "");
+          if (!clienteId || !managedIds.has(clienteId)) return;
+          setBannerVisible(true);
+          void loadDemandSummary();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [isGestorView, managedClientIds, managedClientNames]);
 
   const copyAccountId = () => {
     if (!user?.id) return;
@@ -61,6 +181,9 @@ const DashboardHeader = () => {
               <>
                 <DropdownMenuItem disabled className="text-muted-foreground">
                   <span className="truncate">{user.email}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/perfil")}>
+                  Meu perfil
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -127,9 +250,26 @@ const DashboardHeader = () => {
       {bannerVisible && (
         <div className="mx-4 mb-3 flex items-center gap-3 rounded-xl bg-header-foreground/10 px-4 py-2.5 backdrop-blur-sm">
           <Zap size={18} className="shrink-0 text-warning" />
-          <p className="flex-1 text-sm">
-            Bônus de até <span className="font-bold text-warning">133%</span> na transferência. Confira
-          </p>
+          {isGestorView ? (
+            <button
+              type="button"
+              onClick={() => navigate("/gestor?tab=demandas&status=pendente")}
+              className="flex-1 text-left text-sm hover:opacity-90"
+            >
+              <span className="font-semibold text-warning">Demandas abertas:</span>{" "}
+              {demandSummary.openCount}{" "}
+              {demandSummary.openCount === 1 ? "demanda" : "demandas"}{" "}
+              {demandSummary.openCount > 0
+                ? `(pendentes: ${demandSummary.pendingCount} • em andamento: ${demandSummary.inProgressCount})`
+                : "no momento."}{" "}
+              {demandSummary.lastClientName ? `Última de ${demandSummary.lastClientName}.` : ""}
+            </button>
+          ) : (
+            <p className="flex-1 text-sm">
+              Bônus de até <span className="font-bold text-warning">133%</span> na transferência.
+              Confira
+            </p>
+          )}
           <button onClick={() => setBannerVisible(false)} className="shrink-0 opacity-70 hover:opacity-100">
             <X size={16} />
           </button>

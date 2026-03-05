@@ -10,22 +10,39 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardHeader from "@/components/DashboardHeader";
 import BalanceTabs from "@/components/BalanceTabs";
 import ProgramCard from "@/components/ProgramCard";
-import QuickSearch from "@/components/QuickSearch";
-import ExploreDestinations from "@/components/ExploreDestinations";
+import DestinationCarousel from "@/components/DestinationCarousel";
+import BonusOffersSection from "@/components/bonus/BonusOffersSection";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProgramasCliente } from "@/hooks/useProgramasCliente";
 import { useGestor } from "@/hooks/useGestor";
 import { useVincularCliente } from "@/hooks/useVincularCliente";
+import { supabase } from "@/lib/supabase";
+import { CARD_DESTINATION_TO_AIRPORT_CODE } from "@/lib/airports";
 
 const STORAGE_PREFIX = "mile-manager:program-state:";
 const LOGO_STORAGE_PREFIX = "mile-manager:program-logo:";
 const PROGRAM_CARDS_STORAGE_KEY = "mile-manager:program-cards";
 const MIGRATION_FLAG_PREFIX = "mile-manager:migration:v1:";
 const MANAGER_ACCESSED_CLIENTS_PREFIX = "mile-manager:manager-accessed-clients:";
+const ORIGINS_STORAGE_PREFIX = "mile-manager:enabled-origins:";
+const DEFAULT_ENABLED_ORIGINS = ["BHZ", "SAO", "RIO", "BSB"];
+
+type SelectedDestinationSearch = {
+  code: string;
+  name: string;
+};
 
 type ProgramCardData = {
   programId: string;
@@ -331,6 +348,7 @@ const Index = () => {
   const managerClientId =
     role === "gestor" || role === "admin" ? managerClientIdParam : null;
   const managerMode = role === "gestor" || role === "admin";
+  const demandTargetClientId = managerClientId ?? user?.id ?? null;
   const [activeTab, setActiveTab] = useState("saldo");
   const [activeNav, setActiveNav] = useState("programas");
   const [showAll, setShowAll] = useState(false);
@@ -338,11 +356,26 @@ const Index = () => {
   const [programs, setPrograms] = useState<ProgramCardData[]>(basePrograms);
   const [economiaPeriodoMeses, setEconomiaPeriodoMeses] = useState<1 | 6 | 12>(12);
   const [isAddProgramMenuOpen, setIsAddProgramMenuOpen] = useState(false);
+  const [isDemandDialogOpen, setIsDemandDialogOpen] = useState(false);
+  const [demandType, setDemandType] = useState<"emissao" | "outros">("emissao");
+  const [demandSubmitting, setDemandSubmitting] = useState(false);
+  const [demandaOrigem, setDemandaOrigem] = useState("");
+  const [demandaDestino, setDemandaDestino] = useState("");
+  const [demandaDataIda, setDemandaDataIda] = useState("");
+  const [demandaDataVolta, setDemandaDataVolta] = useState("");
+  const [demandaPassageiros, setDemandaPassageiros] = useState(1);
+  const [demandaClasse, setDemandaClasse] = useState("");
+  const [demandaBagagemDescricao, setDemandaBagagemDescricao] = useState("");
+  const [demandaAssentoDescricao, setDemandaAssentoDescricao] = useState("");
+  const [demandaFlexDatas, setDemandaFlexDatas] = useState<"sim" | "nao">("nao");
+  const [demandaOutrosDetalhes, setDemandaOutrosDetalhes] = useState("");
   const [isClientesAtivosOpen, setIsClientesAtivosOpen] = useState(false);
+  const [isClientesVencendoOpen, setIsClientesVencendoOpen] = useState(false);
   const [vincularIdInput, setVincularIdInput] = useState("");
   const [optionLogoImages, setOptionLogoImages] = useState<Record<string, string>>(
     {},
   );
+  const [enabledOrigins, setEnabledOrigins] = useState<string[]>(DEFAULT_ENABLED_ORIGINS);
   const [accessedClientsVersion, setAccessedClientsVersion] = useState(0);
   const economiaReportRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -351,19 +384,67 @@ const Index = () => {
     saveProgramState,
   } =
     useProgramasCliente(managerClientId);
-  const { resumoClientes, kpis: gestorKpis } = useGestor(managerMode);
+  const { resumoClientes, kpis: gestorKpis, demandasGestor } = useGestor(managerMode);
   const { vincular, isVincularLoading, getErrorMessage } = useVincularCliente(managerMode ? user?.id : undefined);
 
   const dataOwnerId = managerClientId ?? user?.id ?? "anonymous";
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = `${ORIGINS_STORAGE_PREFIX}${dataOwnerId}`;
+    const raw = window.localStorage.getItem(key);
+
+    if (!raw) {
+      setEnabledOrigins(DEFAULT_ENABLED_ORIGINS);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        setEnabledOrigins(DEFAULT_ENABLED_ORIGINS);
+        return;
+      }
+
+      const sanitized = parsed
+        .map((item) => String(item).trim().toUpperCase())
+        .filter(Boolean);
+      setEnabledOrigins(sanitized.length > 0 ? sanitized : DEFAULT_ENABLED_ORIGINS);
+    } catch {
+      setEnabledOrigins(DEFAULT_ENABLED_ORIGINS);
+    }
+  }, [dataOwnerId]);
+
   const gestorScore = useMemo(() => {
     if (!managerMode || !gestorKpis) return 0;
-    const { economiaTotalGestao, totalClientesAtivos, roiMedio } = gestorKpis;
-    const porEconomia = Math.min(600, (economiaTotalGestao / 50));
-    const porClientes = Math.min(300, totalClientesAtivos * 60);
-    const porRoi = Math.min(100, Math.max(0, roiMedio / 20));
-    return Math.round(Math.min(1000, porEconomia + porClientes + porRoi));
+    const economiaMediaGerada = gestorKpis.roiMedio;
+    // Escala linear: 35.000 de economia média => score 1.000.
+    return Math.round(
+      Math.min(1000, Math.max(0, (economiaMediaGerada / 35000) * 1000)),
+    );
   }, [managerMode, gestorKpis]);
+
+  const clientesComVencendo90d = useMemo(
+    () =>
+      resumoClientes
+        .filter((c) => c.pontosVencendo90d > 0)
+        .sort((a, b) => b.pontosVencendo90d - a.pontosVencendo90d),
+    [resumoClientes],
+  );
+  const demandasPendentes = useMemo(
+    () => demandasGestor.filter((d) => d.status === "pendente").length,
+    [demandasGestor],
+  );
+  const demandasEmAndamento = useMemo(
+    () => demandasGestor.filter((d) => d.status === "em_andamento").length,
+    [demandasGestor],
+  );
+
+  const handleOpenManagerClient = (clientId: string) => {
+    const query = new URLSearchParams(searchParams);
+    query.set("clientId", clientId);
+    navigate(`/?${query.toString()}`);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -617,7 +698,96 @@ const Index = () => {
     setShowAll(true);
   };
 
+  const handleSubmitDemand = async () => {
+    if (!user?.id || !demandTargetClientId) {
+      toast.error("Faça login para solicitar uma demanda.");
+      return;
+    }
+
+    if (demandType === "emissao") {
+      if (!demandaOrigem.trim() || !demandaDestino.trim() || demandaPassageiros <= 0) {
+        toast.error("Preencha origem, destino e quantidade de pessoas.");
+        return;
+      }
+      if (demandaDataIda && demandaDataVolta && demandaDataVolta < demandaDataIda) {
+        toast.error("A data de volta deve ser igual ou posterior à data de ida.");
+        return;
+      }
+    } else if (!demandaOutrosDetalhes.trim()) {
+      toast.error("Descreva a solicitação em 'Outros'.");
+      return;
+    }
+
+    setDemandSubmitting(true);
+    try {
+      const payload =
+        demandType === "emissao"
+          ? {
+              origem: demandaOrigem.trim(),
+              destino: demandaDestino.trim(),
+              dataIda: demandaDataIda || null,
+              dataVolta: demandaDataVolta || null,
+              diasViagem: demandaDiasViagem,
+              passageiros: demandaPassageiros,
+              classeVoo: demandaClasse.trim(),
+              bagagemDespachadaDescricao: demandaBagagemDescricao.trim(),
+              selecaoAssentoDescricao: demandaAssentoDescricao.trim(),
+              flexibilidadeDatas: demandaFlexDatas,
+            }
+          : {
+              detalhes: demandaOutrosDetalhes.trim(),
+            };
+
+      const { error } = await supabase.from("demandas_cliente").insert({
+        cliente_id: demandTargetClientId,
+        tipo: demandType,
+        status: "pendente",
+        payload,
+      });
+      if (error) throw error;
+
+      toast.success("Demanda enviada para o gestor com sucesso.");
+      setIsDemandDialogOpen(false);
+      setDemandType("emissao");
+      setDemandaOrigem("");
+      setDemandaDestino("");
+      setDemandaDataIda("");
+      setDemandaDataVolta("");
+      setDemandaPassageiros(1);
+      setDemandaClasse("");
+      setDemandaBagagemDescricao("");
+      setDemandaAssentoDescricao("");
+      setDemandaFlexDatas("nao");
+      setDemandaOutrosDetalhes("");
+    } catch (err) {
+      const rawMsg = err instanceof Error ? err.message : "Erro ao enviar demanda.";
+      const msg = /row-level security|permission denied|new row violates/i.test(rawMsg)
+        ? "Sem permissão para abrir demanda para este cliente. Verifique o vínculo do gestor e as policies de RLS."
+        : rawMsg;
+      toast.error(msg);
+    } finally {
+      setDemandSubmitting(false);
+    }
+  };
+
+  const handleSearchEmissionFromDestinationCard = ({
+    code,
+  }: SelectedDestinationSearch) => {
+    const destinationAirportCode = CARD_DESTINATION_TO_AIRPORT_CODE[code] ?? code;
+    navigate(`/search-flights?destination=${encodeURIComponent(destinationAirportCode)}`);
+  };
+
   const visiblePrograms = showAll ? programs : programs.slice(0, 4);
+  const demandaDiasViagem = useMemo(() => {
+    if (!demandaDataIda || !demandaDataVolta) return null;
+    const [anoIda, mesIda, diaIda] = demandaDataIda.split("-").map(Number);
+    const [anoVolta, mesVolta, diaVolta] = demandaDataVolta.split("-").map(Number);
+    const idaUtc = Date.UTC(anoIda, mesIda - 1, diaIda);
+    const voltaUtc = Date.UTC(anoVolta, mesVolta - 1, diaVolta);
+    const ms = voltaUtc - idaUtc;
+    if (Number.isNaN(ms) || ms < 0) return null;
+    return Math.round(ms / (1000 * 60 * 60 * 24));
+  }, [demandaDataIda, demandaDataVolta]);
   const gestorClientOptions = useMemo(
     () =>
       resumoClientes.map((client) => ({
@@ -944,78 +1114,106 @@ const Index = () => {
       {activeTab === "saldo" && (
         <>
           <div className="px-5 pb-2">
-            <div className="relative inline-block">
+            <div className="flex items-center gap-2">
               {managerMode && !managerClientId ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setIsClientesAtivosOpen((prev) => !prev)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                  >
-                    <Plus size={14} />
-                    {gestorKpis.totalClientesAtivos} clientes ativos
-                  </button>
-                  {isClientesAtivosOpen && (
-                    <div className="absolute left-0 z-20 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Clientes vinculados (ativos)
-                      </p>
-                      {resumoClientes.length > 0 ? (
-                        <ul className="mb-3 max-h-32 space-y-1 overflow-y-auto text-xs">
-                          {resumoClientes.map((c) => (
-                            <li key={c.clienteId} className="flex items-center justify-between rounded-lg px-2 py-1.5 bg-muted/50">
-                              <span className="truncate">{c.nome}</span>
-                              <span className="text-muted-foreground tabular-nums shrink-0">{c.milhas.toLocaleString("pt-BR")} pts</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="mb-3 text-xs text-muted-foreground">Nenhum cliente vinculado ainda.</p>
-                      )}
-                      <div className="border-t border-slate-200 dark:border-slate-600 pt-2">
-                        <p className="mb-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-400">Vincular novo cliente</p>
-                        <p className="mb-1.5 text-[10px] text-muted-foreground">Peça o ID da conta do cliente (menu ☰ na conta dele) e cole abaixo.</p>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="UUID do cliente"
-                            value={vincularIdInput}
-                            onChange={(e) => setVincularIdInput(e.target.value)}
-                            className="h-9 text-xs font-mono"
-                          />
-                          <Button
-                            size="sm"
-                            className="h-9 shrink-0"
-                            disabled={!vincularIdInput.trim() || isVincularLoading}
-                            onClick={async () => {
-                              const id = vincularIdInput.trim();
-                              if (!id) return;
-                              try {
-                                await vincular(id);
-                                setVincularIdInput("");
-                                setIsClientesAtivosOpen(false);
-                                toast.success("Cliente vinculado. Agora ele entra nos cálculos dos cards.");
-                              } catch (err: unknown) {
-                                toast.error(getErrorMessage(err));
-                              }
-                            }}
-                          >
-                            {isVincularLoading ? "..." : "Vincular"}
-                          </Button>
+                  <div className="relative inline-block">
+                    <button
+                      type="button"
+                      onClick={() => setIsClientesAtivosOpen((prev) => !prev)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                    >
+                      <Plus size={14} />
+                      {gestorKpis.totalClientesAtivos} clientes ativos
+                    </button>
+                    {isClientesAtivosOpen && (
+                      <div className="absolute left-0 z-20 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Clientes vinculados (ativos)
+                        </p>
+                        {resumoClientes.length > 0 ? (
+                          <ul className="mb-3 max-h-32 space-y-1 overflow-y-auto text-xs">
+                            {resumoClientes.map((c) => (
+                              <li key={c.clienteId} className="flex items-center justify-between rounded-lg px-2 py-1.5 bg-muted/50">
+                                <span className="truncate">{c.nome}</span>
+                                <span className="text-muted-foreground tabular-nums shrink-0">{c.milhas.toLocaleString("pt-BR")} pts</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mb-3 text-xs text-muted-foreground">Nenhum cliente vinculado ainda.</p>
+                        )}
+                        <div className="border-t border-slate-200 dark:border-slate-600 pt-2">
+                          <p className="mb-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-400">Vincular novo cliente</p>
+                          <p className="mb-1.5 text-[10px] text-muted-foreground">Peça o ID da conta do cliente (menu ☰ na conta dele) e cole abaixo.</p>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="UUID do cliente"
+                              value={vincularIdInput}
+                              onChange={(e) => setVincularIdInput(e.target.value)}
+                              className="h-9 text-xs font-mono"
+                            />
+                            <Button
+                              size="sm"
+                              className="h-9 shrink-0"
+                              disabled={!vincularIdInput.trim() || isVincularLoading}
+                              onClick={async () => {
+                                const id = vincularIdInput.trim();
+                                if (!id) return;
+                                try {
+                                  await vincular(id);
+                                  setVincularIdInput("");
+                                  setIsClientesAtivosOpen(false);
+                                  toast.success("Cliente vinculado. Agora ele entra nos cálculos dos cards.");
+                                } catch (err: unknown) {
+                                  toast.error(getErrorMessage(err));
+                                }
+                              }}
+                            >
+                              {isVincularLoading ? "..." : "Vincular"}
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/gestor?tab=demandas&status=pendente")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 shadow-sm transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
+                  >
+                    Demandas Abertas {demandasPendentes > 0 ? `(${demandasPendentes})` : ""}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/gestor?tab=demandas&status=em_andamento")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-800 shadow-sm transition-colors hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
+                  >
+                    Demandas em Andamento{" "}
+                    {demandasEmAndamento > 0 ? `(${demandasEmAndamento})` : ""}
+                  </button>
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddProgramMenuOpen((prev) => !prev)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                  >
-                    <Plus size={14} />
-                    Adicionar programa
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddProgramMenuOpen((prev) => !prev)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                    >
+                      <Plus size={14} />
+                      Adicionar programa
+                    </button>
+                    {(!managerMode || !!managerClientId) && (
+                      <button
+                        type="button"
+                        onClick={() => setIsDemandDialogOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 shadow-sm transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
+                      >
+                        Solicitar demanda
+                      </button>
+                    )}
+                  </div>
 
                   {isAddProgramMenuOpen && (
                     <div className="absolute left-0 z-20 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
@@ -1107,7 +1305,7 @@ const Index = () => {
                 <p className="mt-0.5 text-[11px] text-muted-foreground">sob gestão (todos os clientes)</p>
               </div>
               <div className="relative cursor-default rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <p className="text-[11px] font-medium text-muted-foreground">ROI médio</p>
+                <p className="text-[11px] font-medium text-muted-foreground">Economia média gerada</p>
                 <p className="mt-2 text-lg font-semibold tabular-nums">
                   {gestorKpis.roiMedio.toLocaleString("pt-BR", {
                     style: "currency",
@@ -1118,12 +1316,60 @@ const Index = () => {
                 </p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">consolidado (todos os clientes)</p>
               </div>
-              <div className="relative col-span-2 cursor-default rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+              <div
+                className={`relative col-span-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 ${
+                  clientesComVencendo90d.length > 0 ? "cursor-pointer" : "cursor-default"
+                }`}
+                onClick={() => {
+                  if (clientesComVencendo90d.length === 0) return;
+                  setIsClientesVencendoOpen((prev) => !prev);
+                }}
+                role={clientesComVencendo90d.length > 0 ? "button" : undefined}
+                tabIndex={clientesComVencendo90d.length > 0 ? 0 : undefined}
+                onKeyDown={(event) => {
+                  if (clientesComVencendo90d.length === 0) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setIsClientesVencendoOpen((prev) => !prev);
+                  }
+                }}
+              >
                 <p className="text-[11px] font-medium text-muted-foreground">Clientes com milhas vencendo &lt;90 dias</p>
                 <p className="mt-2 text-lg font-semibold tabular-nums text-amber-600 dark:text-amber-400">
                   {gestorKpis.clientesComVencendo90d}
                 </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">clientes com pontos a vencer nos próximos 90 dias</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {clientesComVencendo90d.length > 0
+                    ? "clique para ver os clientes e abrir a conta"
+                    : "clientes com pontos a vencer nos próximos 90 dias"}
+                </p>
+                {isClientesVencendoOpen && clientesComVencendo90d.length > 0 && (
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-600 dark:bg-slate-700/30">
+                    <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Clientes com vencimento próximo
+                    </p>
+                    <ul className="max-h-36 space-y-1 overflow-y-auto">
+                      {clientesComVencendo90d.map((client) => (
+                        <li key={client.clienteId}>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setIsClientesVencendoOpen(false);
+                              handleOpenManagerClient(client.clienteId);
+                            }}
+                            className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs transition-colors hover:bg-white/80 dark:hover:bg-slate-600/50"
+                          >
+                            <span className="truncate">{client.nome}</span>
+                            <span className="shrink-0 font-semibold text-amber-700 dark:text-amber-300">
+                              {client.pontosVencendo90d.toLocaleString("pt-BR")} pts
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -1150,11 +1396,14 @@ const Index = () => {
                   Ver todos
                 </button>
               )}
-
-              <QuickSearch />
-              <ExploreDestinations />
             </>
           )}
+
+          <DestinationCarousel
+            origins={enabledOrigins}
+            onDestinationClick={handleSearchEmissionFromDestinationCard}
+          />
+          <BonusOffersSection />
 
         </>
       )}
@@ -1452,6 +1701,158 @@ const Index = () => {
           </div>
         </div>
       )}
+
+      <Dialog open={isDemandDialogOpen} onOpenChange={setIsDemandDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Solicitar demanda</DialogTitle>
+            <DialogDescription>
+              Envie uma solicitação para o seu gestor.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={demandType === "emissao" ? "default" : "outline"}
+                onClick={() => setDemandType("emissao")}
+              >
+                Emissão
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={demandType === "outros" ? "default" : "outline"}
+                onClick={() => setDemandType("outros")}
+              >
+                Outros
+              </Button>
+            </div>
+
+            {demandType === "emissao" ? (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    placeholder="Origem"
+                    value={demandaOrigem}
+                    onChange={(event) => setDemandaOrigem(event.target.value)}
+                  />
+                  <Input
+                    placeholder="Destino"
+                    value={demandaDestino}
+                    onChange={(event) => setDemandaDestino(event.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-muted-foreground">Data de ida</p>
+                    <Input
+                      type="date"
+                      value={demandaDataIda}
+                      onChange={(event) => setDemandaDataIda(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-muted-foreground">Data de volta</p>
+                    <Input
+                      type="date"
+                      value={demandaDataVolta}
+                      min={demandaDataIda || undefined}
+                      onChange={(event) => setDemandaDataVolta(event.target.value)}
+                    />
+                  </div>
+                </div>
+                {demandaDiasViagem !== null && (
+                  <p className="text-[11px] font-medium text-muted-foreground">
+                    Duração estimada da viagem:{" "}
+                    <span className="text-foreground">
+                      {demandaDiasViagem} {demandaDiasViagem === 1 ? "dia" : "dias"}
+                    </span>
+                  </p>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-muted-foreground">Número de passageiros</p>
+                    <select
+                      value={demandaPassageiros}
+                      onChange={(event) => setDemandaPassageiros(Number(event.target.value))}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {Array.from({ length: 9 }, (_, idx) => idx + 1).map((value) => (
+                        <option key={`pax-${value}`} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-muted-foreground">Classe do voo</p>
+                    <select
+                      value={demandaClasse}
+                      onChange={(event) => setDemandaClasse(event.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="economica">Econômica</option>
+                      <option value="premium-economy">Premium Economy</option>
+                      <option value="executiva">Executiva</option>
+                      <option value="primeira-classe">Primeira Classe</option>
+                    </select>
+                  </div>
+                </div>
+                <Input
+                  placeholder="Bagagem despachada (quantidade / detalhes)"
+                  value={demandaBagagemDescricao}
+                  onChange={(event) => setDemandaBagagemDescricao(event.target.value)}
+                />
+                <Input
+                  placeholder="Seleção de assento (quantidade / detalhes)"
+                  value={demandaAssentoDescricao}
+                  onChange={(event) => setDemandaAssentoDescricao(event.target.value)}
+                />
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">Flexibilidade de datas</p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={demandaFlexDatas === "sim" ? "default" : "outline"}
+                      onClick={() => setDemandaFlexDatas("sim")}
+                    >
+                      Sim
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={demandaFlexDatas === "nao" ? "default" : "outline"}
+                      onClick={() => setDemandaFlexDatas("nao")}
+                    >
+                      Não
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Textarea
+                placeholder="Descreva sua demanda..."
+                value={demandaOutrosDetalhes}
+                onChange={(event) => setDemandaOutrosDetalhes(event.target.value)}
+              />
+            )}
+
+            <Button
+              type="button"
+              className="w-full"
+              onClick={handleSubmitDemand}
+              disabled={demandSubmitting}
+            >
+              {demandSubmitting ? "Enviando..." : "Enviar demanda"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav
         activeItem={activeNav}
