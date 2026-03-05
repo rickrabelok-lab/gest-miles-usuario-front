@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Ticket, Layers, Users, ChevronUp, ArrowLeft } from "lucide-react";
+import { Ticket, Layers, Users, ChevronUp, ArrowLeft, UserMinus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ interface BottomNavProps {
   selectedClientId?: string | null;
   onClientSelect?: (clientId: string) => void;
   onBackToMyAccount?: () => void;
+  onRemoveClient?: (clientId: string) => void;
 }
 
 const items = [
@@ -28,6 +29,7 @@ const BottomNav = ({
   selectedClientId,
   onClientSelect,
   onBackToMyAccount,
+  onRemoveClient,
 }: BottomNavProps) => {
   const [openClients, setOpenClients] = useState(false);
   const [pastedClientId, setPastedClientId] = useState("");
@@ -63,6 +65,20 @@ const BottomNav = ({
                     >
                       <ArrowLeft className="h-4 w-4" />
                       Voltar para minha conta
+                    </Button>
+                  )}
+                  {selectedClientId && onRemoveClient && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mb-3 w-full justify-start gap-2 border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
+                      onClick={() => {
+                        onRemoveClient(selectedClientId);
+                        setOpenClients(false);
+                      }}
+                    >
+                      <UserMinus className="h-4 w-4" />
+                      Remover cliente
                     </Button>
                   )}
                   <p className="mb-2 text-xs font-medium text-slate-600">

@@ -32,8 +32,38 @@ export const useVincularCliente = (gestorUserId: string | undefined) => {
     },
   });
 
+  const desvincularMutation = useMutation({
+    mutationFn: async (clienteId: string) => {
+      const raw = clienteId.trim();
+      const uuid = raw.toLowerCase();
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)) {
+        throw new Error("ID do cliente inválido. Use o UUID completo.");
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error("Faça login novamente para desvincular.");
+      const { data, error } = await supabase
+        .from("gestor_clientes")
+        .delete()
+        .eq("gestor_id", user.id)
+        .eq("cliente_id", uuid)
+        .select("cliente_id");
+      if (error) {
+        const err = new Error(error.message) as Error & { code?: string };
+        err.code = error.code;
+        throw err;
+      }
+      return { deleted: (data ?? []).length > 0 };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gestor_clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["gestor_clientes_perfis"] });
+    },
+  });
+
   return {
     vincular: mutation.mutateAsync,
+    desvincular: desvincularMutation.mutateAsync,
+    isDesvincularLoading: desvincularMutation.isPending,
     vincularStatus: mutation.status,
     vincularError: mutation.error,
     isVincularLoading: mutation.isPending,

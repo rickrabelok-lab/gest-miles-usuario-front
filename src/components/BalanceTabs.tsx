@@ -4,6 +4,7 @@ interface BalanceTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   economyTrend?: "up" | "down" | "none";
+  economyLabel?: string;
 }
 
 const tabs = [
@@ -13,7 +14,12 @@ const tabs = [
   { id: "economia", label: "R$", icon: null },
 ];
 
-const BalanceTabs = ({ activeTab, onTabChange, economyTrend = "none" }: BalanceTabsProps) => {
+const BalanceTabs = ({
+  activeTab,
+  onTabChange,
+  economyTrend = "none",
+  economyLabel = "R$",
+}: BalanceTabsProps) => {
   return (
     <div className="grid grid-cols-4 gap-2 px-5 py-4">
       {tabs.map((tab) => {
@@ -36,7 +42,9 @@ const BalanceTabs = ({ activeTab, onTabChange, economyTrend = "none" }: BalanceT
                 {tab.label}
               </>
             ) : (
-              <span className="text-xs font-bold">R$</span>
+              <span className={economyLabel === "R$" ? "text-xs font-bold" : "text-[10px] font-semibold"}>
+                {economyLabel}
+              </span>
             )}
             {isEconomyTab && economyTrend === "up" && (
               <ArrowUpRight size={13} className="text-emerald-600" />

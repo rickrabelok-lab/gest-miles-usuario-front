@@ -62,54 +62,78 @@ export type GestorDemandaItem = {
   createdAt: string;
 };
 
-export const useGestor = (enabled = true) => {
+export type GestorPlanoAcaoProgramKey = "latam" | "azul" | "smiles" | "avios";
+
+export type GestorPlanoAcaoClienteItem = {
+  clienteId: string;
+  nome: string;
+};
+
+export const useGestor = (
+  enabled = true,
+  extraClientIds: string[] = [],
+) => {
   const queryClient = useQueryClient();
   const clientsQuery = useQuery({
     queryKey: ["gestor_clientes"],
     enabled,
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) return [] as string[];
       const { data, error } = await supabase
         .from("gestor_clientes")
-        .select("cliente_id");
+        .select("cliente_id")
+        .eq("gestor_id", user.id);
       if (error) throw error;
       return (data ?? []).map((row) => row.cliente_id as string);
     },
   });
 
+  const allClientIds = useMemo(() => {
+    const merged = new Set<string>();
+    (clientsQuery.data ?? []).forEach((id) => {
+      if (id) merged.add(id);
+    });
+    extraClientIds.forEach((id) => {
+      if (id) merged.add(id);
+    });
+    return Array.from(merged);
+  }, [clientsQuery.data, extraClientIds]);
+
   const profilesQuery = useQuery({
-    queryKey: ["gestor_clientes_perfis", clientsQuery.data],
-    enabled: enabled && !!clientsQuery.data?.length,
+    queryKey: ["gestor_clientes_perfis", allClientIds],
+    enabled: enabled && !!allClientIds.length,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("perfis")
-        .select("usuario_id, nome_completo")
-        .in("usuario_id", clientsQuery.data!);
+        .select("usuario_id, nome_completo, configuracao_tema")
+        .in("usuario_id", allClientIds);
       if (error) throw error;
       return data ?? [];
     },
   });
 
   const programsQuery = useQuery({
-    queryKey: ["gestor_programas_cliente", clientsQuery.data],
-    enabled: enabled && !!clientsQuery.data?.length,
+    queryKey: ["gestor_programas_cliente", allClientIds],
+    enabled: enabled && !!allClientIds.length,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programas_cliente")
         .select("cliente_id, program_id, program_name, saldo, custo_medio_milheiro, updated_at, state")
-        .in("cliente_id", clientsQuery.data!);
+        .in("cliente_id", allClientIds);
       if (error) throw error;
       return data ?? [];
     },
   });
 
   const demandasQuery = useQuery({
-    queryKey: ["gestor_demandas_cliente", clientsQuery.data],
-    enabled: enabled && !!clientsQuery.data?.length,
+    queryKey: ["gestor_demandas_cliente", allClientIds],
+    enabled: enabled && !!allClientIds.length,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("demandas_cliente")
         .select("id, cliente_id, tipo, status, payload, created_at")
-        .in("cliente_id", clientsQuery.data!)
+        .in("cliente_id", allClientIds)
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
@@ -118,9 +142,9 @@ export const useGestor = (enabled = true) => {
   });
 
   useEffect(() => {
-    if (!enabled || !clientsQuery.data?.length) return;
+    if (!enabled || !allClientIds.length) return;
 
-    const managedClientIds = new Set(clientsQuery.data);
+    const managedClientIds = new Set(allClientIds);
     const profileNames = new Map<string, string>();
     (profilesQuery.data ?? []).forEach((row) => {
       profileNames.set(row.usuario_id as string, (row.nome_completo as string) ?? "Cliente");
@@ -156,7 +180,35 @@ export const useGestor = (enabled = true) => {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [enabled, clientsQuery.data, profilesQuery.data, queryClient]);
+  }, [enabled, allClientIds, profilesQuery.data, queryClient]);
+
+  useEffect(() => {
+    if (!enabled || !allClientIds.length) return;
+
+    const managedClientIds = new Set(allClientIds);
+    const channel = supabase
+      .channel(`gestor-perfis-action-plan-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "perfis",
+        },
+        (payload) => {
+          const row = (payload.new ?? payload.old ?? {}) as { usuario_id?: string };
+          const usuarioId = String(row.usuario_id ?? "");
+          if (!usuarioId || !managedClientIds.has(usuarioId)) return;
+
+          queryClient.invalidateQueries({ queryKey: ["gestor_clientes_perfis"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [enabled, allClientIds, queryClient]);
 
   const resumoClientes = useMemo<GestorClienteResumo[]>(() => {
     const profiles = new Map<string, string>();
@@ -192,7 +244,7 @@ export const useGestor = (enabled = true) => {
 
     // Garante que todo cliente vinculado em gestor_clientes apareça como ativo,
     // mesmo sem registros em programas_cliente (métricas ficam zeradas até haver dados).
-    (clientsQuery.data ?? []).forEach((clientId) => {
+    allClientIds.forEach((clientId) => {
       if (grouped.has(clientId)) return;
       grouped.set(clientId, {
         clienteId: clientId,
@@ -349,7 +401,7 @@ export const useGestor = (enabled = true) => {
     });
 
     return result;
-  }, [clientsQuery.data, profilesQuery.data, programsQuery.data]);
+  }, [allClientIds, profilesQuery.data, programsQuery.data]);
 
   const vencimentosTodosClientes = useMemo<GestorVencimentoItem[]>(() => {
     const profiles = new Map<string, string>();
@@ -545,6 +597,61 @@ export const useGestor = (enabled = true) => {
     };
   }, [programsQuery.data]);
 
+  const planosAcaoPorPrograma = useMemo<
+    Record<GestorPlanoAcaoProgramKey, GestorPlanoAcaoClienteItem[]>
+  >(() => {
+    const grouped: Record<GestorPlanoAcaoProgramKey, GestorPlanoAcaoClienteItem[]> = {
+      latam: [],
+      azul: [],
+      smiles: [],
+      avios: [],
+    };
+    const mergedByClientId = new Map<
+      string,
+      {
+        nome: string;
+        flags: Record<GestorPlanoAcaoProgramKey, boolean>;
+      }
+    >();
+
+    const isFallbackName = (n: string) =>
+      !n || n === "Cliente" || /^Cliente\s+[0-9a-f]{8}/i.test(n.trim());
+
+    (profilesQuery.data ?? []).forEach((row) => {
+      const clienteId = String(row.usuario_id ?? "");
+      if (!clienteId) return;
+      const nome = String(row.nome_completo ?? "Cliente").trim();
+      const configuracao = (row.configuracao_tema ?? {}) as Record<string, unknown>;
+      const clientePerfil = (configuracao.clientePerfil ?? {}) as Record<string, unknown>;
+      const planoAcao = (clientePerfil.planoAcao ?? {}) as Record<string, unknown>;
+
+      const existing = mergedByClientId.get(clienteId) ?? {
+        nome: nome || "Cliente",
+        flags: { latam: false, azul: false, smiles: false, avios: false },
+      };
+      if (nome && !isFallbackName(nome)) existing.nome = nome;
+      else if (!existing.nome || isFallbackName(existing.nome)) existing.nome = nome || "Cliente";
+      (Object.keys(grouped) as GestorPlanoAcaoProgramKey[]).forEach((key) => {
+        if (planoAcao[key] === true) existing.flags[key] = true;
+      });
+      mergedByClientId.set(clienteId, existing);
+    });
+
+    mergedByClientId.forEach((value, clienteId) => {
+      (Object.keys(grouped) as GestorPlanoAcaoProgramKey[]).forEach((key) => {
+        if (value.flags[key]) {
+          grouped[key].push({ clienteId, nome: value.nome });
+        }
+      });
+    });
+
+    (Object.keys(grouped) as GestorPlanoAcaoProgramKey[]).forEach((key) => {
+      grouped[key].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    });
+
+    return grouped;
+  }, [profilesQuery.data]);
+
   return {
     loading:
       clientsQuery.isLoading ||
@@ -556,11 +663,14 @@ export const useGestor = (enabled = true) => {
       profilesQuery.error ||
       programsQuery.error ||
       demandasQuery.error,
-    clientsIds: clientsQuery.data ?? [],
+    /** IDs dos clientes vinculados ao gestor (apenas gestor_clientes), para filtrar lista "Clientes ativos". */
+    linkedClientIds: clientsQuery.data ?? [],
+    clientsIds: allClientIds,
     resumoClientes,
     vencimentosTodosClientes,
     demandasGestor,
     kpis,
     dreConsolidado,
+    planosAcaoPorPrograma,
   };
 };

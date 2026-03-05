@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Settings2,
@@ -49,6 +50,8 @@ import { cn } from "@/lib/utils";
 import { useProgramasCliente } from "@/hooks/useProgramasCliente";
 import { useAuth } from "@/contexts/AuthContext";
 import { logAcao } from "@/lib/audit";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 type MovimentoTipo = "entrada" | "saida";
 
@@ -120,6 +123,64 @@ const SALDO_BASE_INICIAL = 0;
 const CUSTO_MEDIO_BASE_INICIAL = 0;
 const CUSTO_SALDO_BASE_INICIAL = 0;
 const STORAGE_PREFIX = "mile-manager:program-state:";
+
+const ACTION_PLAN_LABEL_BY_KEY = {
+  latam: "Latam Pass",
+  azul: "Tudo Azul",
+  smiles: "Smiles",
+  avios: "Avios",
+} as const;
+
+type ActionPlanProgramKey = keyof typeof ACTION_PLAN_LABEL_BY_KEY;
+
+const ACTION_PLAN_BY_PROGRAM_ID: Record<string, ActionPlanProgramKey> = {
+  "latam-pass": "latam",
+  latam: "latam",
+  "tudo-azul": "azul",
+  azul: "azul",
+  smiles: "smiles",
+  gol: "smiles",
+  avios: "avios",
+  iberia: "avios",
+  "british-airways": "avios",
+  "qatar-airways": "avios",
+  finnair: "avios",
+};
+
+const normalizeProgramToken = (value?: string) =>
+  (value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+const resolveActionPlanProgramKey = (
+  programId?: string,
+  programName?: string,
+): ActionPlanProgramKey | null => {
+  const normalizedProgramId = normalizeProgramToken(programId);
+  if (normalizedProgramId && ACTION_PLAN_BY_PROGRAM_ID[normalizedProgramId]) {
+    return ACTION_PLAN_BY_PROGRAM_ID[normalizedProgramId];
+  }
+
+  const normalizedProgramName = normalizeProgramToken(programName);
+  if (!normalizedProgramName) return null;
+  if (normalizedProgramName.includes("latam")) return "latam";
+  if (normalizedProgramName.includes("azul")) return "azul";
+  if (normalizedProgramName.includes("smiles") || normalizedProgramName.includes("gol")) {
+    return "smiles";
+  }
+  if (
+    normalizedProgramName.includes("avios")
+    || normalizedProgramName.includes("iberia")
+    || normalizedProgramName.includes("british")
+    || normalizedProgramName.includes("qatar")
+    || normalizedProgramName.includes("finnair")
+  ) {
+    return "avios";
+  }
+  return null;
+};
 
 const formatDateYmd = (date: Date) => {
   const y = date.getFullYear();
@@ -196,6 +257,7 @@ const readPersistedProgramState = (
 
 const LoyaltyProgramDetails = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { role } = useAuth();
@@ -305,6 +367,108 @@ const LoyaltyProgramDetails = () => {
     persistedState?.custoMedioMilheiro ?? CUSTO_MEDIO_BASE_INICIAL,
   );
   const custoTotal = custoSaldo;
+  const [actionPlanFollowupOpen, setActionPlanFollowupOpen] = useState(false);
+  const [actionPlanFollowupSaving, setActionPlanFollowupSaving] = useState(false);
+  const actionPlanProgramKey = useMemo(
+    () => resolveActionPlanProgramKey(programId, programName),
+    [programId, programName],
+  );
+  const actionPlanProgramLabel = actionPlanProgramKey
+    ? ACTION_PLAN_LABEL_BY_KEY[actionPlanProgramKey]
+    : null;
+
+  const maybeAskActionPlanFollowup = async () => {
+    if (!effectiveClientId || !actionPlanProgramKey || !actionPlanProgramLabel) return;
+    try {
+      const { data: perfilRows, error } = await supabase
+        .from("perfis")
+        .select("id, slug, configuracao_tema")
+        .eq("usuario_id", effectiveClientId)
+        .limit(1);
+      if (error) throw error;
+      const perfil = (perfilRows ?? [])[0] as
+        | { id?: string; slug?: string | null; configuracao_tema?: Record<string, unknown> | null }
+        | undefined;
+
+      const perfilCfg = (perfil?.configuracao_tema ?? {}) as Record<string, unknown>;
+      const clientePerfil = (perfilCfg.clientePerfil ?? {}) as Record<string, unknown>;
+      const planoAcao = (clientePerfil.planoAcao ?? {}) as Record<string, unknown>;
+      if (planoAcao[actionPlanProgramKey] !== true) return;
+
+      setActionPlanFollowupOpen(true);
+    } catch {
+      // Não bloqueia o fluxo de emissão caso a leitura do plano falhe.
+    }
+  };
+
+  const handleConfirmActionPlanFollowup = async (keepInPlan: boolean) => {
+    if (!effectiveClientId || !actionPlanProgramKey || !actionPlanProgramLabel) {
+      setActionPlanFollowupOpen(false);
+      return;
+    }
+
+    setActionPlanFollowupSaving(true);
+    try {
+      const { data: perfilRows, error } = await supabase
+        .from("perfis")
+        .select("id, slug, configuracao_tema")
+        .eq("usuario_id", effectiveClientId)
+        .limit(1);
+      if (error) throw error;
+      const perfil = (perfilRows ?? [])[0] as
+        | { id?: string; slug?: string | null; configuracao_tema?: Record<string, unknown> | null }
+        | undefined;
+
+      const perfilCfg = (perfil?.configuracao_tema ?? {}) as Record<string, unknown>;
+      const clientePerfil = (perfilCfg.clientePerfil ?? {}) as Record<string, unknown>;
+      const existingPlanoAcao = (clientePerfil.planoAcao ?? {}) as Record<string, unknown>;
+      const nextPlanoAcao: Record<string, unknown> = {
+        ...existingPlanoAcao,
+        [actionPlanProgramKey]: keepInPlan,
+      };
+      const nextConfig = {
+        ...perfilCfg,
+        clientePerfil: {
+          ...clientePerfil,
+          planoAcao: nextPlanoAcao,
+        },
+      };
+
+      if (perfil?.id) {
+        const { error: updateError } = await supabase
+          .from("perfis")
+          .update({ configuracao_tema: nextConfig })
+          .eq("usuario_id", effectiveClientId);
+        if (updateError) throw updateError;
+      } else {
+        const fallbackSuffix = effectiveClientId.slice(0, 8);
+        const { error: insertError } = await supabase.from("perfis").insert({
+          usuario_id: effectiveClientId,
+          slug: `cliente-${fallbackSuffix}`,
+          nome_completo: `Cliente ${fallbackSuffix}`,
+          configuracao_tema: nextConfig,
+        });
+        if (insertError) throw insertError;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["gestor_clientes_perfis"] });
+      setActionPlanFollowupOpen(false);
+      toast.success(
+        keepInPlan
+          ? `${actionPlanProgramLabel} mantido no plano de ação.`
+          : `${actionPlanProgramLabel} removido do plano de ação.`,
+      );
+    } catch (error) {
+      const rawMessage =
+        error instanceof Error ? error.message : "Não foi possível atualizar o plano de ação.";
+      const message = /row-level security|permission denied|violates/i.test(rawMessage)
+        ? "Sem permissão para atualizar o plano de ação deste cliente."
+        : rawMessage;
+      toast.error(message);
+    } finally {
+      setActionPlanFollowupSaving(false);
+    }
+  };
 
   const handleAtualizarTela = () => {
     // Recalcula os indicadores a partir do estado atual e carimba a última atualização.
@@ -791,6 +955,7 @@ const LoyaltyProgramDetails = () => {
         },
       });
     }
+    void maybeAskActionPlanFollowup();
   };
 
   return (
@@ -1894,6 +2059,36 @@ const LoyaltyProgramDetails = () => {
               </div>
             </div>
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={actionPlanFollowupOpen} onOpenChange={setActionPlanFollowupOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Plano de ação</DialogTitle>
+            <DialogDescription>
+              {actionPlanProgramLabel
+                ? `Você finalizou a emissão da passagem que estava no plano de ação. Deseja manter ${actionPlanProgramLabel} como plano de ação para futuras emissões ou tirar do plano de ação?`
+                : "Deseja manter este programa no plano de ação para futuras emissões?"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleConfirmActionPlanFollowup(false)}
+              disabled={actionPlanFollowupSaving}
+            >
+              Tirar do plano
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleConfirmActionPlanFollowup(true)}
+              disabled={actionPlanFollowupSaving}
+            >
+              Manter no plano
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
