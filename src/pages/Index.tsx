@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Download,
   Plus,
+  X,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -44,6 +45,58 @@ const MIGRATION_FLAG_PREFIX = "mile-manager:migration:v1:";
 const MANAGER_ACCESSED_CLIENTS_PREFIX = "mile-manager:manager-accessed-clients:";
 const ORIGINS_STORAGE_PREFIX = "mile-manager:enabled-origins:";
 const DEFAULT_ENABLED_ORIGINS = ["BHZ", "SAO", "RIO", "BSB"];
+
+/** SQL para permitir que o gestor salve o plano de ação do cliente (rodar no Supabase SQL Editor). */
+const PERFIS_GESTOR_UPDATE_SQL = `-- Permite que o gestor atualize (e crie) o perfil dos clientes que ele gerencia.
+-- No Supabase: SQL Editor > New query > Cole este bloco > Run.
+
+create or replace function public.can_manage_client(target_cliente_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    coalesce(
+      auth.uid() = target_cliente_id
+      or public.is_admin()
+      or exists (
+        select 1
+        from public.gestor_clientes gc
+        where gc.gestor_id = auth.uid()
+          and gc.cliente_id = target_cliente_id
+      ),
+      false
+    );
+$$;
+
+drop policy if exists perfis_update_own_or_admin on public.perfis;
+drop policy if exists perfis_update_own_or_gestor_or_admin on public.perfis;
+
+create policy perfis_update_own_or_gestor_or_admin on public.perfis
+  for update
+  using (
+    auth.uid() = usuario_id
+    or public.is_admin()
+    or public.can_manage_client(usuario_id)
+  )
+  with check (
+    auth.uid() = usuario_id
+    or public.is_admin()
+    or public.can_manage_client(usuario_id)
+  );
+
+drop policy if exists perfis_insert_own on public.perfis;
+drop policy if exists perfis_insert_own_or_gestor on public.perfis;
+
+create policy perfis_insert_own_or_gestor on public.perfis
+  for insert
+  with check (
+    auth.uid() = usuario_id
+    or public.can_manage_client(usuario_id)
+  );
+`;
 
 type SelectedDestinationSearch = {
   code: string;
@@ -435,7 +488,9 @@ const Index = () => {
   const [enabledOrigins, setEnabledOrigins] = useState<string[]>(DEFAULT_ENABLED_ORIGINS);
   const [accessedClientsVersion, setAccessedClientsVersion] = useState(0);
   const [selectedPlanoProgramKey, setSelectedPlanoProgramKey] = useState<ActionPlanProgramKey | null>(null);
+  const [showPlanoAcaoPermissionHelp, setShowPlanoAcaoPermissionHelp] = useState(false);
   const economiaReportRef = useRef<HTMLDivElement | null>(null);
+  const vencendoSectionRef = useRef<HTMLDivElement | null>(null);
   const {
     byProgramId: remoteByProgramId,
     data: remotePrograms,
@@ -448,6 +503,7 @@ const Index = () => {
     kpis: gestorKpis,
     demandasGestor,
     planosAcaoPorPrograma,
+    vencimentosTodosClientes,
   } = useGestor(
     managerMode,
     useMemo(() => {
@@ -478,10 +534,17 @@ const Index = () => {
   );
   const { vincular, desvincular, isVincularLoading, isDesvincularLoading, getErrorMessage } = useVincularCliente(managerMode ? user?.id : undefined);
 
-  const dataOwnerId = managerClientId ?? user?.id ?? "anonymous";
+  // Cliente: só dados do próprio user.id (nunca "anonymous"). Gestor: pode ver cliente ou "anonymous" antes de login.
+  const dataOwnerId: string | null =
+    role === "gestor" || role === "admin"
+      ? managerClientId ?? user?.id ?? "anonymous"
+      : user?.id ?? null;
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !dataOwnerId) {
+      if (!dataOwnerId) setEnabledOrigins(DEFAULT_ENABLED_ORIGINS);
+      return;
+    }
     const key = `${ORIGINS_STORAGE_PREFIX}${dataOwnerId}`;
     const raw = window.localStorage.getItem(key);
 
@@ -559,21 +622,35 @@ const Index = () => {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!dataOwnerId) {
+      setProgramDefs(basePrograms);
+      setPrograms(basePrograms);
+      return;
+    }
     const key = `${PROGRAM_CARDS_STORAGE_KEY}${dataOwnerId}`;
     const raw = window.localStorage.getItem(key);
-    if (!raw) return;
+    if (!raw) {
+      setProgramDefs(basePrograms);
+      setPrograms(basePrograms);
+      return;
+    }
     try {
       const parsed = JSON.parse(raw);
       const normalized = normalizeProgramCards(parsed);
       setProgramDefs(normalized);
       setPrograms(normalized);
     } catch {
-      // mantém base padrão
+      setProgramDefs(basePrograms);
+      setPrograms(basePrograms);
     }
   }, [dataOwnerId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!dataOwnerId) {
+      setOptionLogoImages({});
+      return;
+    }
 
     const hydrateOptionLogos = () => {
       const next: Record<string, string> = {};
@@ -594,6 +671,10 @@ const Index = () => {
   useEffect(() => {
     const hydrateProgramsFromStorage = () => {
       if (typeof window === "undefined") return;
+      if (!dataOwnerId) {
+        setPrograms(basePrograms);
+        return;
+      }
 
       const nextPrograms = programDefs.map((program) => {
         const slug = program.programId;
@@ -648,6 +729,8 @@ const Index = () => {
                 : nearestExpiringDays <= 60
                   ? "-60d"
                   : "-90d";
+          // Milhas a vencer só é exibido para gestor; cliente não vê esse badge.
+          const showExpiring = managerMode && hasExpiringMiles;
 
           const ultimoMovimentoTipo = parsed.movimentos?.[0]?.tipo;
           const variation: ProgramCardData["variation"] =
@@ -668,11 +751,9 @@ const Index = () => {
               maximumFractionDigits: 2,
             }),
             variation,
-            expiring: hasExpiringMiles,
-            error: hasExpiringMiles
-              ? "Milhas a vencer"
-              : program.error,
-            expiringTag,
+            expiring: showExpiring,
+            error: showExpiring ? "Milhas a vencer" : program.error,
+            expiringTag: showExpiring ? expiringTag : undefined,
           };
         } catch {
           return program;
@@ -690,7 +771,7 @@ const Index = () => {
       window.removeEventListener("focus", hydrateProgramsFromStorage);
       window.removeEventListener("storage", hydrateProgramsFromStorage);
     };
-  }, [programDefs, remoteByProgramId, dataOwnerId]);
+  }, [programDefs, remoteByProgramId, dataOwnerId, managerMode]);
 
   useEffect(() => {
     if (!user?.id || managerClientId) return;
@@ -704,7 +785,9 @@ const Index = () => {
       for (const program of programDefs) {
         const slug = program.programId;
         const nameSlug = slugify(program.name);
-        const storageKey = `${STORAGE_PREFIX}${slug}:${nameSlug}`;
+        // Só migra dados do próprio usuário (chave com user.id). Nunca migrar da chave antiga
+        // sem user id, para não copiar dados de outro usuário para a conta nova.
+        const storageKey = `${STORAGE_PREFIX}${user.id}:${slug}:${nameSlug}`;
         const rawState = window.localStorage.getItem(storageKey);
         if (!rawState) continue;
 
@@ -720,7 +803,7 @@ const Index = () => {
           if (!hasMeaningfulData) continue;
 
           const logoImage =
-            window.localStorage.getItem(`${LOGO_STORAGE_PREFIX}${slug}`) ?? null;
+            window.localStorage.getItem(`${LOGO_STORAGE_PREFIX}${user.id}:${slug}`) ?? null;
 
           await saveProgramState({
             programId: slug,
@@ -748,6 +831,7 @@ const Index = () => {
   }, [user?.id, managerClientId, programDefs, saveProgramState]);
 
   const handleProgramLogoChange = (programName: string, imageDataUrl: string) => {
+    if (!dataOwnerId) return;
     const slug = programName;
     if (typeof window !== "undefined") {
       window.localStorage.setItem(
@@ -780,6 +864,7 @@ const Index = () => {
   const handleToggleProgramCard = (
     option: (typeof AVAILABLE_PROGRAM_OPTIONS)[number],
   ) => {
+    if (!dataOwnerId) return;
     const jaExiste = programDefs.some((program) => program.programId === option.programId);
 
     setProgramDefs((prev) => {
@@ -1053,14 +1138,15 @@ const Index = () => {
     try {
       const { data: existingPerfilRows, error: existingPerfilError } = await supabase
         .from("perfis")
-        .select("id, slug, configuracao_tema")
+        .select("id, slug, nome_completo, configuracao_tema")
         .eq("usuario_id", demandTargetClientId)
         .limit(1);
       if (existingPerfilError) throw existingPerfilError;
       const existingPerfil = (existingPerfilRows ?? [])[0] as
         | {
-            id?: string;
+            id?: string | number;
             slug?: string | null;
+            nome_completo?: string | null;
             configuracao_tema?: Record<string, unknown> | null;
           }
         | undefined;
@@ -1091,7 +1177,11 @@ const Index = () => {
         },
       };
 
-      if (existingPerfil?.id) {
+      const fallbackSuffix = demandTargetClientId.slice(0, 8);
+      const slug = existingPerfil?.slug ?? `cliente-${fallbackSuffix}`;
+      const nomeCompleto = existingPerfil?.nome_completo ?? `Cliente ${fallbackSuffix}`;
+
+      if (existingPerfil != null && existingPerfil.id != null) {
         const { data: updated, error: updateError } = await supabase
           .from("perfis")
           .update({ configuracao_tema: nextConfig })
@@ -1099,14 +1189,13 @@ const Index = () => {
           .select("usuario_id");
         if (updateError) throw updateError;
         if (!updated?.length) {
-          throw new Error("Sem permissão para salvar o plano de ação deste cliente. Aplique a migration perfis_gestor_can_update_client.");
+          throw new Error("Sem permissão para salvar (gestor: rode o SQL no Supabase e vincule o cliente em Clientes ativos).");
         }
       } else {
-        const fallbackSuffix = demandTargetClientId.slice(0, 8);
         const { error: insertError } = await supabase.from("perfis").insert({
           usuario_id: demandTargetClientId,
-          slug: `cliente-${fallbackSuffix}`,
-          nome_completo: `Cliente ${fallbackSuffix}`,
+          slug,
+          nome_completo: nomeCompleto,
           configuracao_tema: nextConfig,
         });
         if (insertError) throw insertError;
@@ -1115,11 +1204,19 @@ const Index = () => {
       queryClient.invalidateQueries({ queryKey: ["gestor_clientes_perfis"] });
       return true;
     } catch (error) {
-      const rawMsg = error instanceof Error ? error.message : "Erro ao salvar plano de ação.";
-      const msg = /row-level security|permission denied|violates/i.test(rawMsg)
-        ? "Sem permissão para salvar o plano de ação deste cliente."
+      const rawMsg =
+        error instanceof Error
+          ? error.message
+          : typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "Erro ao salvar plano de ação.";
+      const isPermissionError =
+        /Sem permissão|row-level security|permission denied|violates|policy|RLS/i.test(rawMsg);
+      const msg = isPermissionError
+        ? "Sem permissão para salvar. Abra o diálogo de ajuda (ao fechar este toast) e rode o SQL no Supabase. Confirme também que o cliente está em Clientes ativos."
         : rawMsg;
       toast.error(msg);
+      if (isPermissionError) setShowPlanoAcaoPermissionHelp(true);
       return false;
     } finally {
       setActionPlanSaving(false);
@@ -1157,8 +1254,17 @@ const Index = () => {
   }, [programDefs]);
 
   const allPersistedPrograms = useMemo(() => {
+    // Cliente sem user: abas Vencendo/Extrato/R$ não mostram dados de ninguém.
+    if (!dataOwnerId) return [] as Array<{ meta: ProgramMeta; state: PersistedProgramState }>;
+
     if (remotePrograms && remotePrograms.length > 0) {
-      return remotePrograms
+      // Filtro de segurança: só incluir programas do dono atual (evita vazamento entre usuários).
+      const targetOwnerId = managerClientId ?? user?.id;
+      const safeRows = targetOwnerId
+        ? remotePrograms.filter((row) => row.cliente_id === targetOwnerId)
+        : [];
+
+      return safeRows
         .map((row) => {
           const state = row.state as PersistedProgramState | null;
           if (!state) return null;
@@ -1175,6 +1281,9 @@ const Index = () => {
             !!item,
         );
     }
+
+    // Cliente: abas Vencendo/Extrato/R$ usam só dados do backend (nunca localStorage), para não cruzar com outros usuários.
+    if (!managerMode) return [] as Array<{ meta: ProgramMeta; state: PersistedProgramState }>;
 
     if (typeof window === "undefined") return [] as Array<{
       meta: ProgramMeta;
@@ -1203,7 +1312,7 @@ const Index = () => {
         }
       })
       .filter((item): item is { meta: ProgramMeta; state: PersistedProgramState } => !!item);
-  }, [programMetaBySlug, remotePrograms, dataOwnerId]);
+  }, [programMetaBySlug, remotePrograms, dataOwnerId, managerClientId, user?.id, managerMode]);
 
   const vencimentosGlobais = useMemo(() => {
     const hoje = new Date();
@@ -1368,6 +1477,12 @@ const Index = () => {
       compras,
     };
   }, [allPersistedPrograms, economiaPeriodoMeses]);
+
+  useEffect(() => {
+    if (activeTab === "vencendo" && vencendoSectionRef.current) {
+      vencendoSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [activeTab]);
 
   const handleDownloadEconomiaPdf = async () => {
     if (!economiaReportRef.current) return;
@@ -1807,46 +1922,98 @@ const Index = () => {
       )}
 
       {activeTab === "vencendo" && (
-        <div className="space-y-3 px-5">
-          {vencimentosGlobais.length === 0 && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm">
-              Nenhum vencimento encontrado nos programas registrados.
-            </div>
-          )}
-          {vencimentosGlobais.map((item) => (
-            <div
-              key={`${item.programSlug}-${item.data}-${item.quantidade}`}
-              className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold ring-1 ring-black/10"
-                    style={{
-                      backgroundColor: `${item.programLogoColor}1f`,
-                      color: item.programLogoColor,
-                    }}
-                  >
-                    {item.programLogo}
-                  </span>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-900">
-                      {item.programName}
-                    </p>
-                    <p className="text-[11px] text-slate-500">{item.data}</p>
-                  </div>
-                </div>
-                <p className="text-xs font-semibold text-slate-900">
-                  {item.quantidade.toLocaleString("pt-BR")} milhas
-                </p>
-              </div>
-              <p className="mt-2 text-[11px] text-slate-500">
-                {item.diasRestantes < 0
-                  ? `Venceu há ${Math.abs(item.diasRestantes)} dias`
-                  : `Vence em ${item.diasRestantes} dias`}
+        <div ref={vencendoSectionRef} className="space-y-3 px-5">
+          {managerMode && !managerClientId ? (
+            <>
+              <p className="text-[11px] font-medium text-muted-foreground">
+                Próximos vencimentos (todos os clientes)
               </p>
-            </div>
-          ))}
+              {(vencimentosTodosClientes ?? []).length === 0 ? (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm">
+                  Nenhum vencimento nos próximos dias na carteira.
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {(vencimentosTodosClientes ?? []).slice(0, 200).map((item, idx) => (
+                    <button
+                      key={`${item.clienteId}-${item.programId}-${item.data}-${idx}`}
+                      type="button"
+                      onClick={() => {
+                        const q = new URLSearchParams(searchParams);
+                        q.set("clientId", item.clienteId);
+                        navigate(`/?${q.toString()}`);
+                      }}
+                      className="flex w-full flex-col gap-0.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition-colors hover:bg-slate-50 dark:border-border dark:bg-card dark:hover:bg-muted/50"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-slate-900">{item.clienteNome}</span>
+                        <span
+                          className={
+                            item.diasRestantes <= 30
+                              ? "font-semibold text-red-600 dark:text-red-400"
+                              : item.diasRestantes <= 60
+                                ? "font-semibold text-amber-600 dark:text-amber-400"
+                                : "text-muted-foreground"
+                          }
+                        >
+                          {item.diasRestantes} dias
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>{item.programName}</span>
+                        <span>
+                          {item.quantidade.toLocaleString("pt-BR")} pts · {item.data}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {vencimentosGlobais.length === 0 ? (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm">
+                  Nenhum vencimento encontrado nos programas registrados.
+                </div>
+              ) : (
+                vencimentosGlobais.map((item) => (
+                  <div
+                    key={`${item.programSlug}-${item.data}-${item.quantidade}`}
+                    className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold ring-1 ring-black/10"
+                          style={{
+                            backgroundColor: `${item.programLogoColor}1f`,
+                            color: item.programLogoColor,
+                          }}
+                        >
+                          {item.programLogo}
+                        </span>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-900">
+                            {item.programName}
+                          </p>
+                          <p className="text-[11px] text-slate-500">{item.data}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs font-semibold text-slate-900">
+                        {item.quantidade.toLocaleString("pt-BR")} milhas
+                      </p>
+                    </div>
+                    <p className="mt-2 text-[11px] text-slate-500">
+                      {item.diasRestantes < 0
+                        ? `Venceu há ${Math.abs(item.diasRestantes)} dias`
+                        : `Vence em ${item.diasRestantes} dias`}
+                    </p>
+                  </div>
+                ))
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -2345,6 +2512,47 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showPlanoAcaoPermissionHelp} onOpenChange={setShowPlanoAcaoPermissionHelp}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Como liberar o salvamento do Plano de Ação</DialogTitle>
+            <DialogDescription>
+              O gestor só pode salvar o plano do cliente se o Supabase permitir (policy) e se o cliente estiver vinculado em &quot;Clientes ativos&quot;.
+            </DialogDescription>
+          </DialogHeader>
+          <ol className="list-decimal space-y-1 pl-4 text-sm text-muted-foreground">
+            <li>Abra o Supabase do seu projeto → SQL Editor → New query.</li>
+            <li>Cole o SQL abaixo (botão &quot;Copiar SQL&quot;) e clique em Run.</li>
+            <li>Confirme que este cliente está na lista &quot;Clientes ativos&quot; (vincule pelo UUID se precisar).</li>
+          </ol>
+          <pre className="max-h-64 overflow-auto rounded border bg-muted/50 p-2 text-[11px] font-mono whitespace-pre-wrap break-all">
+            {PERFIS_GESTOR_UPDATE_SQL}
+          </pre>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowPlanoAcaoPermissionHelp(false)}
+            >
+              Fechar
+            </Button>
+            <Button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(PERFIS_GESTOR_UPDATE_SQL);
+                  toast.success("SQL copiado. Cole no Supabase SQL Editor e execute.");
+                } catch {
+                  toast.error("Não foi possível copiar.");
+                }
+              }}
+            >
+              Copiar SQL
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isActionPlanDialogOpen} onOpenChange={setIsActionPlanDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -2361,46 +2569,109 @@ const Index = () => {
 
             <div className="rounded-xl border border-border bg-card p-3">
               <p className="text-xs font-semibold text-foreground">
-                Programas para acumular pontos
+                Programas disponíveis
               </p>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Selecione os programas prioritários para este cliente.
+                Clique em Adicionar para incluir no plano de ação.
               </p>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {ACTION_PLAN_PROGRAM_LABELS.map(([key, label]) => {
-                  const selected = actionPlanProgramKeys.includes(key);
+                  const added = actionPlanProgramKeys.includes(key);
+                  if (added) return null;
                   const iconSrc = ACTION_PLAN_PROGRAM_ICON_BY_KEY[key];
                   const airlineCode = ACTION_PLAN_AIRLINE_BY_KEY[key];
                   return (
-                    <button
+                    <div
                       key={key}
-                      type="button"
-                      onClick={() => void toggleActionPlanProgram(key)}
-                      disabled={actionPlanSaving}
-                      className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
-                        selected
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border bg-background text-muted-foreground hover:bg-muted"
-                      }`}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-2 py-1.5"
                     >
-                      {iconSrc ? (
-                        <span className="inline-flex h-4 w-4 items-center justify-center">
-                          {airlineCode ? (
-                            <AirlineLogo airline={airlineCode} size={14} />
-                          ) : (
-                            <img
-                              src={iconSrc}
-                              alt={`Logo ${label}`}
-                              className="h-3.5 w-3.5 bg-transparent object-contain"
-                            />
-                          )}
-                        </span>
-                      ) : null}
-                      {label}
-                    </button>
+                      <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 text-xs font-semibold text-foreground">
+                        {iconSrc ? (
+                          <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
+                            {airlineCode ? (
+                              <AirlineLogo airline={airlineCode} size={14} />
+                            ) : (
+                              <img
+                                src={iconSrc}
+                                alt=""
+                                className="h-3.5 w-3.5 bg-transparent object-contain"
+                              />
+                            )}
+                          </span>
+                        ) : null}
+                        <span className="truncate">{label}</span>
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 shrink-0 gap-1 px-2 text-[11px]"
+                        disabled={actionPlanSaving}
+                        onClick={() => void toggleActionPlanProgram(key)}
+                      >
+                        <Plus size={12} />
+                        Adicionar
+                      </Button>
+                    </div>
                   );
                 })}
               </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-3">
+              <p className="text-xs font-semibold text-foreground">
+                Adicionados no plano de ação
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Programas prioritários para este cliente. Remova se quiser tirar do plano.
+              </p>
+              {actionPlanProgramKeys.length === 0 ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Nenhum programa adicionado ainda.
+                </p>
+              ) : (
+                <ul className="mt-2 space-y-2">
+                  {actionPlanProgramKeys.map((key) => {
+                    const label = ACTION_PLAN_PROGRAM_LABELS.find(([k]) => k === key)?.[1] ?? key;
+                    const iconSrc = ACTION_PLAN_PROGRAM_ICON_BY_KEY[key];
+                    const airlineCode = ACTION_PLAN_AIRLINE_BY_KEY[key];
+                    return (
+                      <li
+                        key={key}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-2 py-1.5"
+                      >
+                        <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 text-xs font-semibold text-primary">
+                          {iconSrc ? (
+                            <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
+                              {airlineCode ? (
+                                <AirlineLogo airline={airlineCode} size={14} />
+                              ) : (
+                                <img
+                                  src={iconSrc}
+                                  alt=""
+                                  className="h-3.5 w-3.5 bg-transparent object-contain"
+                                />
+                              )}
+                            </span>
+                          ) : null}
+                          <span className="truncate">{label}</span>
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 shrink-0 gap-1 px-2 text-[11px] text-muted-foreground hover:text-destructive"
+                          disabled={actionPlanSaving}
+                          onClick={() => void toggleActionPlanProgram(key)}
+                        >
+                          <X size={12} />
+                          Remover
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
 
             <div className="rounded-xl border border-border bg-card p-3">
@@ -2441,7 +2712,17 @@ const Index = () => {
 
       <BottomNav
         activeItem={activeNav}
-        onItemChange={setActiveNav}
+        onItemChange={(item) => {
+          if (item === "passagens") {
+            navigate("/search-flights");
+            return;
+          }
+          if (item === "vender") {
+            navigate(managerClientId ? `/cliente?clientId=${managerClientId}` : "/cliente");
+            return;
+          }
+          setActiveNav(item);
+        }}
         showClientSelector={managerMode}
         clients={clientsForBottomNav}
         selectedClientId={managerClientId}

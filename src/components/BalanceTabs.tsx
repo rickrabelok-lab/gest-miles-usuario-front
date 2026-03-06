@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, BarChart3, Clock, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Clock, TrendingUp } from "lucide-react";
 
 interface BalanceTabsProps {
   activeTab: string;
@@ -8,7 +8,7 @@ interface BalanceTabsProps {
 }
 
 const tabs = [
-  { id: "saldo", label: "Saldo", icon: BarChart3 },
+  { id: "saldo", label: "Inicio", icon: null },
   { id: "vencendo", label: "Vencendo", icon: Clock },
   { id: "extrato", label: "Extrato", icon: TrendingUp },
   { id: "economia", label: "R$", icon: null },
@@ -41,10 +41,12 @@ const BalanceTabs = ({
                 <Icon size={14} />
                 {tab.label}
               </>
-            ) : (
+            ) : isEconomyTab ? (
               <span className={economyLabel === "R$" ? "text-xs font-bold" : "text-[10px] font-semibold"}>
                 {economyLabel}
               </span>
+            ) : (
+              tab.label
             )}
             {isEconomyTab && economyTrend === "up" && (
               <ArrowUpRight size={13} className="text-emerald-600" />

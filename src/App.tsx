@@ -13,6 +13,8 @@ import ClientProfile from "./pages/ClientProfile";
 import SearchFlightsScreen from "./pages/SearchFlightsScreen";
 import PriceCalendarScreen from "./pages/PriceCalendarScreen";
 import BonusOffersScreen from "./pages/BonusOffersScreen";
+import ClientePage from "./pages/ClientePage";
+import VencimentosPage from "./pages/VencimentosPage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
 import ProtectedByRole from "@/components/RequireRole";
@@ -56,6 +58,22 @@ const App = () => (
                   <ProtectedByRole allow={["gestor", "admin"]}>
                     <GestorDashboard />
                   </ProtectedByRole>
+                }
+              />
+              <Route
+                path="/cliente"
+                element={
+                  <ProtectedByRole allow={["gestor", "admin"]}>
+                    <ClientePage />
+                  </ProtectedByRole>
+                }
+              />
+              <Route
+                path="/vencimentos"
+                element={
+                  <RequireAuth>
+                    <VencimentosPage />
+                  </RequireAuth>
                 }
               />
               <Route path="/program/:programId" element={<LoyaltyProgramDetails />} />

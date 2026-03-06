@@ -48,7 +48,9 @@ export const useProgramasCliente = (managerClientId?: string | null) => {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as ProgramaClienteRow[];
+      const rows = (data ?? []) as ProgramaClienteRow[];
+      // Filtro de segurança: só retorna linhas do cliente solicitado (defesa em profundidade).
+      return rows.filter((row) => row.cliente_id === clientId);
     },
   });
 
