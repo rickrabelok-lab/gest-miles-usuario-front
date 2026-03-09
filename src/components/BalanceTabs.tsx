@@ -21,7 +21,7 @@ const BalanceTabs = ({
   economyLabel = "R$",
 }: BalanceTabsProps) => {
   return (
-    <div className="grid grid-cols-4 gap-2 px-5 py-4">
+    <div className="grid grid-cols-4 gap-1.5 px-5 py-3">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
@@ -30,29 +30,29 @@ const BalanceTabs = ({
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex items-center justify-center gap-1 rounded-full px-2 py-2 text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1 rounded-[14px] border px-2.5 py-2 text-[11px] font-medium transition-all duration-300 ease-out ${
               isActive
-                ? "bg-primary text-primary-foreground shadow-md"
-                : "bg-card text-muted-foreground card-miles"
+                ? "border-transparent gradient-primary text-primary-foreground shadow-[0_2px_10px_-2px_rgba(138,5,190,0.25)] active:scale-[0.98]"
+                : "border-nubank-border bg-white text-nubank-text-secondary shadow-nubank hover:shadow-nubank-hover hover:border-primary/15 hover:text-nubank-text active:scale-[0.98]"
             }`}
           >
             {Icon ? (
               <>
-                <Icon size={14} />
-                {tab.label}
+                <Icon size={14} strokeWidth={2} />
+                <span>{tab.label}</span>
               </>
             ) : isEconomyTab ? (
-              <span className={economyLabel === "R$" ? "text-xs font-bold" : "text-[10px] font-semibold"}>
+              <span className={economyLabel === "R$" ? "text-sm font-bold" : "text-xs font-semibold"}>
                 {economyLabel}
               </span>
             ) : (
-              tab.label
+              <span>{tab.label}</span>
             )}
             {isEconomyTab && economyTrend === "up" && (
-              <ArrowUpRight size={13} className="text-emerald-600" />
+              <ArrowUpRight size={14} className="shrink-0 text-emerald-600" strokeWidth={2.5} />
             )}
             {isEconomyTab && economyTrend === "down" && (
-              <ArrowDownRight size={13} className="text-red-600" />
+              <ArrowDownRight size={14} className="shrink-0 text-red-600" strokeWidth={2.5} />
             )}
           </button>
         );

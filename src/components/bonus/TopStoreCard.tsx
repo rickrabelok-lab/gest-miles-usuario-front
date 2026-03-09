@@ -6,9 +6,9 @@ type TopStoreCardProps = {
 };
 
 const TopStoreCard = ({ store, bestMultiplier }: TopStoreCardProps) => (
-  <article className="rounded-2xl bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
-    <p className="text-sm font-semibold text-slate-800">{store}</p>
-    <p className="mt-1 text-[13px] text-[#0EA5A4]">Até {bestMultiplier}x</p>
+  <article className="rounded-[16px] bg-white p-4 shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover hover:-translate-y-0.5">
+    <p className="text-sm font-semibold text-nubank-text">{store}</p>
+    <p className="mt-0.5 text-xs text-primary">Até {bestMultiplier}x</p>
   </article>
 );
 

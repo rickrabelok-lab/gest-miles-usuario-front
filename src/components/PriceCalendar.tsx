@@ -38,7 +38,7 @@ const PriceCalendar = ({
   const monthPrices = [...pricesByDay.values()];
 
   return (
-    <div className="rounded-[20px] bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
+    <div className="rounded-[16px] bg-white p-5 shadow-nubank">
       <div className="mb-3 grid grid-cols-7 gap-2">
         {WEEKDAYS.map((label) => (
           <p key={label} className="text-center text-[12px] text-slate-400">
@@ -62,11 +62,11 @@ const PriceCalendar = ({
               key={`day-${day}`}
               type="button"
               onClick={() => onSelectDay(day)}
-              className="group flex min-h-[66px] flex-col items-center justify-start rounded-xl px-1 py-1 transition-all duration-150 active:scale-95"
+              className="group flex min-h-[66px] flex-col items-center justify-start rounded-[12px] px-1 py-1 transition-all duration-300 ease-out active:scale-95"
             >
               <span
                 className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-medium transition-all duration-150 ${
-                  selected ? "bg-[#0EA5A4] text-white" : "text-slate-700"
+                  selected ? "gradient-primary text-primary-foreground" : "text-nubank-text"
                 }`}
               >
                 {day}

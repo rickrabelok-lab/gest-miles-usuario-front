@@ -97,7 +97,7 @@ const DestinationCarousel = ({
               key={`skeleton-${destination.code}`}
               className="basis-[46%] pl-2 sm:basis-[38%]"
             >
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-card p-2.5 shadow-sm">
+              <div className="overflow-hidden rounded-[14px] bg-white p-2.5 shadow-nubank">
                 <Skeleton className="h-20 w-full rounded-xl" />
                 <Skeleton className="mt-2.5 h-4 w-20" />
                 <Skeleton className="mt-2 h-3.5 w-full" />
@@ -122,7 +122,7 @@ const DestinationCarousel = ({
                   onClick={() =>
                     onDestinationClick?.({ code: destination.code, name: destination.name })
                   }
-                  className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-card p-2.5 text-left shadow-sm transition-transform hover:-translate-y-0.5"
+                  className="w-full overflow-hidden rounded-[14px] gradient-card-subtle p-2.5 text-left shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover hover:-translate-y-0.5"
                 >
                   <div className="relative h-20 overflow-hidden rounded-xl">
                     <img
@@ -137,15 +137,15 @@ const DestinationCarousel = ({
                     </span>
                   </div>
 
-                  <div className="mt-2.5 rounded-xl bg-slate-50 px-2 py-2">
+                  <div className="mt-1.5 rounded-lg bg-nubank-bg px-2 py-1.5">
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-semibold text-slate-900">
+                      <p className="text-[11px] font-semibold text-nubank-text">
                         {formatMiles(miles?.bestPrice ?? null)}
                       </p>
                       <AirlineLogo airline={miles?.airline} size={16} />
                     </div>
                     <div className="mt-1 flex items-center justify-between">
-                      <p className="text-[11px] text-slate-700">
+                      <p className="text-[11px] text-nubank-text-secondary">
                         {formatMoney(money?.bestPrice ?? null)}
                       </p>
                       <AirlineLogo airline={money?.airline} size={16} />
@@ -162,13 +162,13 @@ const DestinationCarousel = ({
   return (
     <section className="px-5 py-4">
       <div className="mb-3">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">Destinos</h2>
-        <p className="text-xs text-muted-foreground">
+        <h2 className="text-lg font-bold tracking-tight text-nubank-text">Destinos em destaque</h2>
+        <p className="mt-0.5 text-xs text-nubank-text-secondary">
           Melhores preços por região com base nas origens habilitadas.
         </p>
       </div>
       {renderRow(REGION_DESTINATIONS)}
-      <div className="mt-3">{renderRow(INTERNATIONAL_DESTINATIONS)}</div>
+      <div className="mt-4">{renderRow(INTERNATIONAL_DESTINATIONS)}</div>
     </section>
   );
 };

@@ -1494,7 +1494,7 @@ const Index = () => {
 
     const canvas = await html2canvas(economiaReportRef.current, {
       scale: 2,
-      backgroundColor: "#f8fafc",
+      backgroundColor: "#F7F7F8",
       useCORS: true,
     });
 
@@ -1522,7 +1522,7 @@ const Index = () => {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-background pb-24">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
       <DashboardHeader />
 
       <BalanceTabs
@@ -1533,8 +1533,8 @@ const Index = () => {
       />
 
       {managerClientId && (
-        <div className="px-5 pb-2">
-          <div className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
+        <div className="px-5 pb-3">
+          <div className="inline-flex rounded-full bg-primary/10 px-4 py-2 text-xs font-semibold text-primary">
             Visualizando como gestor
           </div>
         </div>
@@ -1542,7 +1542,7 @@ const Index = () => {
 
       {activeTab === "saldo" && (
         <>
-          <div className="px-5 pb-2">
+          <div className="px-5 pb-3">
             <div className="flex items-center gap-2">
               {managerMode && !managerClientId ? (
                 <>
@@ -1550,14 +1550,14 @@ const Index = () => {
                     <button
                       type="button"
                       onClick={() => setIsClientesAtivosOpen((prev) => !prev)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-nubank-border bg-white px-3 py-1.5 text-xs font-semibold text-nubank-text shadow-nubank transition-colors hover:bg-white/90 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                     >
                       <Plus size={14} />
                       {linkedClientIds.length} clientes ativos
                     </button>
                     {isClientesAtivosOpen && (
-                      <div className="absolute left-0 z-20 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <div className="absolute left-0 z-20 mt-2 w-80 rounded-2xl border border-nubank-border bg-white p-3 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-nubank-text-secondary dark:text-slate-400">
                           Clientes vinculados (ativos)
                         </p>
                         {(() => {
@@ -1592,8 +1592,8 @@ const Index = () => {
                           <p className="mb-3 text-xs text-muted-foreground">Nenhum cliente vinculado ainda.</p>
                         );
                         })()}
-                        <div className="border-t border-slate-200 dark:border-slate-600 pt-2">
-                          <p className="mb-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-400">Vincular novo cliente</p>
+                        <div className="border-t border-nubank-border dark:border-slate-600 pt-2">
+                          <p className="mb-1.5 text-[11px] font-medium text-nubank-text-secondary dark:text-slate-400">Vincular novo cliente</p>
                           <p className="mb-1.5 text-[10px] text-muted-foreground">Peça o ID da conta do cliente (menu ☰ na conta dele) e cole abaixo.</p>
                           <div className="flex gap-2">
                             <Input
@@ -1629,14 +1629,14 @@ const Index = () => {
                   <button
                     type="button"
                     onClick={() => navigate("/gestor?tab=demandas&status=pendente")}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 shadow-sm transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 shadow-nubank transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
                   >
                     Demandas Abertas {demandasPendentes > 0 ? `(${demandasPendentes})` : ""}
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate("/gestor?tab=demandas&status=em_andamento")}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-800 shadow-sm transition-colors hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-800 shadow-nubank transition-colors hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
                   >
                     Demandas em Andamento{" "}
                     {demandasEmAndamento > 0 ? `(${demandasEmAndamento})` : ""}
@@ -1653,21 +1653,21 @@ const Index = () => {
                       <button
                         type="button"
                         onClick={() => setIsAddProgramMenuOpen((prev) => !prev)}
-                        className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-full border border-slate-200 bg-white px-2 text-[11px] font-semibold whitespace-nowrap text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-full border border-nubank-border bg-white px-2 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-white/90 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                       >
                         <Plus size={12} />
                       </button>
 
                       {isAddProgramMenuOpen && (
-                        <div className="absolute left-0 z-20 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                          <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        <div className="absolute left-0 z-20 mt-2 w-72 rounded-2xl border border-nubank-border bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                          <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-nubank-text-secondary dark:text-slate-400">
                             Selecione os programas
                           </p>
                           <div className="space-y-1">
                             {AVAILABLE_PROGRAM_OPTIONS.map((option) => (
                               <label
                                 key={option.programId}
-                                className="flex w-full cursor-pointer items-center gap-2 rounded-xl px-2 py-2 text-left text-xs text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
+                                className="flex w-full cursor-pointer items-center gap-2 rounded-xl px-2 py-2 text-left text-xs text-nubank-text transition-colors hover:bg-primary/5 dark:text-slate-200 dark:hover:bg-slate-700"
                               >
                                 <input
                                   type="checkbox"
@@ -1704,14 +1704,14 @@ const Index = () => {
                         <button
                           type="button"
                           onClick={() => setIsDemandDialogOpen(true)}
-                          className="inline-flex h-9 w-full items-center justify-center rounded-full border border-transparent bg-primary px-2 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                          className="inline-flex h-9 w-full items-center justify-center rounded-full border border-transparent bg-primary px-2 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-nubank transition-colors hover:bg-primary/90"
                         >
                           Solicitar Cotação
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsActionPlanDialogOpen(true)}
-                          className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-full border border-slate-200 bg-transparent px-2 text-[11px] font-semibold whitespace-nowrap text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-700"
+                          className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-full border border-nubank-border bg-transparent px-2 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-white/90 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-700"
                         >
                           {actionPlanSelectedPrograms.length > 1 ? (
                             <span className="inline-flex items-center gap-1">
@@ -1778,7 +1778,7 @@ const Index = () => {
           {managerMode && !managerClientId ? (
             <div className="grid grid-cols-2 gap-3 px-5">
               <div
-                className={`relative col-span-2 cursor-default rounded-2xl border-2 p-4 shadow-sm ${
+                className={`relative col-span-2 cursor-default rounded-2xl border-2 p-4 shadow-nubank ${
                   gestorScore >= 600
                     ? "border-emerald-500/60 bg-emerald-500/5 dark:bg-emerald-500/10"
                     : gestorScore >= 300
@@ -1805,7 +1805,7 @@ const Index = () => {
                   Avaliação da economia trazida para todos os clientes sob gestão
                 </p>
               </div>
-              <div className="relative cursor-default rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+              <div className="relative cursor-default rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank dark:border-slate-700 dark:bg-slate-800">
                 <p className="text-[11px] font-medium text-muted-foreground">Economia total gerada</p>
                 <p className="mt-2 text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
                   {gestorKpis.economiaTotalGestao.toLocaleString("pt-BR", {
@@ -1817,7 +1817,7 @@ const Index = () => {
                 </p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">sob gestão (todos os clientes)</p>
               </div>
-              <div className="relative cursor-default rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+              <div className="relative cursor-default rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank dark:border-slate-700 dark:bg-slate-800">
                 <p className="text-[11px] font-medium text-muted-foreground">Economia média gerada</p>
                 <p className="mt-2 text-lg font-semibold tabular-nums">
                   {gestorKpis.roiMedio.toLocaleString("pt-BR", {
@@ -1830,7 +1830,7 @@ const Index = () => {
                 <p className="mt-0.5 text-[11px] text-muted-foreground">consolidado (todos os clientes)</p>
               </div>
               <div
-                className={`relative col-span-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 ${
+                className={`relative col-span-2 rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank dark:border-slate-700 dark:bg-slate-800 ${
                   clientesComVencendo90d.length > 0 ? "cursor-pointer" : "cursor-default"
                 }`}
                 onClick={() => {
@@ -1857,8 +1857,8 @@ const Index = () => {
                     : "clientes com pontos a vencer nos próximos 90 dias"}
                 </p>
                 {isClientesVencendoOpen && clientesComVencendo90d.length > 0 && (
-                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-600 dark:bg-slate-700/30">
-                    <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <div className="mt-3 rounded-xl border border-nubank-border bg-white/80 p-2 dark:border-slate-600 dark:bg-slate-700/30">
+                    <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-nubank-text-secondary dark:text-slate-400">
                       Clientes com vencimento próximo
                     </p>
                     <ul className="max-h-36 space-y-1 overflow-y-auto">
@@ -1887,7 +1887,10 @@ const Index = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-3 px-5">
+              <section className="px-5 pb-1">
+                <h2 className="section-label-lg text-lg">Meus programas</h2>
+              </section>
+              <div className="grid grid-cols-2 gap-1.5 px-5 pb-2">
                 {visiblePrograms.map((prog) => (
                   <ProgramCard
                     key={prog.programId}
@@ -1903,37 +1906,42 @@ const Index = () => {
               {!showAll && programs.length > 4 && (
                 <button
                   onClick={() => setShowAll(true)}
-                  className="mx-auto mt-3 flex items-center gap-1 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="mx-auto mt-1.5 flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-nubank-text-secondary transition-colors hover:bg-white/80 hover:text-nubank-text"
                 >
-                  <ChevronDown size={16} />
+                  <ChevronDown size={18} strokeWidth={2} />
                   Ver todos
                 </button>
               )}
             </>
           )}
 
-          <DestinationCarousel
-            origins={enabledOrigins}
-            onDestinationClick={handleSearchEmissionFromDestinationCard}
-          />
-          <BonusOffersSection />
+          <div className="mt-5">
+            <DestinationCarousel
+              origins={enabledOrigins}
+              onDestinationClick={handleSearchEmissionFromDestinationCard}
+            />
+          </div>
+
+          <div className="mt-5">
+            <BonusOffersSection />
+          </div>
 
         </>
       )}
 
       {activeTab === "vencendo" && (
-        <div ref={vencendoSectionRef} className="space-y-3 px-5">
+        <div ref={vencendoSectionRef} className="space-y-2.5 px-5 py-3">
           {managerMode && !managerClientId ? (
             <>
-              <p className="text-[11px] font-medium text-muted-foreground">
+              <p className="section-label">
                 Próximos vencimentos (todos os clientes)
               </p>
               {(vencimentosTodosClientes ?? []).length === 0 ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm">
+                <div className="rounded-[16px] bg-white p-8 text-center text-sm text-nubank-text-secondary shadow-nubank">
                   Nenhum vencimento nos próximos dias na carteira.
                 </div>
               ) : (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {(vencimentosTodosClientes ?? []).slice(0, 200).map((item, idx) => (
                     <button
                       key={`${item.clienteId}-${item.programId}-${item.data}-${idx}`}
@@ -1943,10 +1951,10 @@ const Index = () => {
                         q.set("clientId", item.clienteId);
                         navigate(`/?${q.toString()}`);
                       }}
-                      className="flex w-full flex-col gap-0.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition-colors hover:bg-slate-50 dark:border-border dark:bg-card dark:hover:bg-muted/50"
+                      className="flex w-full flex-col gap-1.5 rounded-[16px] bg-white px-5 py-4 text-left shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover dark:bg-card dark:hover:bg-muted/50"
                     >
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-slate-900">{item.clienteNome}</span>
+                        <span className="font-medium text-nubank-text">{item.clienteNome}</span>
                         <span
                           className={
                             item.diasRestantes <= 30
@@ -1973,14 +1981,15 @@ const Index = () => {
           ) : (
             <>
               {vencimentosGlobais.length === 0 ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm">
+                <div className="rounded-2xl border border-nubank-border bg-white p-6 text-center text-sm text-nubank-text-secondary shadow-nubank">
                   Nenhum vencimento encontrado nos programas registrados.
                 </div>
               ) : (
-                vencimentosGlobais.map((item) => (
+                <div className="space-y-2">
+                {vencimentosGlobais.map((item) => (
                   <div
                     key={`${item.programSlug}-${item.data}-${item.quantidade}`}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm"
+                    className="rounded-2xl border border-nubank-border bg-white p-5 text-nubank-text shadow-nubank"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
@@ -1994,23 +2003,24 @@ const Index = () => {
                           {item.programLogo}
                         </span>
                         <div>
-                          <p className="text-xs font-semibold text-slate-900">
+                          <p className="text-xs font-semibold text-nubank-text">
                             {item.programName}
                           </p>
-                          <p className="text-[11px] text-slate-500">{item.data}</p>
+                          <p className="text-[11px] text-nubank-text-secondary">{item.data}</p>
                         </div>
                       </div>
-                      <p className="text-xs font-semibold text-slate-900">
+                      <p className="text-xs font-semibold text-nubank-text">
                         {item.quantidade.toLocaleString("pt-BR")} milhas
                       </p>
                     </div>
-                    <p className="mt-2 text-[11px] text-slate-500">
+                    <p className="mt-2 text-[11px] font-medium text-nubank-text-secondary">
                       {item.diasRestantes < 0
                         ? `Venceu há ${Math.abs(item.diasRestantes)} dias`
                         : `Vence em ${item.diasRestantes} dias`}
                     </p>
                   </div>
-                ))
+                ))}
+                </div>
               )}
             </>
           )}
@@ -2018,16 +2028,16 @@ const Index = () => {
       )}
 
       {activeTab === "extrato" && (
-        <div className="space-y-2 px-5">
+        <div className="space-y-2 px-5 py-2">
           {extratoGlobal.length === 0 && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm">
+            <div className="rounded-2xl border border-nubank-border bg-white p-6 text-center text-sm text-nubank-text-secondary shadow-nubank">
               Nenhuma entrada ou saída registrada ainda.
             </div>
           )}
           {extratoGlobal.map((item) => (
             <div
               key={`${item.programSlug}-${item.id}`}
-              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+              className="flex items-center gap-4 rounded-2xl border border-nubank-border bg-white p-5 shadow-nubank"
             >
               <span
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ring-1 ring-black/10"
@@ -2039,10 +2049,10 @@ const Index = () => {
                 {item.programLogo}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-slate-900">
+                <p className="truncate text-xs font-semibold text-nubank-text">
                   {item.descricao}
                 </p>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-nubank-text-secondary">
                   {item.programName} • {item.data}
                 </p>
               </div>
@@ -2055,7 +2065,7 @@ const Index = () => {
                   {item.tipo === "entrada" ? "+" : "-"}
                   {Math.abs(item.milhas).toLocaleString("pt-BR")}
                 </p>
-                <p className="text-[10px] text-slate-500">
+                <p className="text-[10px] text-nubank-text-secondary">
                   {item.tipo === "entrada" ? "Entrada" : "Saída"}
                 </p>
               </div>
@@ -2085,7 +2095,7 @@ const Index = () => {
                       className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
                         isSelected
                           ? "border-primary bg-primary/10 text-primary"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                          : "border-nubank-border bg-white text-nubank-text hover:bg-white/90 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                       }`}
                     >
                       {iconSrc ? (
@@ -2112,7 +2122,7 @@ const Index = () => {
                 const iconSrc = ACTION_PLAN_PROGRAM_ICON_BY_KEY[key];
                 const airlineCode = ACTION_PLAN_AIRLINE_BY_KEY[key];
                 return (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
                     <div className="flex items-center gap-2">
                       {iconSrc ? (
                         <span className="inline-flex h-5 w-5 items-center justify-center">
@@ -2123,8 +2133,8 @@ const Index = () => {
                           )}
                         </span>
                       ) : null}
-                      <p className="text-sm font-semibold text-slate-900">{label}</p>
-                      <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                      <p className="text-sm font-semibold text-nubank-text">{label}</p>
+                      <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-nubank-text-secondary">
                         {clients.length} cliente{clients.length === 1 ? "" : "s"}
                       </span>
                     </div>
@@ -2142,10 +2152,10 @@ const Index = () => {
                             <button
                               type="button"
                               onClick={() => handleOpenManagerClient(client.clienteId)}
-                              className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs transition-colors hover:bg-slate-50"
+                              className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs transition-colors hover:bg-white/90"
                             >
                               <span className="truncate">{client.nome}</span>
-                              <span className="shrink-0 text-[11px] font-semibold text-slate-500">Abrir</span>
+                              <span className="shrink-0 text-[11px] font-semibold text-nubank-text-secondary">Abrir</span>
                             </button>
                           </li>
                         ))}
@@ -2158,7 +2168,7 @@ const Index = () => {
           ) : (
           <>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+            <div className="inline-flex rounded-full border border-nubank-border bg-white p-1 shadow-nubank">
               {[
                 { label: "1M", value: 1 as const },
                 { label: "6M", value: 6 as const },
@@ -2173,7 +2183,7 @@ const Index = () => {
                     className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${
                       active
                         ? "bg-slate-900 text-white"
-                        : "text-slate-600 hover:bg-slate-100"
+                        : "text-nubank-text-secondary hover:bg-primary/5"
                     }`}
                   >
                     {opcao.label}
@@ -2184,16 +2194,16 @@ const Index = () => {
             <button
               type="button"
               onClick={handleDownloadEconomiaPdf}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+              className="inline-flex items-center gap-1 rounded-full border border-nubank-border bg-white px-3 py-1.5 text-xs font-semibold text-nubank-text shadow-nubank transition-colors hover:bg-white/90"
             >
               <Download size={14} />
               Baixar PDF
             </button>
           </div>
           <div ref={economiaReportRef} className="space-y-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-slate-700">
+              <p className="text-xs font-semibold text-nubank-text">
                 Economia total das emissões (últimos {economiaPeriodoMeses}{" "}
                 {economiaPeriodoMeses === 1 ? "mês" : "meses"})
               </p>
@@ -2222,7 +2232,7 @@ const Index = () => {
                 currency: "BRL",
               })}
             </p>
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-[11px] text-nubank-text-secondary">
               Custo de compra de pontos no período:{" "}
               {analiseEconomia.custoTotalCompras.toLocaleString("pt-BR", {
                 style: "currency",
@@ -2231,12 +2241,12 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold text-slate-700">
+          <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
+            <p className="text-xs font-semibold text-nubank-text">
               Passagens emitidas que geraram economia/prejuízo
             </p>
             {analiseEconomia.emissoes.length === 0 && (
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs text-nubank-text-secondary">
                 Nenhuma emissão registrada no período selecionado.
               </p>
             )}
@@ -2244,7 +2254,7 @@ const Index = () => {
               {analiseEconomia.emissoes.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                  className="rounded-xl border border-nubank-border bg-white/80 p-3"
                 >
                   <div className="flex items-center gap-2">
                     <span
@@ -2256,14 +2266,14 @@ const Index = () => {
                     >
                       {item.programLogo}
                     </span>
-                    <p className="text-[11px] font-semibold text-slate-800">
+                    <p className="text-[11px] font-semibold text-nubank-text">
                       {item.programName} • {item.data}
                     </p>
                   </div>
-                  <p className="mt-1 text-xs font-medium text-slate-900">
+                  <p className="mt-1 text-xs font-medium text-nubank-text">
                     {item.descricao}
                   </p>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-600">
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-nubank-text-secondary">
                     <span>{item.milhas.toLocaleString("pt-BR")} milhas</span>
                     <span>
                       Tarifa:{" "}
@@ -2274,7 +2284,7 @@ const Index = () => {
                     </span>
                   </div>
                   <div className="mt-1 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-600">
+                    <span className="text-nubank-text-secondary">
                       Custo real:{" "}
                       {item.custoReal.toLocaleString("pt-BR", {
                         style: "currency",
@@ -2300,13 +2310,13 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold text-slate-700">
+          <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
+            <p className="text-xs font-semibold text-nubank-text">
               Pontos comprados e custos (últimos {economiaPeriodoMeses}{" "}
               {economiaPeriodoMeses === 1 ? "mês" : "meses"})
             </p>
             {analiseEconomia.compras.length === 0 && (
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs text-nubank-text-secondary">
                 Nenhuma compra de pontos registrada no período selecionado.
               </p>
             )}
@@ -2314,7 +2324,7 @@ const Index = () => {
               {analiseEconomia.compras.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                  className="rounded-xl border border-nubank-border bg-white/80 p-3"
                 >
                   <div className="flex items-center gap-2">
                     <span
@@ -2326,14 +2336,14 @@ const Index = () => {
                     >
                       {item.programLogo}
                     </span>
-                    <p className="text-[11px] font-semibold text-slate-800">
+                    <p className="text-[11px] font-semibold text-nubank-text">
                       {item.programName} • {item.data}
                     </p>
                   </div>
-                  <p className="mt-1 text-xs font-medium text-slate-900">
+                  <p className="mt-1 text-xs font-medium text-nubank-text">
                     {item.descricao}
                   </p>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-600">
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-nubank-text-secondary">
                     <span>{item.milhas.toLocaleString("pt-BR")} milhas</span>
                     <span>
                       Custo:{" "}

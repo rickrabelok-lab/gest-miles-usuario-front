@@ -163,14 +163,14 @@ const DashboardHeader = () => {
   };
 
   return (
-    <div className="bg-header text-header-foreground">
+    <div className="gradient-primary text-header-foreground">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-3">
+      <div className="flex items-center justify-between px-5 pt-3.5 pb-3.5">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-2 rounded-full bg-header-foreground/15 px-3 py-1.5 text-sm font-medium backdrop-blur-sm hover:bg-header-foreground/25"
+              className="flex items-center gap-2 rounded-[16px] bg-white/15 px-3 py-2 text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:bg-white/25"
             >
               <User size={16} />
               <span>{user ? getInitials(user.email) : "?"}</span>
@@ -208,7 +208,7 @@ const DashboardHeader = () => {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="rounded-lg p-1.5 hover:bg-header-foreground/15"
+              className="rounded-[16px] p-2 transition-all duration-200 hover:bg-white/20"
               aria-label="Abrir menu"
             >
               <Menu size={22} />
@@ -248,13 +248,13 @@ const DashboardHeader = () => {
 
       {/* Promo banner */}
       {bannerVisible && (
-        <div className="mx-4 mb-3 flex items-center gap-3 rounded-xl bg-header-foreground/10 px-4 py-2.5 backdrop-blur-sm">
+        <div className="mx-4 mb-2.5 flex items-center gap-2 rounded-[14px] border border-white/20 bg-white/95 px-3 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.06)] backdrop-blur-sm">
           <Zap size={18} className="shrink-0 text-warning" />
           {isGestorView ? (
             <button
               type="button"
               onClick={() => navigate("/gestor?tab=demandas&status=pendente")}
-              className="flex-1 text-left text-sm hover:opacity-90"
+              className="flex-1 text-left text-sm text-nubank-text hover:opacity-90"
             >
               <span className="font-semibold text-warning">Demandas abertas:</span>{" "}
               {demandSummary.openCount}{" "}
@@ -265,12 +265,12 @@ const DashboardHeader = () => {
               {demandSummary.lastClientName ? `Última de ${demandSummary.lastClientName}.` : ""}
             </button>
           ) : (
-            <p className="flex-1 text-sm">
+            <p className="flex-1 text-sm text-nubank-text">
               Bônus de até <span className="font-bold text-warning">133%</span> na transferência.
               Confira
             </p>
           )}
-          <button onClick={() => setBannerVisible(false)} className="shrink-0 opacity-70 hover:opacity-100">
+          <button onClick={() => setBannerVisible(false)} className="shrink-0 rounded-full p-1 text-nubank-text-secondary opacity-70 hover:bg-black/5 hover:opacity-100" aria-label="Fechar">
             <X size={16} />
           </button>
         </div>

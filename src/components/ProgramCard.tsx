@@ -97,7 +97,7 @@ const ProgramCard = (props: ProgramCardProps) => {
 
   return (
     <div
-      className="relative cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm outline-none transition hover:shadow-md hover:ring-2 hover:ring-slate-300 focus-visible:ring-2 focus-visible:ring-slate-400"
+      className="relative cursor-pointer rounded-[14px] gradient-card-subtle p-2 text-nubank-text shadow-nubank outline-none transition-all duration-300 ease-out hover:shadow-nubank-hover hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-primary/20 active:scale-[0.99]"
       role="button"
       tabIndex={0}
       onClick={handleOpenDetails}
@@ -105,15 +105,15 @@ const ProgramCard = (props: ProgramCardProps) => {
     >
       {/* Expiring badge */}
       {expiring && (
-        <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-destructive ring-2 ring-white" />
+        <div className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-white shadow-sm" />
       )}
 
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-1">
         {/* Logo */}
         <button
           type="button"
           onClick={handleOpenLogoPicker}
-          className="group relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full text-sm font-bold ring-1 ring-black/10 transition hover:brightness-95"
+          className="group relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[8px] font-bold transition-all duration-300 ease-out hover:brightness-95"
           style={{ backgroundColor: logoColor + "20", color: logoColor }}
           title="Alterar imagem do programa"
           aria-label={`Alterar imagem do programa ${name}`}
@@ -128,7 +128,7 @@ const ProgramCard = (props: ProgramCardProps) => {
             logo
           )}
           <span className="absolute inset-0 hidden items-center justify-center bg-black/35 text-white group-hover:flex">
-            <ImagePlus size={14} />
+            <ImagePlus size={10} />
           </span>
           <input
             ref={fileInputRef}
@@ -141,11 +141,11 @@ const ProgramCard = (props: ProgramCardProps) => {
         </button>
 
         {/* Variation arrow + balance */}
-        <div className="flex items-center gap-1">
-          {variation === "up" && <ArrowUp size={14} className="text-success" />}
-          {variation === "down" && <ArrowDown size={14} className="text-destructive" />}
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">
+          {variation === "up" && <ArrowUp size={11} className="shrink-0 text-success" strokeWidth={2.5} />}
+          {variation === "down" && <ArrowDown size={11} className="shrink-0 text-destructive" strokeWidth={2.5} />}
           <span
-            className={`font-display text-xl font-bold ${
+            className={`truncate font-display text-sm font-bold tabular-nums ${
               variation === "up"
                 ? "text-success"
                 : variation === "down"
@@ -158,19 +158,19 @@ const ProgramCard = (props: ProgramCardProps) => {
         </div>
       </div>
 
-      <div className="mt-3">
-        <p className="text-xs text-slate-500">{lastUpdate}</p>
-        <p className="mt-0.5 text-sm font-semibold text-slate-600">R$ {valueInBRL}</p>
+      <div className="mt-1 flex items-baseline justify-between gap-1">
+        <p className="text-[10px] font-medium text-nubank-text-secondary leading-tight">{lastUpdate}</p>
+        <p className="text-xs font-semibold tabular-nums text-nubank-text leading-tight">R$ {valueInBRL}</p>
       </div>
 
       {error && (
-        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-500">
-          <div className="flex items-center gap-1.5">
-            <AlertCircle size={12} />
-            <span>{error}</span>
+        <div className="mt-1 flex items-center justify-between gap-1 rounded-lg bg-black/[0.03] px-1.5 py-1 text-[10px] text-nubank-text-secondary">
+          <div className="flex items-center gap-0.5">
+            <AlertCircle size={10} />
+            <span className="truncate">{error}</span>
           </div>
           {expiringTag && (
-            <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive ring-1 ring-destructive/30">
+            <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[9px] font-semibold text-destructive">
               {expiringTag}
             </span>
           )}

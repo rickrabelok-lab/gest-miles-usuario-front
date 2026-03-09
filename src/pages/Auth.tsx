@@ -92,12 +92,12 @@ const Auth = () => {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md items-center p-4">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Login e criação de conta</CardTitle>
+    <div className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center bg-nubank-bg p-5">
+      <Card className="w-full max-w-sm gradient-card-subtle shadow-nubank">
+        <CardHeader className="space-y-1 pb-2">
+          <CardTitle className="text-2xl font-bold tracking-tight text-nubank-text">Login e criação de conta</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <Input
             type="email"
             value={email}
@@ -110,7 +110,7 @@ const Auth = () => {
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Senha (mínimo 6 caracteres)"
           />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
               className="w-full"

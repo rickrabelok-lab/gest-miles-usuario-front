@@ -71,24 +71,24 @@ const BonusOffersSection = () => {
   };
 
   return (
-    <section className="px-5 pb-4">
-      <div className="mb-3 flex items-center justify-between">
+    <section className="px-5 pb-8">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <div>
-          <h3 className="text-base font-semibold text-[#1E293B]">Compras Bonificadas</h3>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-lg font-bold tracking-tight text-nubank-text">Ofertas de bônus</h2>
+          <p className="mt-0.5 text-xs text-nubank-text-secondary">
             Ganhe mais pontos com ofertas ativas dos programas.
           </p>
         </div>
         <button
           type="button"
           onClick={() => navigate("/bonus-offers")}
-          className="rounded-full bg-[#E2E8F0] px-3 py-1.5 text-xs font-medium text-slate-600"
+          className="shrink-0 rounded-[12px] gradient-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-[0_2px_8px_-2px_rgba(138,5,190,0.25)] transition-all duration-300 ease-out hover:opacity-95 hover:shadow-[0_4px_12px_-2px_rgba(138,5,190,0.3)]"
         >
           Ver tudo
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2.5">
         {loading && (
           <>
             <BonusOfferCardSkeleton />
@@ -97,37 +97,37 @@ const BonusOffersSection = () => {
         )}
 
         {!loading && error && (
-          <div className="rounded-2xl bg-white p-4 text-center shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
-            <p className="text-sm text-slate-500">Não foi possível carregar as ofertas.</p>
+          <div className="rounded-[16px] bg-white p-4 text-center shadow-nubank">
+            <p className="text-sm text-nubank-text-secondary">Não foi possível carregar as ofertas.</p>
           </div>
         )}
 
         {!loading && !error && (
           <div
             ref={cardsRowRef}
-            className="flex gap-3 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide touch-pan-x select-none [-webkit-overflow-scrolling:touch]"
+            className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide touch-pan-x select-none [-webkit-overflow-scrolling:touch]"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
             onPointerLeave={handlePointerUp}
           >
-            <article className="w-[84%] shrink-0 rounded-[20px] bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
-              <p className="mb-2 text-[12px] font-medium text-[#94A3B8]">Programas</p>
-              <div className="grid grid-cols-2 gap-2">
+            <article className="w-[84%] shrink-0 rounded-[16px] gradient-card-subtle p-3.5 shadow-nubank">
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-widest text-nubank-text-secondary">Programas</p>
+              <div className="grid grid-cols-2 gap-1.5">
                 {MAIN_PROGRAMS.map((program) => (
                   <button
                     key={program}
                     type="button"
                     onClick={() => navigate("/bonus-offers")}
-                    className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left shadow-[0_2px_6px_rgba(15,23,42,0.05)]"
+                    className="rounded-xl bg-nubank-bg px-2 py-1.5 text-left transition-all duration-200 hover:bg-primary/[0.06]"
                   >
-                    <p className="text-[13px] font-semibold text-slate-800">
+                    <p className="text-[13px] font-semibold text-nubank-text">
                       {programShortName(program)}
                     </p>
-                    <p className="mt-0.5 text-[12px] text-slate-600">
+                    <p className="mt-0.5 text-[12px] text-nubank-text-secondary">
                       Até{" "}
-                      <span className="font-semibold text-[#0EA5A4]">
+                      <span className="font-semibold text-primary">
                         {programHighlightsMap.get(program) ?? "--"}x
                       </span>
                     </p>
@@ -136,20 +136,20 @@ const BonusOffersSection = () => {
               </div>
             </article>
 
-            <article className="w-[84%] shrink-0 rounded-[20px] bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
-              <p className="mb-2 text-[12px] font-medium text-[#94A3B8]">Lojas</p>
-              <div className="grid grid-cols-2 gap-2">
+            <article className="w-[84%] shrink-0 rounded-[16px] gradient-card-subtle p-3.5 shadow-nubank">
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-widest text-nubank-text-secondary">Lojas</p>
+              <div className="grid grid-cols-2 gap-1.5">
                 {topStores.slice(0, 4).map((store) => (
                   <button
                     key={store.store}
                     type="button"
                     onClick={() => navigate("/bonus-offers")}
-                    className="rounded-xl bg-[#F8FAFC] px-2.5 py-2 text-left"
+                    className="rounded-xl bg-nubank-bg px-2 py-1.5 text-left transition-all duration-200 hover:bg-primary/[0.06]"
                   >
-                    <p className="text-[13px] font-semibold text-slate-800">{store.store}</p>
-                    <p className="mt-0.5 text-[11px] text-slate-500">
+                    <p className="text-[13px] font-semibold text-nubank-text">{store.store}</p>
+                    <p className="mt-0.5 text-[11px] text-nubank-text-secondary">
                       {programShortName(store.program)} •{" "}
-                      <span className="font-semibold text-[#0EA5A4]">até {store.bestMultiplier}x</span>
+                      <span className="font-semibold text-primary">até {store.bestMultiplier}x</span>
                     </p>
                   </button>
                 ))}

@@ -1,10 +1,10 @@
-import { useRef } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, AlertCircle } from "lucide-react";
+import { Download, FileText, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { GestorClienteResumo } from "@/hooks/useGestor";
 import type { GestorVencimentoItem } from "@/hooks/useGestor";
-import type { LogAcaoRow } from "@/hooks/useGestorLogs";
 
 type Props = {
   clients: GestorClienteResumo[];
@@ -18,65 +18,106 @@ type Props = {
 };
 
 const GestorExport = ({ clients, vencimentos, alertasCount, kpis }: Props) => {
-  const printRef = useRef<HTMLDivElement>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
-  const exportConsolidado = () => {
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Relatório consolidado - Mile Manager</title>
-          <style>
-            body { font-family: system-ui, sans-serif; padding: 24px; color: #1e293b; }
-            h1 { font-size: 1.5rem; margin-bottom: 8px; }
-            .meta { color: #64748b; font-size: 0.875rem; margin-bottom: 24px; }
-            table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-            th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
-            th { background: #f1f5f9; font-weight: 600; }
-            .number { text-align: right; }
-          </style>
-        </head>
-        <body>
-          <h1>Relatório consolidado</h1>
-          <p class="meta">Gerado em ${new Date().toLocaleString("pt-BR")}</p>
-          <p><strong>Clientes ativos:</strong> ${kpis.totalClientesAtivos}</p>
-          <p><strong>Valor estratégico total:</strong> ${kpis.valorEstrategicoTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}</p>
-          <p><strong>Economia total gerada:</strong> ${kpis.economiaTotalGestao.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}</p>
-          <h2 style="margin-top: 24px;">Clientes</h2>
-          <table>
-            <thead><tr><th>Cliente</th><th class="number">Milhas</th><th class="number">Valor est.</th><th class="number">Economia</th><th class="number">Score</th></tr></thead>
-            <tbody>
-              ${clients
-                .map(
-                  (c) =>
-                    `<tr><td>${c.nome}</td><td class="number">${c.milhas.toLocaleString("pt-BR")}</td><td class="number">${c.valorEstimado.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}</td><td class="number">${c.economiaTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}</td><td class="number">${c.scoreEstrategico}</td></tr>`,
-                )
-                .join("")}
-            </tbody>
-          </table>
-          <h2 style="margin-top: 24px;">Próximos vencimentos (até 100)</h2>
-          <table>
-            <thead><tr><th>Cliente</th><th>Programa</th><th class="number">Qtd</th><th>Data</th><th class="number">Dias</th></tr></thead>
-            <tbody>
-              ${vencimentos
-                .slice(0, 100)
-                .map(
-                  (v) =>
-                    `<tr><td>${v.clienteNome}</td><td>${v.programName}</td><td class="number">${v.quantidade.toLocaleString("pt-BR")}</td><td>${v.data}</td><td class="number">${v.diasRestantes}</td></tr>`,
-                )
-                .join("")}
-            </tbody>
-          </table>
-          <p style="margin-top: 24px; color: #64748b;"><strong>Alertas pendentes:</strong> ${alertasCount}</p>
-        </body>
-      </html>
-    `);
-    win.document.close();
-    win.print();
-    win.close();
+  const exportConsolidado = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const margin = 15;
+      let y = 20;
+      const lineHeight = 7;
+
+      pdf.setFontSize(18);
+      pdf.text("Relatório consolidado", margin, y);
+      y += lineHeight * 2;
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, margin, y);
+      y += lineHeight;
+
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Clientes ativos: ${kpis.totalClientesAtivos}`, margin, y);
+      y += lineHeight;
+      pdf.text(`Valor estratégico total: ${kpis.valorEstrategicoTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}`, margin, y);
+      y += lineHeight;
+      pdf.text(`Economia total gerada: ${kpis.economiaTotalGestao.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}`, margin, y);
+      y += lineHeight * 2;
+
+      pdf.setFontSize(12);
+      pdf.text("Clientes", margin, y);
+      y += lineHeight;
+
+      const clientCols = [45, 25, 35, 35, 20];
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Cliente", margin, y);
+      pdf.text("Milhas", margin + clientCols[0], y);
+      pdf.text("Valor est.", margin + clientCols[0] + clientCols[1], y);
+      pdf.text("Economia", margin + clientCols[0] + clientCols[1] + clientCols[2], y);
+      pdf.text("Score", margin + clientCols[0] + clientCols[1] + clientCols[2] + clientCols[3], y);
+      y += lineHeight;
+      pdf.setFont("helvetica", "normal");
+
+      for (const c of clients) {
+        if (y > 270) {
+          pdf.addPage();
+          y = 20;
+        }
+        pdf.text(c.nome.slice(0, 25), margin, y);
+        pdf.text(c.milhas.toLocaleString("pt-BR"), margin + clientCols[0], y);
+        pdf.text(c.valorEstimado.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }), margin + clientCols[0] + clientCols[1], y);
+        pdf.text(c.economiaTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }), margin + clientCols[0] + clientCols[1] + clientCols[2], y);
+        pdf.text(String(c.scoreEstrategico), margin + clientCols[0] + clientCols[1] + clientCols[2] + clientCols[3], y);
+        y += lineHeight;
+      }
+
+      y += lineHeight;
+      pdf.setFontSize(12);
+      pdf.text("Próximos vencimentos (até 100)", margin, y);
+      y += lineHeight;
+
+      const vencCols = [40, 35, 20, 25, 20];
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Cliente", margin, y);
+      pdf.text("Programa", margin + vencCols[0], y);
+      pdf.text("Qtd", margin + vencCols[0] + vencCols[1], y);
+      pdf.text("Data", margin + vencCols[0] + vencCols[1] + vencCols[2], y);
+      pdf.text("Dias", margin + vencCols[0] + vencCols[1] + vencCols[2] + vencCols[3], y);
+      y += lineHeight;
+      pdf.setFont("helvetica", "normal");
+
+      for (const v of vencimentos.slice(0, 100)) {
+        if (y > 270) {
+          pdf.addPage();
+          y = 20;
+        }
+        pdf.text(v.clienteNome.slice(0, 18), margin, y);
+        pdf.text(v.programName.slice(0, 15), margin + vencCols[0], y);
+        pdf.text(v.quantidade.toLocaleString("pt-BR"), margin + vencCols[0] + vencCols[1], y);
+        pdf.text(v.data, margin + vencCols[0] + vencCols[1] + vencCols[2], y);
+        pdf.text(String(v.diasRestantes), margin + vencCols[0] + vencCols[1] + vencCols[2] + vencCols[3], y);
+        y += lineHeight;
+      }
+
+      y += lineHeight;
+      pdf.text(`Alertas pendentes: ${alertasCount}`, margin, y);
+
+      const dataArquivo = new Date().toISOString().slice(0, 10);
+      pdf.save(`relatorio-consolidado-${dataArquivo}.pdf`);
+      toast.success("PDF baixado com sucesso.");
+    } catch (err) {
+      toast.error("Erro ao gerar PDF. Tente novamente.");
+      console.error(err);
+    } finally {
+      setExportingPdf(false);
+    }
   };
 
   const exportCsvRanking = () => {
@@ -108,14 +149,21 @@ const GestorExport = ({ clients, vencimentos, alertasCount, kpis }: Props) => {
       <Card className="rounded-xl border-border/80">
         <CardContent className="p-3 space-y-2">
           <Button
+            type="button"
             variant="outline"
             className="w-full justify-start gap-2"
             onClick={exportConsolidado}
+            disabled={exportingPdf}
           >
-            <FileText className="h-4 w-4" />
-            Relatório consolidado (imprimir / PDF)
+            {exportingPdf ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            {exportingPdf ? "Gerando PDF..." : "Relatório consolidado (PDF)"}
           </Button>
           <Button
+            type="button"
             variant="outline"
             className="w-full justify-start gap-2"
             onClick={exportCsvRanking}
@@ -123,12 +171,8 @@ const GestorExport = ({ clients, vencimentos, alertasCount, kpis }: Props) => {
             <Download className="h-4 w-4" />
             Ranking de clientes (CSV)
           </Button>
-          <p className="text-[11px] text-muted-foreground pt-1">
-            Use &quot;Imprimir&quot; no navegador e escolha &quot;Salvar como PDF&quot; para gerar PDF.
-          </p>
         </CardContent>
       </Card>
-      <div ref={printRef} className="hidden" aria-hidden />
     </div>
   );
 };

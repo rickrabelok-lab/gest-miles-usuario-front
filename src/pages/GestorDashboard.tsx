@@ -189,14 +189,14 @@ const GestorDashboard = () => {
 
   return (
     <div className={cn(darkMode && "dark")}>
-      <div className="mx-auto min-h-screen w-full max-w-md bg-slate-50/80 p-4 pb-24 dark:bg-background">
-      <header className="mb-4 rounded-2xl border border-sky-100/70 bg-gradient-to-br from-white via-sky-50/50 to-cyan-50/40 p-4 shadow-[0_6px_18px_rgba(2,132,199,0.06)] dark:border-border dark:bg-card dark:shadow-none">
+      <div className="mx-auto min-h-screen w-full max-w-md bg-nubank-bg p-4 pb-24 dark:bg-background">
+      <header className="mb-4 rounded-2xl gradient-primary p-4 text-primary-foreground shadow-[0_4px_16px_-2px_rgba(138,5,190,0.25)] dark:shadow-none">
         <div className="mb-2 flex items-center justify-start">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 w-7 border-sky-200/70 bg-white/90 p-0 text-sky-700 hover:bg-sky-50 dark:border-border dark:bg-transparent dark:text-foreground"
+            className="h-7 w-7 border-white/30 bg-white/15 p-0 text-white hover:bg-white/25 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
             onClick={() => navigate("/")}
             aria-label="Voltar ao dashboard"
             title="Voltar ao dashboard"
@@ -204,10 +204,10 @@ const GestorDashboard = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">
+        <h1 className="text-xl font-bold tracking-tight text-white">
           Centro estratégico de operação
         </h1>
-        <p className="mt-1 text-xs text-slate-600 dark:text-muted-foreground">
+        <p className="mt-1 text-xs text-white/85">
           Ferramenta de priorização de clientes · Inteligência financeira B2B
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -215,10 +215,10 @@ const GestorDashboard = () => {
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium",
               riscoGlobal === "baixo" &&
-                "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+                "bg-emerald-400/25 text-white",
               riscoGlobal === "medio" &&
-                "bg-amber-500/15 text-amber-700 dark:text-amber-400",
-              riscoGlobal === "alto" && "bg-red-500/15 text-red-700 dark:text-red-400",
+                "bg-amber-400/25 text-white",
+              riscoGlobal === "alto" && "bg-red-400/25 text-white",
             )}
           >
             <Shield className="h-3.5 w-3.5" />
@@ -228,7 +228,7 @@ const GestorDashboard = () => {
           <button
             type="button"
             onClick={toggleDark}
-            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white/80 hover:text-slate-700 dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
+            className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
             title={darkMode ? "Modo claro" : "Modo escuro"}
           >
             {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -251,35 +251,35 @@ const GestorDashboard = () => {
       <Tabs
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as GestorTab)}
-        className="mt-4 space-y-3"
+        className="gestor-tabs mt-4 space-y-3"
       >
-        <div className="overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <TabsList className="inline-flex h-auto w-max flex-nowrap gap-1 rounded-xl border border-slate-200/80 bg-white/85 p-1 shadow-[0_2px_10px_rgba(15,23,42,0.04)] dark:border-border dark:bg-muted/30 dark:shadow-none">
-          <TabsTrigger value="demandas" className="shrink-0 rounded-lg px-2.5 text-xs">
+        <div className="relative z-10 w-full select-none touch-manipulation">
+        <TabsList className="flex h-auto w-full flex-wrap gap-1.5 rounded-xl border border-nubank-border bg-white/95 p-1.5 shadow-nubank dark:border-border dark:bg-muted/30 dark:shadow-none">
+          <TabsTrigger value="demandas" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Demandas
           </TabsTrigger>
-          <TabsTrigger value="clientes" className="shrink-0 rounded-lg px-2.5 text-xs">
+          <TabsTrigger value="clientes" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Clientes
           </TabsTrigger>
-          <TabsTrigger value="vencendo" className="shrink-0 rounded-lg px-2.5 text-xs">
+          <TabsTrigger value="vencendo" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Vencendo
           </TabsTrigger>
-          <TabsTrigger value="alertas" className="shrink-0 rounded-lg px-2.5 text-xs">
+          <TabsTrigger value="alertas" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Alertas
           </TabsTrigger>
-          <TabsTrigger value="rentabilidade" className="shrink-0 rounded-lg px-2.5 text-xs">
+          <TabsTrigger value="rentabilidade" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Rentab.
           </TabsTrigger>
-          <TabsTrigger value="dre" className="shrink-0 rounded-lg px-2.5 text-xs">
+          <TabsTrigger value="dre" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             DRE
           </TabsTrigger>
-          <TabsTrigger value="comparativo" className="shrink-0 rounded-lg px-2.5 text-xs">
+          <TabsTrigger value="comparativo" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Comparar
           </TabsTrigger>
-          <TabsTrigger value="historico" className="shrink-0 rounded-lg px-2.5 text-xs">
+          <TabsTrigger value="historico" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Histórico
           </TabsTrigger>
-          <TabsTrigger value="exportar" className="shrink-0 rounded-lg px-2.5 text-xs">
+          <TabsTrigger value="exportar" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Exportar
           </TabsTrigger>
         </TabsList>
@@ -307,7 +307,7 @@ const GestorDashboard = () => {
                       key={`${item.clienteId}-${item.programId}-${item.data}-${idx}`}
                       type="button"
                       onClick={() => handleOpenClient(item.clienteId)}
-                      className="flex w-full flex-col gap-0.5 rounded-lg border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-left transition-colors hover:bg-sky-50/70 dark:border-border/80 dark:bg-muted/30 dark:hover:bg-muted/60"
+                      className="flex w-full flex-col gap-0.5 rounded-lg border border-nubank-border bg-white px-3 py-2 text-left transition-colors hover:bg-primary/5 dark:border-border/80 dark:bg-muted/30 dark:hover:bg-muted/60"
                     >
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-medium">{item.clienteNome}</span>
@@ -422,7 +422,7 @@ const GestorDashboard = () => {
                         key={`demanda-${d.id}`}
                         type="button"
                         onClick={() => handleOpenClient(d.clienteId)}
-                        className="flex w-full flex-col rounded-lg border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-left transition-colors hover:bg-sky-50/70 dark:border-border/70 dark:bg-muted/20 dark:hover:bg-muted/50"
+                        className="flex w-full flex-col rounded-lg border border-nubank-border bg-white px-3 py-2 text-left transition-colors hover:bg-primary/5 dark:border-border/70 dark:bg-muted/20 dark:hover:bg-muted/50"
                       >
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-semibold">{d.clienteNome}</span>

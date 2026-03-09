@@ -253,7 +253,7 @@ const GestorDashboard = () => {
         onValueChange={(value) => setActiveTab(value as GestorTab)}
         className="mt-4 space-y-3"
       >
-        <div className="overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="overflow-x-auto overscroll-x-contain pb-1 select-none touch-manipulation [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <TabsList className="inline-flex h-auto w-max flex-nowrap gap-1 rounded-xl border border-slate-200/80 bg-white/85 p-1 shadow-[0_2px_10px_rgba(15,23,42,0.04)] dark:border-border dark:bg-muted/30 dark:shadow-none">
           <TabsTrigger value="demandas" className="shrink-0 rounded-lg px-2.5 text-xs">
             Demandas

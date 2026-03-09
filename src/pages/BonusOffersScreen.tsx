@@ -36,13 +36,13 @@ const BonusOffersScreen = () => {
   }, [offers]);
 
   return (
-    <div className="mx-auto min-h-screen max-w-[480px] bg-[#F5F7F9] px-4 pb-10 pt-6">
-      <header className="mb-5">
-        <div className="flex items-center gap-2">
-          <Gift size={18} className="text-[#0EA5A4]" />
-          <h1 className="text-[22px] font-semibold text-[#1E293B]">Compras Bonificadas</h1>
+    <div className="mx-auto min-h-screen max-w-[480px] bg-nubank-bg px-5 pb-14 pt-6">
+      <header className="mb-6">
+        <div className="flex items-center gap-3">
+          <Gift size={24} className="text-primary" />
+          <h1 className="text-2xl font-bold tracking-tight text-nubank-text">Compras Bonificadas</h1>
         </div>
-        <p className="mt-1 text-[13px] text-slate-500">
+        <p className="mt-1 text-sm text-nubank-text-secondary">
           Ganhe mais pontos comprando nas lojas parceiras
         </p>
       </header>
@@ -53,10 +53,10 @@ const BonusOffersScreen = () => {
             key={filter}
             type="button"
             onClick={() => setActiveFilter(filter)}
-            className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-medium transition-all duration-150 ${
+            className={`shrink-0 rounded-[14px] px-5 py-2.5 text-sm font-semibold transition-all duration-300 ease-out ${
               activeFilter === filter
-                ? "bg-[#0EA5A4] text-white"
-                : "bg-[#E2E8F0] text-slate-600"
+                ? "gradient-primary text-primary-foreground shadow-[0_2px_8px_-2px_rgba(138,5,190,0.2)]"
+                : "bg-white border border-nubank-border text-nubank-text-secondary shadow-nubank hover:border-primary/20"
             }`}
           >
             {filter}
@@ -64,7 +64,7 @@ const BonusOffersScreen = () => {
         ))}
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         {loading && (
           <>
             <BonusOfferCardSkeleton />
@@ -74,10 +74,10 @@ const BonusOffersScreen = () => {
         )}
 
         {!loading && error && (
-          <div className="rounded-[20px] bg-white p-4 text-center shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
+          <div className="rounded-[16px] bg-white p-4 text-center shadow-nubank">
             <p className="text-sm text-slate-600">{error}</p>
             <Button
-              className="mt-3 h-9 rounded-full bg-[#0EA5A4] px-4 text-white"
+              className="mt-3 h-9"
               onClick={() => void retry()}
             >
               Tentar novamente
@@ -86,7 +86,7 @@ const BonusOffersScreen = () => {
         )}
 
         {!loading && !error && offers.length === 0 && (
-          <div className="rounded-[20px] bg-white p-4 text-center shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
+          <div className="rounded-[16px] bg-white p-4 text-center shadow-nubank">
             <p className="text-sm text-slate-600">Nenhuma oferta ativa para este programa.</p>
           </div>
         )}
@@ -105,7 +105,7 @@ const BonusOffersScreen = () => {
       </section>
 
       <section className="mt-7">
-        <h2 className="mb-3 text-[18px] font-semibold text-[#1E293B]">Principais Lojas</h2>
+        <h2 className="mb-6 text-xl font-bold tracking-tight text-nubank-text">Principais Lojas</h2>
         <div className="grid grid-cols-2 gap-3">
           {topStores.map((store) => (
             <TopStoreCard

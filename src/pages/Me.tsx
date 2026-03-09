@@ -78,7 +78,7 @@ const Me = () => {
   if (redirectTo) return <Navigate to={redirectTo} replace />;
 
   return (
-    <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+    <div className="flex min-h-screen items-center justify-center bg-nubank-bg text-sm text-nubank-text-secondary">
       {error ? `Erro ao configurar perfil: ${error}` : "Preparando sua conta..."}
     </div>
   );
