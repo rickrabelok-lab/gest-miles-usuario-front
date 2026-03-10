@@ -60,6 +60,7 @@ const Me = () => {
         usuario_id: user.id,
         slug,
         nome_completo: user.user_metadata?.full_name ?? user.email ?? "Usuário",
+        role: "cliente",
       });
 
       if (insertError) {
@@ -78,8 +79,18 @@ const Me = () => {
   if (redirectTo) return <Navigate to={redirectTo} replace />;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-nubank-bg text-sm text-nubank-text-secondary">
-      {error ? `Erro ao configurar perfil: ${error}` : "Preparando sua conta..."}
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-4 bg-nubank-bg text-sm text-nubank-text-secondary">
+      {error ? (
+        <>
+          <p className="text-center font-medium text-destructive">Erro ao configurar perfil</p>
+          <p className="text-center text-muted-foreground">{error}</p>
+          <p className="max-w-xs text-center text-xs text-muted-foreground">
+            Verifique se o e-mail está confirmado no Supabase (Auth → Users) e se existe um perfil com role &quot;cliente&quot; na tabela perfis.
+          </p>
+        </>
+      ) : (
+        "Preparando sua conta..."
+      )}
     </div>
   );
 };

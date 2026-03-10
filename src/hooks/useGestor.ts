@@ -75,17 +75,36 @@ export const useGestor = (
 ) => {
   const queryClient = useQueryClient();
   const clientsQuery = useQuery({
-    queryKey: ["gestor_clientes"],
+    queryKey: ["cliente_gestores"],
     enabled,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return [] as string[];
-      const { data, error } = await supabase
+      const ids = new Set<string>();
+
+      const { data: cgData, error: cgError } = await supabase
+        .from("cliente_gestores")
+        .select("cliente_id")
+        .eq("gestor_id", user.id);
+      if (!cgError && cgData) {
+        cgData.forEach((row) => {
+          const id = row.cliente_id as string;
+          if (id) ids.add(id);
+        });
+      }
+
+      const { data: gcData, error: gcError } = await supabase
         .from("gestor_clientes")
         .select("cliente_id")
         .eq("gestor_id", user.id);
-      if (error) throw error;
-      return (data ?? []).map((row) => row.cliente_id as string);
+      if (!gcError && gcData) {
+        gcData.forEach((row) => {
+          const id = row.cliente_id as string;
+          if (id) ids.add(id);
+        });
+      }
+
+      return Array.from(ids);
     },
   });
 
@@ -101,7 +120,7 @@ export const useGestor = (
   }, [clientsQuery.data, extraClientIds]);
 
   const profilesQuery = useQuery({
-    queryKey: ["gestor_clientes_perfis", allClientIds],
+    queryKey: ["cliente_gestores_perfis", allClientIds],
     enabled: enabled && !!allClientIds.length,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -200,7 +219,7 @@ export const useGestor = (
           const usuarioId = String(row.usuario_id ?? "");
           if (!usuarioId || !managedClientIds.has(usuarioId)) return;
 
-          queryClient.invalidateQueries({ queryKey: ["gestor_clientes_perfis"] });
+          queryClient.invalidateQueries({ queryKey: ["cliente_gestores_perfis"] });
         },
       )
       .subscribe();
@@ -242,7 +261,7 @@ export const useGestor = (
         }>;
       };
 
-    // Garante que todo cliente vinculado em gestor_clientes apareça como ativo,
+    // Garante que todo cliente vinculado em cliente_gestores apareça como ativo,
     // mesmo sem registros em programas_cliente (métricas ficam zeradas até haver dados).
     allClientIds.forEach((clientId) => {
       if (grouped.has(clientId)) return;
@@ -663,7 +682,7 @@ export const useGestor = (
       profilesQuery.error ||
       programsQuery.error ||
       demandasQuery.error,
-    /** IDs dos clientes vinculados ao gestor (apenas gestor_clientes), para filtrar lista "Clientes ativos". */
+    /** IDs dos clientes vinculados ao gestor (cliente_gestores), para filtrar lista "Clientes ativos". */
     linkedClientIds: clientsQuery.data ?? [],
     clientsIds: allClientIds,
     resumoClientes,

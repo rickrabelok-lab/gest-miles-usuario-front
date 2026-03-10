@@ -15,6 +15,7 @@ import ProgramCard from "@/components/ProgramCard";
 import DestinationCarousel from "@/components/DestinationCarousel";
 import BonusOffersSection from "@/components/bonus/BonusOffersSection";
 import BottomNav from "@/components/BottomNav";
+import SmartRedemptionSuggestions from "@/components/SmartRedemptionSuggestions";
 import AirlineLogo from "@/components/AirlineLogo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,9 +64,9 @@ as $$
       or public.is_admin()
       or exists (
         select 1
-        from public.gestor_clientes gc
-        where gc.gestor_id = auth.uid()
-          and gc.cliente_id = target_cliente_id
+        from public.cliente_gestores cg
+        where cg.gestor_id = auth.uid()
+          and cg.cliente_id = target_cliente_id
       ),
       false
     );
@@ -1201,7 +1202,7 @@ const Index = () => {
         if (insertError) throw insertError;
       }
 
-      queryClient.invalidateQueries({ queryKey: ["gestor_clientes_perfis"] });
+      queryClient.invalidateQueries({ queryKey: ["cliente_gestores_perfis"] });
       return true;
     } catch (error) {
       const rawMsg =
@@ -1477,6 +1478,49 @@ const Index = () => {
       compras,
     };
   }, [allPersistedPrograms, economiaPeriodoMeses]);
+
+  const [emissoesProgramFilter, setEmissoesProgramFilter] = useState<
+    "all" | "latam" | "smiles" | "tudoazul" | "livelo" | "esfera"
+  >("all");
+  const [emissoesSortOrder, setEmissoesSortOrder] = useState<"recentes" | "antigas">(
+    "recentes",
+  );
+
+  const emissoesFiltradasOrdenadas = useMemo(() => {
+    let list = analiseEconomia.emissoes;
+
+    if (emissoesProgramFilter !== "all") {
+      list = list.filter((item) => {
+        const name = item.programName.toLowerCase();
+        switch (emissoesProgramFilter) {
+          case "latam":
+            return name.includes("latam");
+          case "smiles":
+            return name.includes("smiles");
+          case "tudoazul":
+            return (
+              name.includes("tudoazul") ||
+              name.includes("tudo azul") ||
+              name.includes("azul")
+            );
+          case "livelo":
+            return name.includes("livelo");
+          case "esfera":
+            return name.includes("esfera");
+          default:
+            return true;
+        }
+      });
+    }
+
+    const sorted = [...list].sort((a, b) => {
+      const da = parseBrDate(a.data)?.getTime() ?? 0;
+      const db = parseBrDate(b.data)?.getTime() ?? 0;
+      return emissoesSortOrder === "recentes" ? db - da : da - db;
+    });
+
+    return sorted;
+  }, [analiseEconomia.emissoes, emissoesProgramFilter, emissoesSortOrder]);
 
   useEffect(() => {
     if (activeTab === "vencendo" && vencendoSectionRef.current) {
@@ -2201,57 +2245,163 @@ const Index = () => {
             </button>
           </div>
           <div ref={economiaReportRef} className="space-y-3">
-          <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-nubank-text">
-                Economia total das emissões (últimos {economiaPeriodoMeses}{" "}
-                {economiaPeriodoMeses === 1 ? "mês" : "meses"})
+            <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-nubank-text">
+                  Economia total das emissões (últimos {economiaPeriodoMeses}{" "}
+                  {economiaPeriodoMeses === 1 ? "mês" : "meses"})
+                </p>
+                {analiseEconomia.trend === "up" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                    <ArrowUpRight size={14} />
+                    Economia
+                  </span>
+                )}
+                {analiseEconomia.trend === "down" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                    <ArrowDownRight size={14} />
+                    Prejuízo
+                  </span>
+                )}
+              </div>
+              <p
+                className={`mt-2 text-xl font-bold ${
+                  analiseEconomia.economiaTotal >= 0
+                    ? "text-emerald-700"
+                    : "text-red-700"
+                }`}
+              >
+                {analiseEconomia.economiaTotal.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
               </p>
-              {analiseEconomia.trend === "up" && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                  <ArrowUpRight size={14} />
-                  Economia
-                </span>
-              )}
-              {analiseEconomia.trend === "down" && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
-                  <ArrowDownRight size={14} />
-                  Prejuízo
-                </span>
-              )}
+              <p className="mt-1 text-[11px] text-nubank-text-secondary">
+                Custo de compra de pontos no período:{" "}
+                {analiseEconomia.custoTotalCompras.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </p>
             </div>
-            <p
-              className={`mt-2 text-xl font-bold ${
-                analiseEconomia.economiaTotal >= 0
-                  ? "text-emerald-700"
-                  : "text-red-700"
-              }`}
-            >
-              {analiseEconomia.economiaTotal.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
-            </p>
-            <p className="mt-1 text-[11px] text-nubank-text-secondary">
-              Custo de compra de pontos no período:{" "}
-              {analiseEconomia.custoTotalCompras.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
-            </p>
-          </div>
 
-          <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
-            <p className="text-xs font-semibold text-nubank-text">
-              Passagens emitidas que geraram economia/prejuízo
-            </p>
-            {analiseEconomia.emissoes.length === 0 && (
-              <p className="mt-3 text-xs text-nubank-text-secondary">
-                Nenhuma emissão registrada no período selecionado.
+            <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
+              <p className="text-xs font-semibold text-nubank-text">
+                Total de emissões realizadas
               </p>
-            )}
+              <p className="mt-2 text-2xl font-bold text-nubank-text">
+                {analiseEconomia.emissoes.length.toLocaleString("pt-BR")}
+              </p>
+              <p className="mt-1 text-[11px] text-nubank-text-secondary">
+                Considerando apenas o período selecionado acima.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
+              <p className="text-xs font-semibold text-nubank-text">
+                Passagens emitidas que geraram economia/prejuízo
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 font-semibold ${
+                      emissoesProgramFilter === "all"
+                        ? "bg-nubank-primary text-white"
+                        : "bg-nubank-bg text-nubank-text-secondary"
+                    }`}
+                    onClick={() => setEmissoesProgramFilter("all")}
+                  >
+                    Ver todos
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 font-semibold ${
+                      emissoesProgramFilter === "latam"
+                        ? "bg-nubank-primary text-white"
+                        : "bg-nubank-bg text-nubank-text-secondary"
+                    }`}
+                    onClick={() => setEmissoesProgramFilter("latam")}
+                  >
+                    LATAM Pass
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 font-semibold ${
+                      emissoesProgramFilter === "smiles"
+                        ? "bg-nubank-primary text-white"
+                        : "bg-nubank-bg text-nubank-text-secondary"
+                    }`}
+                    onClick={() => setEmissoesProgramFilter("smiles")}
+                  >
+                    Smiles
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 font-semibold ${
+                      emissoesProgramFilter === "tudoazul"
+                        ? "bg-nubank-primary text-white"
+                        : "bg-nubank-bg text-nubank-text-secondary"
+                    }`}
+                    onClick={() => setEmissoesProgramFilter("tudoazul")}
+                  >
+                    TudoAzul
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 font-semibold ${
+                      emissoesProgramFilter === "livelo"
+                        ? "bg-nubank-primary text-white"
+                        : "bg-nubank-bg text-nubank-text-secondary"
+                    }`}
+                    onClick={() => setEmissoesProgramFilter("livelo")}
+                  >
+                    Livelo
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 font-semibold ${
+                      emissoesProgramFilter === "esfera"
+                        ? "bg-nubank-primary text-white"
+                        : "bg-nubank-bg text-nubank-text-secondary"
+                    }`}
+                    onClick={() => setEmissoesProgramFilter("esfera")}
+                  >
+                    Esfera
+                  </button>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 font-semibold ${
+                      emissoesSortOrder === "recentes"
+                        ? "bg-nubank-primary text-white"
+                        : "bg-nubank-bg text-nubank-text-secondary"
+                    }`}
+                    onClick={() => setEmissoesSortOrder("recentes")}
+                  >
+                    Mais recentes
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1 font-semibold ${
+                      emissoesSortOrder === "antigas"
+                        ? "bg-nubank-primary text-white"
+                        : "bg-nubank-bg text-nubank-text-secondary"
+                    }`}
+                    onClick={() => setEmissoesSortOrder("antigas")}
+                  >
+                    Mais antigas
+                  </button>
+                </div>
+              </div>
+              {emissoesFiltradasOrdenadas.length === 0 && (
+                <p className="mt-3 text-xs text-nubank-text-secondary">
+                  Nenhuma emissão encontrada para os filtros selecionados.
+                </p>
+              )}
             <div className="mt-3 space-y-2">
-              {analiseEconomia.emissoes.map((item) => (
+              {emissoesFiltradasOrdenadas.map((item) => (
                 <div
                   key={item.id}
                   className="rounded-xl border border-nubank-border bg-white/80 p-3"
@@ -2368,6 +2518,12 @@ const Index = () => {
           </>
           )}
         </div>
+      )}
+
+      {activeTab === "sugestoes" && (
+        <SmartRedemptionSuggestions
+          clientId={managerClientId ?? user?.id ?? null}
+        />
       )}
 
       <Dialog open={isDemandDialogOpen} onOpenChange={setIsDemandDialogOpen}>

@@ -11,7 +11,7 @@ import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
 
-export type AppRole = "user" | "premium_user" | "gestor" | "admin";
+export type AppRole = "admin" | "cs" | "gestor" | "cliente";
 
 type AuthContextValue = {
   user: User | null;
@@ -56,7 +56,12 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       return;
     }
 
-    setRole((data?.role as AppRole | undefined) ?? "user");
+    const raw = data?.role as string | undefined;
+    const mapped: AppRole =
+      raw === "admin" || raw === "cs" || raw === "gestor" || raw === "cliente"
+        ? raw
+        : "cliente";
+    setRole(mapped);
     setRoleLoading(false);
   }, []);
 

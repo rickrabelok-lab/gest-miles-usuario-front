@@ -451,7 +451,7 @@ const LoyaltyProgramDetails = () => {
         if (insertError) throw insertError;
       }
 
-      queryClient.invalidateQueries({ queryKey: ["gestor_clientes_perfis"] });
+      queryClient.invalidateQueries({ queryKey: ["cliente_gestores_perfis"] });
       setActionPlanFollowupOpen(false);
       toast.success(
         keepInPlan

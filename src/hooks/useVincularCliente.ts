@@ -17,7 +17,7 @@ export const useVincularCliente = (gestorUserId: string | undefined) => {
       }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) throw new Error("Faça login novamente para vincular clientes.");
-      const { error } = await supabase.from("gestor_clientes").insert({
+      const { error } = await supabase.from("cliente_gestores").insert({
         gestor_id: user.id,
         cliente_id: uuid,
       });
@@ -28,7 +28,7 @@ export const useVincularCliente = (gestorUserId: string | undefined) => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["gestor_clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["cliente_gestores"] });
     },
   });
 
@@ -42,7 +42,7 @@ export const useVincularCliente = (gestorUserId: string | undefined) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) throw new Error("Faça login novamente para desvincular.");
       const { data, error } = await supabase
-        .from("gestor_clientes")
+        .from("cliente_gestores")
         .delete()
         .eq("gestor_id", user.id)
         .eq("cliente_id", uuid)
@@ -55,8 +55,8 @@ export const useVincularCliente = (gestorUserId: string | undefined) => {
       return { deleted: (data ?? []).length > 0 };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["gestor_clientes"] });
-      queryClient.invalidateQueries({ queryKey: ["gestor_clientes_perfis"] });
+      queryClient.invalidateQueries({ queryKey: ["cliente_gestores"] });
+      queryClient.invalidateQueries({ queryKey: ["cliente_gestores_perfis"] });
     },
   });
 
@@ -69,9 +69,9 @@ export const useVincularCliente = (gestorUserId: string | undefined) => {
     isVincularLoading: mutation.isPending,
     getErrorMessage: (err: unknown): string => {
       if (isPostgrestError(err)) {
-        if (err.code === "23505") return "Este cliente já está vinculado a um gestor.";
+        if (err.code === "23505") return "Este cliente já está vinculado a você.";
         if (err.code === "42501" || err.message.includes("row-level security") || err.message.includes("policy")) {
-          return "Sem permissão. Aplique a migration que permite gestor vincular cliente (gestor_clientes_insert_own_or_admin).";
+          return "Sem permissão para vincular este cliente.";
         }
         if (err.code === "23503") return "ID do cliente não encontrado. Confira se o UUID está correto.";
         return err.message;

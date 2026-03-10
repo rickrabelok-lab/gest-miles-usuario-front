@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, Clock, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Clock, Sparkles, TrendingUp } from "lucide-react";
 
 interface BalanceTabsProps {
   activeTab: string;
@@ -12,6 +12,7 @@ const tabs = [
   { id: "vencendo", label: "Vencendo", icon: Clock },
   { id: "extrato", label: "Extrato", icon: TrendingUp },
   { id: "economia", label: "R$", icon: null },
+  { id: "sugestoes", label: "Sugestões", icon: Sparkles },
 ];
 
 const BalanceTabs = ({
@@ -21,7 +22,7 @@ const BalanceTabs = ({
   economyLabel = "R$",
 }: BalanceTabsProps) => {
   return (
-    <div className="grid grid-cols-4 gap-1.5 px-5 py-3">
+    <div className="grid grid-cols-5 gap-1.5 px-5 py-3">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;

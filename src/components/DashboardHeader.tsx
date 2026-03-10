@@ -1,4 +1,23 @@
-import { User, Menu, X, Zap, LogIn, LogOut, Copy, Check } from "lucide-react";
+import {
+  User,
+  Menu,
+  X,
+  Zap,
+  LogIn,
+  LogOut,
+  Copy,
+  Check,
+  FileEdit,
+  Bell,
+  Users,
+  Info,
+  UserPlus,
+  HelpCircle,
+  MessageCircle,
+  Calculator,
+  Radio,
+} from "lucide-react";
+import GestMilesLogo from "@/components/GestMilesLogo";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -8,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -50,7 +70,7 @@ const DashboardHeader = () => {
     let cancelled = false;
     const loadManagedClients = async () => {
       const { data, error } = await supabase
-        .from("gestor_clientes")
+        .from("cliente_gestores")
         .select("cliente_id")
         .eq("gestor_id", user.id);
       if (error || cancelled) return;
@@ -203,9 +223,14 @@ const DashboardHeader = () => {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <h1 className="font-display text-xl font-bold tracking-tight">MilesHub</h1>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <div className="flex flex-1 justify-center">
+          <div className="flex items-center gap-2">
+            <GestMilesLogo size={26} variant="light" className="shrink-0" />
+            <h1 className="font-display text-xl font-bold tracking-tight">Gest Miles</h1>
+          </div>
+        </div>
+        <Sheet>
+          <SheetTrigger asChild>
             <button
               type="button"
               className="rounded-[16px] p-2 transition-all duration-200 hover:bg-white/20"
@@ -213,37 +238,204 @@ const DashboardHeader = () => {
             >
               <Menu size={22} />
             </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-72">
-            {user ? (
-              <>
-                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  ID da sua conta (para o gestor solicitar acesso)
+          </SheetTrigger>
+          <SheetContent
+            side="right"
+            className="flex h-full w-3/4 flex-col overflow-hidden p-0 sm:max-w-xs [&>button]:right-4 [&>button]:top-4 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:hover:text-white"
+          >
+            {/* Header estilo Oktoplus – faixa roxa Gest Miles */}
+            <div className="flex shrink-0 items-center justify-between bg-[#8A05BE] px-4 py-4 pr-12">
+              <div className="flex items-center gap-2">
+                <GestMilesLogo size={24} variant="light" className="shrink-0" />
+                <span className="font-display text-lg font-bold tracking-tight text-white">
+                  Gest Miles
+                </span>
+              </div>
+            </div>
+
+            {/* Área de conteúdo – fundo claro, seções com títulos roxos e itens com ícone */}
+            <div className="flex flex-1 flex-col overflow-y-auto bg-white px-4 py-5 dark:bg-gray-50">
+              {user ? (
+                <>
+                  <section className="mb-5">
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A05BE]">
+                      Conta
+                    </p>
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 dark:border-gray-200 dark:bg-gray-100/80">
+                      <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600">
+                        ID da sua conta
+                      </p>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          onClick={copyAccountId}
+                          className="mt-1 flex w-full items-center justify-between gap-2 text-left text-xs font-mono text-gray-900 dark:text-gray-900"
+                        >
+                          <span className="truncate" title={user.id}>
+                            {user.id}
+                          </span>
+                          {idCopied ? (
+                            <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-4 w-4 shrink-0 text-[#8A05BE]" />
+                          )}
+                        </button>
+                      </SheetClose>
+                    </div>
+                  </section>
+
+                  <section className="mb-5">
+                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A05BE]">
+                      Ações rápidas
+                    </p>
+                    <div className="space-y-0.5">
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/registrar-emissao")}
+                        >
+                          <FileEdit className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Registrar Emissão</span>
+                        </button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/alertas/novo")}
+                        >
+                          <Bell className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Adicionar Alerta</span>
+                        </button>
+                      </SheetClose>
+                      {(role === "gestor" || role === "admin") && (
+                        <SheetClose asChild>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                            onClick={() => navigate("/clientes")}
+                          >
+                            <Users className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                            <span>Clientes</span>
+                          </button>
+                        </SheetClose>
+                      )}
+                      {(role === "cs" || role === "admin") && (
+                        <SheetClose asChild>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                            onClick={() => navigate("/cs")}
+                          >
+                            <Users className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                            <span>Painel CS</span>
+                          </button>
+                        </SheetClose>
+                      )}
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/simular-compra-milhas")}
+                        >
+                          <Calculator className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Simular Compra de Milhas</span>
+                        </button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/radar-oportunidades")}
+                        >
+                          <Radio className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Radar de Oportunidades</span>
+                        </button>
+                      </SheetClose>
+                    </div>
+                  </section>
+
+                  <section className="mb-5">
+                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A05BE]">
+                      Saiba mais
+                    </p>
+                    <div className="space-y-0.5">
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/sobre")}
+                        >
+                          <Info className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Sobre a GestMiles</span>
+                        </button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/convide-amigos")}
+                        >
+                          <UserPlus className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Convide Amigos</span>
+                        </button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/duvidas")}
+                        >
+                          <HelpCircle className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Dúvidas</span>
+                        </button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/fale-conosco")}
+                        >
+                          <MessageCircle className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Fale Conosco</span>
+                        </button>
+                      </SheetClose>
+                    </div>
+                  </section>
+
+                  <div className="mt-auto border-t border-gray-200 pt-4 dark:border-gray-200">
+                    <SheetClose asChild>
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-950/30"
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="h-5 w-5 shrink-0" />
+                        <span>Sair</span>
+                      </button>
+                    </SheetClose>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-1 flex-col justify-center">
+                  <p className="mb-4 text-sm text-gray-600 dark:text-gray-600">
+                    Entre ou crie uma conta para acessar todos os recursos da GestMiles.
+                  </p>
+                  <SheetClose asChild>
+                    <button
+                      type="button"
+                      className="w-full rounded-xl bg-[#8A05BE] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-95"
+                      onClick={() => navigate("/auth")}
+                    >
+                      Entrar ou criar conta
+                    </button>
+                  </SheetClose>
                 </div>
-                <DropdownMenuItem
-                  onClick={copyAccountId}
-                  className="cursor-pointer font-mono text-xs"
-                >
-                  <span className="truncate flex-1" title={user.id}>
-                    {user.id}
-                  </span>
-                  {idCopied ? (
-                    <Check className="ml-2 h-4 w-4 shrink-0 text-green-600" />
-                  ) : (
-                    <Copy className="ml-2 h-4 w-4 shrink-0" />
-                  )}
-                </DropdownMenuItem>
-                <div className="px-2 py-1 text-[11px] text-muted-foreground">
-                  Clique para copiar. O gestor usará este ID para solicitar acesso; você aceita no app.
-                </div>
-              </>
-            ) : (
-              <DropdownMenuItem onClick={() => navigate("/auth")}>
-                Criar conta
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Promo banner */}
