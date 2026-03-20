@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -14,6 +14,7 @@ const slugify = (value: string) =>
 
 const Me = () => {
   const { user, loading, refreshRole } = useAuth();
+  const navigate = useNavigate();
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +88,13 @@ const Me = () => {
           <p className="max-w-xs text-center text-xs text-muted-foreground">
             Verifique se o e-mail está confirmado no Supabase (Auth → Users) e se existe um perfil com role &quot;cliente&quot; na tabela perfis.
           </p>
+          <button
+            type="button"
+            className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            onClick={() => navigate("/")}
+          >
+            Voltar para a tela inicial
+          </button>
         </>
       ) : (
         "Preparando sua conta..."
