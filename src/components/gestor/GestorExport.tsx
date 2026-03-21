@@ -53,14 +53,15 @@ const GestorExport = ({ clients, vencimentos, alertasCount, kpis }: Props) => {
       pdf.text("Clientes", margin, y);
       y += lineHeight;
 
-      const clientCols = [45, 25, 35, 35, 20];
-      pdf.setFontSize(8);
+      const clientCols = [38, 32, 22, 30, 28, 12];
+      pdf.setFontSize(7);
       pdf.setFont("helvetica", "bold");
       pdf.text("Cliente", margin, y);
-      pdf.text("Milhas", margin + clientCols[0], y);
-      pdf.text("Valor est.", margin + clientCols[0] + clientCols[1], y);
-      pdf.text("Economia", margin + clientCols[0] + clientCols[1] + clientCols[2], y);
-      pdf.text("Score", margin + clientCols[0] + clientCols[1] + clientCols[2] + clientCols[3], y);
+      pdf.text("Gestores", margin + clientCols[0], y);
+      pdf.text("Milhas", margin + clientCols[0] + clientCols[1], y);
+      pdf.text("Valor est.", margin + clientCols[0] + clientCols[1] + clientCols[2], y);
+      pdf.text("Economia", margin + clientCols[0] + clientCols[1] + clientCols[2] + clientCols[3], y);
+      pdf.text("Scr.", margin + clientCols[0] + clientCols[1] + clientCols[2] + clientCols[3] + clientCols[4], y);
       y += lineHeight;
       pdf.setFont("helvetica", "normal");
 
@@ -69,11 +70,16 @@ const GestorExport = ({ clients, vencimentos, alertasCount, kpis }: Props) => {
           pdf.addPage();
           y = 20;
         }
-        pdf.text(c.nome.slice(0, 25), margin, y);
-        pdf.text(c.milhas.toLocaleString("pt-BR"), margin + clientCols[0], y);
-        pdf.text(c.valorEstimado.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }), margin + clientCols[0] + clientCols[1], y);
-        pdf.text(c.economiaTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }), margin + clientCols[0] + clientCols[1] + clientCols[2], y);
-        pdf.text(String(c.scoreEstrategico), margin + clientCols[0] + clientCols[1] + clientCols[2] + clientCols[3], y);
+        const gestoresTxt =
+          c.gestoresResponsaveis.length > 0
+            ? c.gestoresResponsaveis.map((g) => g.nome).join(", ").slice(0, 42)
+            : "—";
+        pdf.text(c.nome.slice(0, 22), margin, y);
+        pdf.text(gestoresTxt, margin + clientCols[0], y);
+        pdf.text(c.milhas.toLocaleString("pt-BR"), margin + clientCols[0] + clientCols[1], y);
+        pdf.text(c.valorEstimado.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }), margin + clientCols[0] + clientCols[1] + clientCols[2], y);
+        pdf.text(c.economiaTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }), margin + clientCols[0] + clientCols[1] + clientCols[2] + clientCols[3], y);
+        pdf.text(String(c.scoreEstrategico), margin + clientCols[0] + clientCols[1] + clientCols[2] + clientCols[3] + clientCols[4], y);
         y += lineHeight;
       }
 

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 type SortKey =
   | "nome"
+  | "gestores"
   | "milhas"
   | "valorEstimado"
   | "roiMedio"
@@ -49,10 +50,15 @@ const GestorClientsTable = ({ clients, onOpenClient }: Props) => {
   const [filter, setFilter] = useState<FilterPreset>("todos");
 
   const filteredAndSorted = useMemo(() => {
+    const gestoresHaystack = (c: GestorClienteResumo) =>
+      c.gestoresResponsaveis.map((g) => g.nome.toLowerCase()).join(" ");
     const text = search.trim().toLowerCase();
-    let list = clients.filter((c) =>
-      text ? c.nome.toLowerCase().includes(text) : true,
-    );
+    let list = clients.filter((c) => {
+      if (!text) return true;
+      return (
+        c.nome.toLowerCase().includes(text) || gestoresHaystack(c).includes(text)
+      );
+    });
 
     if (filter === "roiNegativo") list = list.filter((c) => c.roiMedio < 0);
     if (filter === "milhasVencendo") list = list.filter((c) => c.pontosVencendo90d > 0);
@@ -66,6 +72,9 @@ const GestorClientsTable = ({ clients, onOpenClient }: Props) => {
       switch (sortKey) {
         case "nome":
           diff = a.nome.localeCompare(b.nome);
+          break;
+        case "gestores":
+          diff = gestoresHaystack(a).localeCompare(gestoresHaystack(b));
           break;
         case "milhas":
           diff = a.milhas - b.milhas;
@@ -99,7 +108,11 @@ const GestorClientsTable = ({ clients, onOpenClient }: Props) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
       setSortKey(key);
-      setSortDir(key === "nome" || key === "ultimaMovimentacao" ? "asc" : "desc");
+      setSortDir(
+        key === "nome" || key === "gestores" || key === "ultimaMovimentacao"
+          ? "asc"
+          : "desc",
+      );
     }
   };
 
@@ -121,7 +134,7 @@ const GestorClientsTable = ({ clients, onOpenClient }: Props) => {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-8"
-            placeholder="Buscar cliente..."
+            placeholder="Buscar por cliente ou gestor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -154,6 +167,16 @@ const GestorClientsTable = ({ clients, onOpenClient }: Props) => {
                     >
                       Cliente
                       <SortIcon column="nome" />
+                    </button>
+                  </th>
+                  <th className="text-left p-2 font-semibold min-w-[100px] max-w-[140px]">
+                    <button
+                      type="button"
+                      className="flex items-center hover:text-foreground"
+                      onClick={() => toggleSort("gestores")}
+                    >
+                      Gestores
+                      <SortIcon column="gestores" />
                     </button>
                   </th>
                   <th className="text-right p-2 font-semibold">
@@ -240,6 +263,24 @@ const GestorClientsTable = ({ clients, onOpenClient }: Props) => {
                       <div className="flex items-center gap-1.5">
                         <span className={cn("h-2 w-2 rounded-full shrink-0", riscoDot[c.riscoCarteira])} />
                         <span className="font-medium truncate max-w-[120px]">{c.nome}</span>
+                      </div>
+                    </td>
+                    <td className="p-2 align-top">
+                      <div className="flex max-w-[132px] flex-wrap gap-1">
+                        {c.gestoresResponsaveis.length === 0 ? (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        ) : (
+                          c.gestoresResponsaveis.map((g) => (
+                            <Badge
+                              key={g.id}
+                              variant="secondary"
+                              className="max-w-full truncate px-1.5 py-0 text-[9px] font-normal"
+                              title={g.nome}
+                            >
+                              {g.nome}
+                            </Badge>
+                          ))
+                        )}
                       </div>
                     </td>
                     <td className="p-2 text-right tabular-nums">{c.milhas.toLocaleString("pt-BR")}</td>

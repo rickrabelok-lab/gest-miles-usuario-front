@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, type AppRole } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { homePathForRole } from "@/lib/homeRoute";
 
 const slugify = (value: string) =>
   value
@@ -29,7 +30,7 @@ const Me = () => {
     const run = async () => {
       const { data: existing, error: existingError } = await supabase
         .from("perfis")
-        .select("slug")
+        .select("slug, role")
         .eq("usuario_id", user.id)
         .maybeSingle();
 
@@ -40,7 +41,12 @@ const Me = () => {
 
       if (existing?.slug) {
         await refreshRole();
-        setRedirectTo("/");
+        const raw = existing.role as string | undefined;
+        const mapped: AppRole =
+          raw === "admin" || raw === "cs" || raw === "gestor" || raw === "cliente"
+            ? raw
+            : "cliente";
+        setRedirectTo(homePathForRole(mapped));
         return;
       }
 

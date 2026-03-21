@@ -7,9 +7,17 @@ import { parseMovimentoDate } from "@/lib/program-state";
 
 export type RiscoCarteira = "baixo" | "medio" | "alto";
 
+/** Gestor vinculado ao cliente (pode haver vários co-gestores). */
+export type GestorResponsavelRef = {
+  id: string;
+  nome: string;
+};
+
 export type GestorClienteResumo = {
   clienteId: string;
   nome: string;
+  /** Todos os gestores com vínculo ativo a este cliente (cliente_gestores + gestor_clientes legado). */
+  gestoresResponsaveis: GestorResponsavelRef[];
   milhas: number;
   valorEstimado: number;
   pontosVencendo90d: number;
@@ -69,36 +77,79 @@ export type GestorPlanoAcaoClienteItem = {
   nome: string;
 };
 
+export type UseGestorOptions = {
+  /**
+   * IDs de gestores supervisionados (ex.: CS via `cs_gestores`).
+   * Quando definido e não vazio, agrega clientes de todos esses gestores
+   * em vez do usuário logado como gestor.
+   */
+  supervisedGestorIds?: string[];
+};
+
 export const useGestor = (
   enabled = true,
   extraClientIds: string[] = [],
+  options: UseGestorOptions = {},
 ) => {
   const queryClient = useQueryClient();
+  const supervisedGestorIds = options.supervisedGestorIds;
+  const supervisedKey =
+    supervisedGestorIds?.length && supervisedGestorIds.length > 0
+      ? [...supervisedGestorIds].sort().join(",")
+      : "";
+
   const clientsQuery = useQuery({
-    queryKey: ["cliente_gestores"],
+    queryKey: ["cliente_gestores", supervisedKey || "self"],
     enabled,
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) return [] as string[];
       const ids = new Set<string>();
 
-      const { data: cgData, error: cgError } = await supabase
+      if (supervisedGestorIds && supervisedGestorIds.length > 0) {
+        const { data: cgData, error: cgError } = await supabase
+          .from("cliente_gestores")
+          .select("cliente_id")
+          .in("gestor_id", supervisedGestorIds);
+        if (!cgError && cgData) {
+          cgData.forEach((row) => {
+            const id = row.cliente_id as string;
+            if (id) ids.add(id);
+          });
+        }
+
+        const { data: gcData, error: gcError } = await supabase
+          .from("gestor_clientes")
+          .select("cliente_id")
+          .in("gestor_id", supervisedGestorIds);
+        if (!gcError && gcData) {
+          gcData.forEach((row) => {
+            const id = row.cliente_id as string;
+            if (id) ids.add(id);
+          });
+        }
+
+        return Array.from(ids);
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) return [] as string[];
+
+      const { data: cgDataSelf, error: cgErrorSelf } = await supabase
         .from("cliente_gestores")
         .select("cliente_id")
         .eq("gestor_id", user.id);
-      if (!cgError && cgData) {
-        cgData.forEach((row) => {
+      if (!cgErrorSelf && cgDataSelf) {
+        cgDataSelf.forEach((row) => {
           const id = row.cliente_id as string;
           if (id) ids.add(id);
         });
       }
 
-      const { data: gcData, error: gcError } = await supabase
+      const { data: gcDataSelf, error: gcErrorSelf } = await supabase
         .from("gestor_clientes")
         .select("cliente_id")
         .eq("gestor_id", user.id);
-      if (!gcError && gcData) {
-        gcData.forEach((row) => {
+      if (!gcErrorSelf && gcDataSelf) {
+        gcDataSelf.forEach((row) => {
           const id = row.cliente_id as string;
           if (id) ids.add(id);
         });
@@ -129,6 +180,82 @@ export const useGestor = (
         .in("usuario_id", allClientIds);
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  /** Co-gestores por cliente (requer RLS que permita ler vínculos — ver migration co_gestor_read_links). */
+  const gestoresPorClienteQuery = useQuery({
+    queryKey: ["gestor_co_gestores_por_cliente", allClientIds],
+    enabled: enabled && !!allClientIds.length,
+    queryFn: async (): Promise<Record<string, GestorResponsavelRef[]>> => {
+      const { data: cgRows, error: cgErr } = await supabase
+        .from("cliente_gestores")
+        .select("cliente_id, gestor_id")
+        .in("cliente_id", allClientIds);
+      if (cgErr) {
+        // RLS antigo: painel segue sem lista de co-gestores até rodar migration `co_gestor_read_links`.
+        return {};
+      }
+
+      const { data: gcRowsRaw, error: gcErr } = await supabase
+        .from("gestor_clientes")
+        .select("cliente_id, gestor_id")
+        .in("cliente_id", allClientIds);
+      const gcRows = gcErr ? [] : (gcRowsRaw ?? []);
+
+      const pairKeys = new Set<string>();
+      const pairs: Array<{ clienteId: string; gestorId: string }> = [];
+      const pushPair = (clienteId: string, gestorId: string) => {
+        if (!clienteId || !gestorId) return;
+        const k = `${clienteId}:${gestorId}`;
+        if (pairKeys.has(k)) return;
+        pairKeys.add(k);
+        pairs.push({ clienteId, gestorId });
+      };
+
+      (cgRows ?? []).forEach((r) =>
+        pushPair(r.cliente_id as string, r.gestor_id as string),
+      );
+      gcRows.forEach((r) =>
+        pushPair(r.cliente_id as string, r.gestor_id as string),
+      );
+
+      const gestorIds = [...new Set(pairs.map((p) => p.gestorId))];
+      const nomeByGestor = new Map<string, string>();
+      if (gestorIds.length > 0) {
+        const { data: perfisGestores, error: pgErr } = await supabase
+          .from("perfis")
+          .select("usuario_id, nome_completo")
+          .in("usuario_id", gestorIds);
+        if (!pgErr) {
+          (perfisGestores ?? []).forEach((row) => {
+            nomeByGestor.set(
+              row.usuario_id as string,
+              (row.nome_completo as string)?.trim() || "Gestor",
+            );
+          });
+        }
+      }
+
+      const byCliente = new Map<string, GestorResponsavelRef[]>();
+      pairs.forEach(({ clienteId, gestorId }) => {
+        const nome = nomeByGestor.get(gestorId) ?? "Gestor";
+        const arr = byCliente.get(clienteId) ?? [];
+        if (!arr.some((g) => g.id === gestorId)) {
+          arr.push({ id: gestorId, nome });
+          byCliente.set(clienteId, arr);
+        }
+      });
+
+      byCliente.forEach((arr) => {
+        arr.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      });
+
+      const out: Record<string, GestorResponsavelRef[]> = {};
+      byCliente.forEach((arr, cid) => {
+        out[cid] = arr;
+      });
+      return out;
     },
   });
 
@@ -170,7 +297,7 @@ export const useGestor = (
     });
 
     const channel = supabase
-      .channel(`gestor-demandas-insert-${Date.now()}`)
+      .channel(`gestor-demandas-insert-${supervisedKey || "self"}-${Date.now()}`)
       .on(
         "postgres_changes",
         {
@@ -199,14 +326,14 @@ export const useGestor = (
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [enabled, allClientIds, profilesQuery.data, queryClient]);
+  }, [enabled, allClientIds, profilesQuery.data, queryClient, supervisedKey]);
 
   useEffect(() => {
     if (!enabled || !allClientIds.length) return;
 
     const managedClientIds = new Set(allClientIds);
     const channel = supabase
-      .channel(`gestor-perfis-action-plan-${Date.now()}`)
+      .channel(`gestor-perfis-action-plan-${supervisedKey || "self"}-${Date.now()}`)
       .on(
         "postgres_changes",
         {
@@ -227,13 +354,15 @@ export const useGestor = (
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [enabled, allClientIds, queryClient]);
+  }, [enabled, allClientIds, queryClient, supervisedKey]);
 
   const resumoClientes = useMemo<GestorClienteResumo[]>(() => {
     const profiles = new Map<string, string>();
     (profilesQuery.data ?? []).forEach((row) => {
       profiles.set(row.usuario_id as string, (row.nome_completo as string) ?? "Cliente");
     });
+
+    const gestoresByCliente = gestoresPorClienteQuery.data ?? {};
 
     const grouped = new Map<
       string,
@@ -405,6 +534,7 @@ export const useGestor = (
       result.push({
         clienteId: cur.clienteId,
         nome: cur.nome,
+        gestoresResponsaveis: gestoresByCliente[cur.clienteId] ?? [],
         milhas: cur.milhas,
         valorEstimado: cur.valorEstimado,
         pontosVencendo90d: cur.pontosVencendo90d,
@@ -420,7 +550,7 @@ export const useGestor = (
     });
 
     return result;
-  }, [allClientIds, profilesQuery.data, programsQuery.data]);
+  }, [allClientIds, profilesQuery.data, programsQuery.data, gestoresPorClienteQuery.data]);
 
   const vencimentosTodosClientes = useMemo<GestorVencimentoItem[]>(() => {
     const profiles = new Map<string, string>();
@@ -675,11 +805,13 @@ export const useGestor = (
     loading:
       clientsQuery.isLoading ||
       profilesQuery.isLoading ||
+      gestoresPorClienteQuery.isLoading ||
       programsQuery.isLoading ||
       demandasQuery.isLoading,
     error:
       clientsQuery.error ||
       profilesQuery.error ||
+      gestoresPorClienteQuery.error ||
       programsQuery.error ||
       demandasQuery.error,
     /** IDs dos clientes vinculados ao gestor (cliente_gestores), para filtrar lista "Clientes ativos". */

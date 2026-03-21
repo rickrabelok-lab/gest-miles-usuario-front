@@ -12,19 +12,37 @@ export type LogAcaoRow = {
   created_at: string;
 };
 
-export const useGestorLogs = (enabled = true) => {
+/**
+ * @param filterByGestorUserIds — Se definido, retorna logs desses usuários (ex.: gestores supervisionados pelo CS).
+ * Caso contrário, apenas do usuário logado.
+ */
+export const useGestorLogs = (enabled = true, filterByGestorUserIds?: string[]) => {
   const { user } = useAuth();
+  const sortedFilterKey =
+    filterByGestorUserIds?.length && filterByGestorUserIds.length > 0
+      ? [...filterByGestorUserIds].sort().join(",")
+      : "";
 
   const query = useQuery({
-    queryKey: ["gestor_logs_acoes", user?.id],
-    enabled: enabled && !!user?.id,
+    queryKey: ["gestor_logs_acoes", user?.id, sortedFilterKey || "self"],
+    enabled:
+      enabled &&
+      !!user?.id &&
+      (!sortedFilterKey || (filterByGestorUserIds?.length ?? 0) > 0),
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("logs_acoes")
         .select("id, user_id, tipo_acao, entidade_afetada, entidade_id, details, created_at")
-        .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(200);
+
+      if (sortedFilterKey && filterByGestorUserIds?.length) {
+        q = q.in("user_id", filterByGestorUserIds);
+      } else {
+        q = q.eq("user_id", user!.id);
+      }
+
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as LogAcaoRow[];
     },

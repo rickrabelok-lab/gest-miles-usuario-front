@@ -18,6 +18,7 @@ type AlertaItem = {
   tipo: AlertaTipo;
   clienteId: string;
   clienteNome: string;
+  gestoresLabel?: string;
   titulo: string;
   descricao: string;
   severidade: "alta" | "media" | "baixa";
@@ -54,12 +55,17 @@ const GestorAlertas = ({ clients, onOpenClient }: Props) => {
   const alertas = useMemo<AlertaItem[]>(() => {
     const out: AlertaItem[] = [];
     clients.forEach((c) => {
+      const gestoresLabel =
+        c.gestoresResponsaveis.length > 0
+          ? c.gestoresResponsaveis.map((g) => g.nome).join(" · ")
+          : undefined;
       if (c.pontosVencendo90d > 0) {
         out.push({
           id: `vencer-${c.clienteId}`,
           tipo: "milhas_a_vencer",
           clienteId: c.clienteId,
           clienteNome: c.nome,
+          gestoresLabel,
           titulo: "Milhas a vencer",
           descricao: `${c.pontosVencendo90d.toLocaleString("pt-BR")} pts vencem em 90 dias`,
           severidade: c.pontosVencendo90d / (c.milhas || 1) > 0.2 ? "alta" : "media",
@@ -71,6 +77,7 @@ const GestorAlertas = ({ clients, onOpenClient }: Props) => {
           tipo: "roi_negativo",
           clienteId: c.clienteId,
           clienteNome: c.nome,
+          gestoresLabel,
           titulo: "ROI negativo",
           descricao: "Média de economia das emissões está negativa",
           severidade: "alta",
@@ -82,6 +89,7 @@ const GestorAlertas = ({ clients, onOpenClient }: Props) => {
           tipo: "concentracao",
           clienteId: c.clienteId,
           clienteNome: c.nome,
+          gestoresLabel,
           titulo: "Concentração alta",
           descricao: `${c.concentracaoMaxima.toFixed(0)}% em um único programa`,
           severidade: c.concentracaoMaxima > 80 ? "alta" : "media",
@@ -132,6 +140,11 @@ const GestorAlertas = ({ clients, onOpenClient }: Props) => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm">{a.clienteNome}</p>
+                      {a.gestoresLabel && (
+                        <p className="text-[10px] text-muted-foreground">
+                          Gestores: {a.gestoresLabel}
+                        </p>
+                      )}
                       <p className="text-xs font-medium text-muted-foreground">{a.titulo}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">{a.descricao}</p>
                     </div>

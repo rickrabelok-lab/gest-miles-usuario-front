@@ -33,6 +33,7 @@ import { useProgramasCliente } from "@/hooks/useProgramasCliente";
 import { useGestor } from "@/hooks/useGestor";
 import { useVincularCliente } from "@/hooks/useVincularCliente";
 import { supabase } from "@/lib/supabase";
+import { homePathForRole } from "@/lib/homeRoute";
 import { CARD_DESTINATION_TO_AIRPORT_CODE } from "@/lib/airports";
 import airlineLatamLogo from "@/assets/airline-latam.png";
 import airlineAzulLogo from "@/assets/airline-azul.png";
@@ -452,8 +453,14 @@ const Index = () => {
   const { role, user } = useAuth();
   const managerClientIdParam = searchParams.get("clientId");
   const managerClientId =
-    role === "gestor" || role === "admin" ? managerClientIdParam : null;
-  const managerMode = role === "gestor" || role === "admin";
+    role === "gestor" || role === "admin" || role === "cs"
+      ? managerClientIdParam
+      : null;
+  /** CS só entra em modo gestor quando há clientId (acompanhar cliente); gestor/admin veem o painel ampliado na home. */
+  const managerMode =
+    role === "gestor" ||
+    role === "admin" ||
+    (role === "cs" && !!managerClientIdParam);
   const demandTargetClientId = managerClientId ?? user?.id ?? null;
   const [activeTab, setActiveTab] = useState("saldo");
   const [activeNav, setActiveNav] = useState("programas");
@@ -533,13 +540,18 @@ const Index = () => {
       return Array.from(ids);
     }, [managerMode, managerClientId, user?.id, accessedClientsVersion]),
   );
-  const { vincular, desvincular, isVincularLoading, isDesvincularLoading, getErrorMessage } = useVincularCliente(managerMode ? user?.id : undefined);
+  const { vincular, desvincular, isVincularLoading, isDesvincularLoading, getErrorMessage } =
+    useVincularCliente(
+      role === "gestor" || role === "admin" ? user?.id : undefined,
+    );
 
   // Cliente: só dados do próprio user.id (nunca "anonymous"). Gestor: pode ver cliente ou "anonymous" antes de login.
   const dataOwnerId: string | null =
     role === "gestor" || role === "admin"
       ? managerClientId ?? user?.id ?? "anonymous"
-      : user?.id ?? null;
+      : role === "cs"
+        ? managerClientId ?? user?.id ?? null
+        : user?.id ?? null;
 
   useEffect(() => {
     if (typeof window === "undefined" || !dataOwnerId) {
@@ -1579,7 +1591,9 @@ const Index = () => {
       {managerClientId && (
         <div className="px-5 pb-3">
           <div className="inline-flex rounded-full bg-primary/10 px-4 py-2 text-xs font-semibold text-primary">
-            Visualizando como gestor
+            {role === "cs"
+              ? "Visualizando como CS (supervisão)"
+              : "Visualizando como gestor"}
           </div>
         </div>
       )}
@@ -2884,6 +2898,10 @@ const Index = () => {
             return;
           }
           if (item === "vender") {
+            if (role === "cs") {
+              navigate("/cs");
+              return;
+            }
             navigate(managerClientId ? `/cliente?clientId=${managerClientId}` : "/cliente");
             return;
           }
@@ -2923,7 +2941,7 @@ const Index = () => {
                 const query = new URLSearchParams(searchParams);
                 query.delete("clientId");
                 const q = query.toString();
-                navigate(q ? `/?${q}` : "/");
+                navigate(q ? `/?${q}` : homePathForRole(role));
               }
             : undefined
         }
@@ -2935,7 +2953,9 @@ const Index = () => {
                   toast.success("Cliente desvinculado.");
                   const query = new URLSearchParams(searchParams);
                   query.delete("clientId");
-                  navigate(query.toString() ? `/?${query.toString()}` : "/");
+                  navigate(
+                    query.toString() ? `/?${query.toString()}` : homePathForRole(role),
+                  );
                 } catch (err: unknown) {
                   toast.error(getErrorMessage(err));
                 }

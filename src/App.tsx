@@ -21,7 +21,6 @@ import SobreGestMilesPage from "./pages/SobreGestMilesPage";
 import ConvideAmigosPage from "./pages/ConvideAmigosPage";
 import DuvidasPage from "./pages/DuvidasPage";
 import FaleConoscoPage from "./pages/FaleConoscoPage";
-import CsDashboardPage from "./pages/CsDashboardPage";
 import PreferenciasSugestoesPage from "./pages/PreferenciasSugestoesPage";
 import SimularCompraMilhasPage from "./pages/SimularCompraMilhasPage";
 import RadarOportunidadesPage from "./pages/RadarOportunidadesPage";
@@ -29,6 +28,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
 import ProtectedByRole from "@/components/RequireRole";
 import RequireAuth from "@/components/RequireAuth";
+import CsHomeRedirect from "@/components/CsHomeRedirect";
 
 const queryClient = new QueryClient();
 
@@ -45,7 +45,9 @@ const App = () => (
                 path="/"
                 element={
                   <RequireAuth>
-                    <Index />
+                    <CsHomeRedirect>
+                      <Index />
+                    </CsHomeRedirect>
                   </RequireAuth>
                 }
               />
@@ -106,7 +108,7 @@ const App = () => (
                 path="/cs"
                 element={
                   <ProtectedByRole allow={["cs", "admin"]}>
-                    <CsDashboardPage />
+                    <GestorDashboard variant="cs" />
                   </ProtectedByRole>
                 }
               />

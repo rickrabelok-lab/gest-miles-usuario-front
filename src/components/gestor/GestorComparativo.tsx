@@ -31,6 +31,19 @@ const GestorComparativo = ({ clients }: Props) => {
                 </thead>
                 <tbody>
                   <tr className="border-b border-border/50">
+                    <td className="p-2 text-muted-foreground align-top">Gestores</td>
+                    {clients.map((c) => (
+                      <td
+                        key={`${c.clienteId}-gestores`}
+                        className="min-w-[90px] shrink-0 p-2 text-right text-[10px] leading-tight text-muted-foreground"
+                      >
+                        {c.gestoresResponsaveis.length === 0
+                          ? "—"
+                          : c.gestoresResponsaveis.map((g) => g.nome).join(", ")}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/50">
                     <td className="p-2 text-muted-foreground">ROI médio</td>
                     {clients.map((c) => (
                       <td key={c.clienteId} className="min-w-[90px] shrink-0 p-2 text-right tabular-nums font-medium">

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCsGestores } from "@/hooks/useCsGestores";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -53,8 +54,41 @@ const DashboardHeader = () => {
   const navigate = useNavigate();
   const { user, role, signOut } = useAuth();
   const isGestorView = role === "gestor" || role === "admin";
+  const { data: csTeam = [] } = useCsGestores(role === "cs");
+  const showDemandOpenBanner = isGestorView || role === "cs";
 
   useEffect(() => {
+    if (role === "cs") {
+      const ids = new Set<string>();
+      csTeam.forEach((g) => {
+        g.clientes.forEach((c) => {
+          if (c.clienteId) ids.add(c.clienteId);
+        });
+      });
+      const idList = Array.from(ids);
+      setManagedClientIds(idList);
+      if (idList.length === 0) {
+        setManagedClientNames({});
+        return;
+      }
+      let cancelled = false;
+      void (async () => {
+        const { data: perfisData } = await supabase
+          .from("perfis")
+          .select("usuario_id, nome_completo")
+          .in("usuario_id", idList);
+        if (cancelled) return;
+        const names: Record<string, string> = {};
+        (perfisData ?? []).forEach((row) => {
+          names[row.usuario_id as string] = (row.nome_completo as string) || "Cliente";
+        });
+        setManagedClientNames(names);
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+
     if (!isGestorView || !user?.id) {
       setManagedClientIds([]);
       setManagedClientNames({});
@@ -96,10 +130,10 @@ const DashboardHeader = () => {
     return () => {
       cancelled = true;
     };
-  }, [isGestorView, user?.id]);
+  }, [isGestorView, user?.id, role, csTeam]);
 
   useEffect(() => {
-    if (!isGestorView || managedClientIds.length === 0) {
+    if (!showDemandOpenBanner || managedClientIds.length === 0) {
       setDemandSummary({
         openCount: 0,
         pendingCount: 0,
@@ -162,7 +196,7 @@ const DashboardHeader = () => {
       active = false;
       void supabase.removeChannel(channel);
     };
-  }, [isGestorView, managedClientIds, managedClientNames]);
+  }, [showDemandOpenBanner, managedClientIds, managedClientNames]);
 
   const copyAccountId = () => {
     if (!user?.id) return;
@@ -442,10 +476,16 @@ const DashboardHeader = () => {
       {bannerVisible && (
         <div className="mx-4 mb-2.5 flex items-center gap-2 rounded-[14px] border border-white/20 bg-white/95 px-3 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.06)] backdrop-blur-sm">
           <Zap size={18} className="shrink-0 text-warning" />
-          {isGestorView ? (
+          {showDemandOpenBanner ? (
             <button
               type="button"
-              onClick={() => navigate("/gestor?tab=demandas&status=pendente")}
+              onClick={() =>
+                navigate(
+                  role === "cs"
+                    ? "/cs?tab=demandas&status=pendente"
+                    : "/gestor?tab=demandas&status=pendente",
+                )
+              }
               className="flex-1 text-left text-sm text-nubank-text hover:opacity-90"
             >
               <span className="font-semibold text-warning">Demandas abertas:</span>{" "}

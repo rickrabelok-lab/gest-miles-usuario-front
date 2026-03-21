@@ -1,12 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Clock, Shield, Moon, Sun } from "lucide-react";
+import { ArrowLeft, Clock, Pencil, Shield, Moon, Sun, Users } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
 import { useGestor } from "@/hooks/useGestor";
 import { useGestorLogs } from "@/hooks/useGestorLogs";
+import { useCsGestores } from "@/hooks/useCsGestores";
 import GestorKpis from "@/components/gestor/GestorKpis";
 import GestorClientsTable from "@/components/gestor/GestorClientsTable";
 import GestorAlertas from "@/components/gestor/GestorAlertas";
@@ -37,8 +53,16 @@ const GESTOR_TABS = [
 type GestorTab = (typeof GESTOR_TABS)[number];
 type DemandFilter = "todos" | "pendente" | "em_andamento" | "concluida";
 
-const GestorDashboard = () => {
+export type GestorDashboardVariant = "gestor" | "cs";
+
+type GestorDashboardProps = {
+  /** `gestor` = painel do próprio gestor; `cs` = supervisão da equipe (vários gestores). */
+  variant?: GestorDashboardVariant;
+};
+
+const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
   const navigate = useNavigate();
+  const { role } = useAuth();
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const requestedStatus = searchParams.get("status");
@@ -55,6 +79,37 @@ const GestorDashboard = () => {
       ? requestedStatus
       : "todos";
   const [demandStatusFilter, setDemandStatusFilter] = useState<DemandFilter>(initialDemandFilter);
+  const [editingGestor, setEditingGestor] = useState<{ id: string; nome: string } | null>(null);
+  const [savingGestorNome, setSavingGestorNome] = useState(false);
+
+  const csQueryEnabled =
+    variant === "cs" && (role === "cs" || role === "admin");
+  const {
+    data: csTeam = [],
+    isLoading: csTeamLoading,
+    error: csTeamError,
+    invalidate: invalidateCsTeam,
+  } = useCsGestores(csQueryEnabled);
+
+  const supervisedGestorIds = useMemo(
+    () => (variant === "cs" ? csTeam.map((g) => g.gestorId) : []),
+    [variant, csTeam],
+  );
+
+  const gestorDataEnabled =
+    variant === "gestor"
+      ? role === "gestor" || role === "admin"
+      : (role === "cs" || role === "admin") &&
+        !csTeamLoading &&
+        supervisedGestorIds.length > 0;
+
+  const gestorOptions = useMemo(
+    () =>
+      variant === "cs" && supervisedGestorIds.length > 0
+        ? { supervisedGestorIds }
+        : {},
+    [variant, supervisedGestorIds],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -76,8 +131,32 @@ const GestorDashboard = () => {
     vencimentosTodosClientes,
     demandasGestor,
     dreConsolidado,
-  } = useGestor();
-  const { logs, loading: logsLoading } = useGestorLogs();
+  } = useGestor(gestorDataEnabled, [], gestorOptions);
+  const { logs, loading: logsLoading } = useGestorLogs(
+    gestorDataEnabled,
+    variant === "cs" && supervisedGestorIds.length > 0
+      ? supervisedGestorIds
+      : undefined,
+  );
+
+  const handleSaveGestorNome = async () => {
+    if (!editingGestor?.id) return;
+    setSavingGestorNome(true);
+    try {
+      const { error: err } = await supabase
+        .from("perfis")
+        .update({ nome_completo: editingGestor.nome.trim() || null })
+        .eq("usuario_id", editingGestor.id);
+      if (err) throw err;
+      toast.success("Dados do gestor atualizados.");
+      setEditingGestor(null);
+      await invalidateCsTeam();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
+    } finally {
+      setSavingGestorNome(false);
+    }
+  };
   const [demandasLocal, setDemandasLocal] = useState(demandasGestor);
 
   useEffect(() => {
@@ -105,10 +184,13 @@ const GestorDashboard = () => {
 
   const handleOpenClient = async (clientId: string) => {
     await logAcao({
-      tipoAcao: "gestor_visualizou_cliente",
+      tipoAcao:
+        variant === "cs" ? "cs_visualizou_cliente" : "gestor_visualizou_cliente",
       entidadeAfetada: "cliente",
       entidadeId: clientId,
-      details: { origem: "painel_gestor" },
+      details: {
+        origem: variant === "cs" ? "painel_cs" : "painel_gestor",
+      },
     });
     navigate(`/?clientId=${encodeURIComponent(clientId)}`);
   };
@@ -171,10 +253,56 @@ const GestorDashboard = () => {
     }
   };
 
+  if (variant === "cs" && csTeamLoading) {
+    return (
+      <div className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center bg-nubank-bg text-sm text-muted-foreground">
+        Carregando equipe e dados consolidados...
+      </div>
+    );
+  }
+
+  if (variant === "cs" && csTeamError) {
+    return (
+      <div className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center bg-nubank-bg px-4 text-center text-sm text-destructive">
+        {csTeamError instanceof Error ? csTeamError.message : "Erro ao carregar equipe CS."}
+      </div>
+    );
+  }
+
+  if (
+    variant === "cs" &&
+    !csTeamLoading &&
+    supervisedGestorIds.length === 0
+  ) {
+    return (
+      <div className="mx-auto min-h-screen max-w-md bg-nubank-bg px-4 pb-24 pt-6">
+        <header className="mb-4 flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(variant === "cs" ? "/cs" : "/")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-lg font-semibold">Painel CS</h1>
+        </header>
+        <Card className="rounded-xl border-border/80">
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Nenhum gestor atribuído ao seu usuário CS. Peça ao administrador para vincular gestores em{" "}
+            <code className="rounded bg-muted px-1">cs_gestores</code>.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center bg-background text-sm text-muted-foreground">
-        Carregando painel do gestor...
+        {variant === "cs"
+          ? "Carregando dados consolidados da equipe..."
+          : "Carregando painel do gestor..."}
       </div>
     );
   }
@@ -182,7 +310,9 @@ const GestorDashboard = () => {
   if (error) {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center bg-background text-sm text-destructive">
-        Falha ao carregar dados do gestor.
+        {variant === "cs"
+          ? "Falha ao carregar dados da supervisão. Verifique as policies RLS (CS) no Supabase."
+          : "Falha ao carregar dados do gestor."}
       </div>
     );
   }
@@ -197,7 +327,7 @@ const GestorDashboard = () => {
             variant="outline"
             size="sm"
             className="h-7 w-7 border-white/30 bg-white/15 p-0 text-white hover:bg-white/25 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-            onClick={() => navigate("/")}
+            onClick={() => navigate(variant === "cs" ? "/cs" : "/")}
             aria-label="Voltar ao dashboard"
             title="Voltar ao dashboard"
           >
@@ -205,10 +335,14 @@ const GestorDashboard = () => {
           </Button>
         </div>
         <h1 className="text-xl font-bold tracking-tight text-white">
-          Centro estratégico de operação
+          {variant === "cs"
+            ? "Supervisão CS — carteira da equipe"
+            : "Centro estratégico de operação"}
         </h1>
         <p className="mt-1 text-xs text-white/85">
-          Ferramenta de priorização de clientes · Inteligência financeira B2B
+          {variant === "cs"
+            ? "KPIs e demandas consolidados dos gestores sob sua supervisão · mesmas ferramentas do painel gestor"
+            : "Ferramenta de priorização de clientes · Inteligência financeira B2B"}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span
@@ -236,9 +370,85 @@ const GestorDashboard = () => {
         </div>
       </header>
 
+      {variant === "cs" && csTeam.length > 0 && (
+        <section className="mb-4">
+          <Card className="rounded-xl border-border/80 bg-white/95 shadow-nubank dark:border-border dark:bg-card">
+            <CardHeader className="pb-2 pt-4">
+              <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Users className="h-4 w-4 text-[#8A05BE]" />
+                Gestores da sua equipe
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {csTeam.length} gestor(es) · {kpis.totalClientesAtivos} cliente(s) na carteira consolidada
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2 pb-4 pt-0">
+              {csTeam.map((g) => (
+                <Collapsible key={g.gestorId}>
+                  <Card className="rounded-lg border-border/60 bg-muted/20">
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm"
+                      >
+                        <span className="truncate font-medium">{g.gestorNome}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {g.clientes.length}{" "}
+                          {g.clientes.length === 1 ? "cliente" : "clientes"}
+                        </span>
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="border-t border-border/60 px-3 pb-3 pt-2">
+                        <div className="mb-2 flex justify-end">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1 text-[#8A05BE]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingGestor({ id: g.gestorId, nome: g.gestorNome });
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Editar nome
+                          </Button>
+                        </div>
+                        <ul className="max-h-36 space-y-1 overflow-y-auto text-xs">
+                          {g.clientes.length === 0 ? (
+                            <li className="text-muted-foreground">Nenhum cliente vinculado.</li>
+                          ) : (
+                            g.clientes.map((c) => (
+                              <li
+                                key={c.clienteId}
+                                className="flex justify-between gap-2 rounded-md bg-background/80 px-2 py-1"
+                              >
+                                <span className="truncate">{c.clienteNome}</span>
+                                <button
+                                  type="button"
+                                  className="shrink-0 text-[#8A05BE] underline-offset-2 hover:underline"
+                                  onClick={() => void handleOpenClient(c.clienteId)}
+                                >
+                                  Abrir
+                                </button>
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      </div>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
       <section className="mb-4">
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          KPIs consolidados
+          {variant === "cs" ? "KPIs da equipe (consolidado)" : "KPIs consolidados"}
         </p>
         <GestorKpis
           kpis={kpis}
@@ -553,6 +763,41 @@ const GestorDashboard = () => {
         </TabsContent>
       </Tabs>
       </div>
+
+      <Dialog open={!!editingGestor} onOpenChange={(open) => !open && setEditingGestor(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar gestor</DialogTitle>
+          </DialogHeader>
+          {editingGestor && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="cs-gestor-nome">Nome completo</Label>
+                <Input
+                  id="cs-gestor-nome"
+                  value={editingGestor.nome}
+                  onChange={(e) =>
+                    setEditingGestor((prev) => prev && { ...prev, nome: e.target.value })
+                  }
+                  placeholder="Nome do gestor"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEditingGestor(null)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleSaveGestorNome()}
+              disabled={savingGestorNome || !editingGestor?.nome?.trim()}
+            >
+              {savingGestorNome ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

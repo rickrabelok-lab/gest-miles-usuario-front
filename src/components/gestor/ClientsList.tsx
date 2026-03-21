@@ -19,9 +19,13 @@ const ClientsList = ({ clients, onOpenClient }: Props) => {
   const filtered = useMemo(() => {
     const text = search.trim().toLowerCase();
     const base = clients
-      .filter((client) =>
-        text ? client.nome.toLowerCase().includes(text) : true,
-      )
+      .filter((client) => {
+        if (!text) return true;
+        const gestoresHay = client.gestoresResponsaveis.some((g) =>
+          g.nome.toLowerCase().includes(text),
+        );
+        return client.nome.toLowerCase().includes(text) || gestoresHay;
+      })
       .filter((client) => (riskOnly ? client.pontosVencendo90d > 0 : true));
 
     return [...base].sort((a, b) => {
@@ -38,7 +42,7 @@ const ClientsList = ({ clients, onOpenClient }: Props) => {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-8"
-            placeholder="Buscar cliente..."
+            placeholder="Buscar cliente ou gestor..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -89,6 +93,12 @@ const ClientsList = ({ clients, onOpenClient }: Props) => {
                     : "-"}
                 </p>
               </div>
+              {client.gestoresResponsaveis.length > 0 && (
+                <p className="text-[10px] leading-snug text-muted-foreground">
+                  <span className="font-medium text-foreground/80">Gestores: </span>
+                  {client.gestoresResponsaveis.map((g) => g.nome).join(" · ")}
+                </p>
+              )}
               <div className="flex items-center justify-between">
                 <p className="text-muted-foreground">Milhas</p>
                 <p className="font-semibold">{client.milhas.toLocaleString("pt-BR")}</p>
