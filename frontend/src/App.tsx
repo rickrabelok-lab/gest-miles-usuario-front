@@ -25,10 +25,17 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
 import ProtectedByRole from "@/components/RequireRole";
 import RequireAuth from "@/components/RequireAuth";
+import MissingSupabaseConfig from "@/components/MissingSupabaseConfig";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  if (!isSupabaseConfigured) {
+    return <MissingSupabaseConfig />;
+  }
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -147,6 +154,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

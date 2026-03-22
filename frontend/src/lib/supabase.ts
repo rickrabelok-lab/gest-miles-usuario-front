@@ -1,14 +1,23 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL ?? import.meta.env.VITE_SUPBASE_URL;
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPBASE_ANON_KEY;
+const rawUrl = (
+  import.meta.env.VITE_SUPABASE_URL ??
+  import.meta.env.VITE_SUPBASE_URL ??
+  ""
+).trim();
+const rawKey = (
+  import.meta.env.VITE_SUPABASE_ANON_KEY ??
+  import.meta.env.VITE_SUPBASE_ANON_KEY ??
+  ""
+).trim();
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing Supabase envs. Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
-  );
-}
+export const isSupabaseConfigured = Boolean(rawUrl && rawKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const fallbackUrl = "https://placeholder.supabase.co";
+const fallbackKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSJ9.placeholder";
+
+export const supabase: SupabaseClient = createClient(
+  isSupabaseConfigured ? rawUrl : fallbackUrl,
+  isSupabaseConfigured ? rawKey : fallbackKey,
+);
