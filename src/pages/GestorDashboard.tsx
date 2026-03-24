@@ -22,7 +22,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGestor } from "@/hooks/useGestor";
 import { useGestorLogs } from "@/hooks/useGestorLogs";
-import { useCsGestores } from "@/hooks/useCsGestores";
+import { useCsGestores, type CsGestorItem } from "@/hooks/useCsGestores";
+import { useCsEquipesNomes } from "@/hooks/useCsEquipesNomes";
 import GestorKpis from "@/components/gestor/GestorKpis";
 import GestorClientsTable from "@/components/gestor/GestorClientsTable";
 import GestorAlertas from "@/components/gestor/GestorAlertas";
@@ -31,13 +32,22 @@ import GestorDre from "@/components/gestor/GestorDre";
 import GestorComparativo from "@/components/gestor/GestorComparativo";
 import GestorHistorico from "@/components/gestor/GestorHistorico";
 import GestorExport from "@/components/gestor/GestorExport";
+import CsVincularClienteCard from "@/components/gestor/CsVincularClienteCard";
 import { logAcao } from "@/lib/audit";
 import type { RiscoCarteira } from "@/hooks/useGestor";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useMinhasReunioes } from "@/hooks/useMinhasReunioes";
 
 const DARK_STORAGE_KEY = "mile-manager:theme";
+
+/**
+ * Nome da empresa de gestão no banner do /cs (texto público no bundle).
+ * Padrão: Gestão João Carvalho. Sobrescreva com `VITE_GESTAO_NOME_EMPRESA` no `.env`.
+ */
+const gestaoNomeEmpresaBanner =
+  (import.meta.env.VITE_GESTAO_NOME_EMPRESA as string | undefined)?.trim() || "Gestão João Carvalho";
 const GESTOR_TABS = [
   "clientes",
   "vencendo",
@@ -59,6 +69,70 @@ type GestorDashboardProps = {
   /** `gestor` = painel do próprio gestor; `cs` = supervisão da equipe (vários gestores). */
   variant?: GestorDashboardVariant;
 };
+
+type CsGestorCollapsibleRowProps = {
+  g: CsGestorItem;
+  onOpenClient: (clientId: string) => void | Promise<void>;
+  onEditNome: (gestor: CsGestorItem) => void;
+};
+
+const CsGestorCollapsibleRow = ({ g, onOpenClient, onEditNome }: CsGestorCollapsibleRowProps) => (
+  <Collapsible>
+    <Card className="rounded-lg border-border/60 bg-muted/20">
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm"
+        >
+          <span className="truncate font-medium">{g.gestorNome}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">
+            {g.clientes.length} {g.clientes.length === 1 ? "cliente" : "clientes"}
+          </span>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="border-t border-border/60 px-3 pb-3 pt-2">
+          <div className="mb-2 flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1 text-[#8A05BE]"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditNome(g);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Editar nome
+            </Button>
+          </div>
+          <ul className="max-h-36 space-y-1 overflow-y-auto text-xs">
+            {g.clientes.length === 0 ? (
+              <li className="text-muted-foreground">Nenhum cliente vinculado.</li>
+            ) : (
+              g.clientes.map((c) => (
+                <li
+                  key={c.clienteId}
+                  className="flex justify-between gap-2 rounded-md bg-background/80 px-2 py-1"
+                >
+                  <span className="truncate">{c.clienteNome}</span>
+                  <button
+                    type="button"
+                    className="shrink-0 text-[#8A05BE] underline-offset-2 hover:underline"
+                    onClick={() => void onOpenClient(c.clienteId)}
+                  >
+                    Abrir
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      </CollapsibleContent>
+    </Card>
+  </Collapsible>
+);
 
 const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
   const navigate = useNavigate();
@@ -85,15 +159,24 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
   const csQueryEnabled =
     variant === "cs" && (role === "cs" || role === "admin");
   const {
-    data: csTeam = [],
+    data: csDash,
     isLoading: csTeamLoading,
     error: csTeamError,
     invalidate: invalidateCsTeam,
   } = useCsGestores(csQueryEnabled);
 
+  const csFlat = csDash?.flat ?? [];
+  const csGrupos = csDash?.grupos ?? [];
+  const csDiretos = csDash?.gestoresSomenteDireto ?? [];
+
+  const {
+    data: csEquipesNomes = [],
+    isLoading: csEquipesNomesLoading,
+  } = useCsEquipesNomes(csQueryEnabled);
+
   const supervisedGestorIds = useMemo(
-    () => (variant === "cs" ? csTeam.map((g) => g.gestorId) : []),
-    [variant, csTeam],
+    () => (variant === "cs" ? csFlat.map((g) => g.gestorId) : []),
+    [variant, csFlat],
   );
 
   const gestorDataEnabled =
@@ -138,6 +221,8 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
       ? supervisedGestorIds
       : undefined,
   );
+  const { reunioes: minhasReunioes, isLoading: minhasReunioesLoading } =
+    useMinhasReunioes(variant === "gestor");
 
   const handleSaveGestorNome = async () => {
     if (!editingGestor?.id) return;
@@ -157,6 +242,7 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
       setSavingGestorNome(false);
     }
   };
+
   const [demandasLocal, setDemandasLocal] = useState(demandasGestor);
 
   useEffect(() => {
@@ -176,6 +262,7 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
     }
     setDemandStatusFilter("todos");
   }, [requestedStatus]);
+
 
   const demandasFiltradas = useMemo(() => {
     if (demandStatusFilter === "todos") return demandasLocal;
@@ -321,19 +408,21 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
     <div className={cn(darkMode && "dark")}>
       <div className="mx-auto min-h-screen w-full max-w-md bg-nubank-bg p-4 pb-24 dark:bg-background">
       <header className="mb-4 rounded-2xl gradient-primary p-4 text-primary-foreground shadow-[0_4px_16px_-2px_rgba(138,5,190,0.25)] dark:shadow-none">
-        <div className="mb-2 flex items-center justify-start">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-7 w-7 border-white/30 bg-white/15 p-0 text-white hover:bg-white/25 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-            onClick={() => navigate(variant === "cs" ? "/cs" : "/")}
-            aria-label="Voltar ao dashboard"
-            title="Voltar ao dashboard"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </div>
+        {variant !== "cs" && (
+          <div className="mb-2 flex items-center justify-start">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 w-7 border-white/30 bg-white/15 p-0 text-white hover:bg-white/25 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+              onClick={() => navigate("/")}
+              aria-label="Voltar ao dashboard"
+              title="Voltar ao dashboard"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
         <h1 className="text-xl font-bold tracking-tight text-white">
           {variant === "cs"
             ? "Supervisão CS — carteira da equipe"
@@ -344,6 +433,21 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
             ? "KPIs e demandas consolidados dos gestores sob sua supervisão · mesmas ferramentas do painel gestor"
             : "Ferramenta de priorização de clientes · Inteligência financeira B2B"}
         </p>
+        {variant === "cs" && csEquipesNomes.length > 0 && (
+          <p className="mt-2 rounded-lg bg-white/10 px-2.5 py-1.5 text-[11px] leading-snug text-white/95">
+            <span className="font-semibold text-white">{gestaoNomeEmpresaBanner}</span>
+          </p>
+        )}
+        {variant === "cs" &&
+          csEquipesNomes.length === 0 &&
+          !csTeamLoading &&
+          !csEquipesNomesLoading && (
+          <p className="mt-2 text-[10px] text-white/70">
+            Equipe não nomeada: acesso via vínculos diretos em{" "}
+            <code className="rounded bg-white/10 px-1">cs_gestores</code> (sem linha em{" "}
+            <code className="rounded bg-white/10 px-1">equipe_cs</code>).
+          </p>
+        )}
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span
             className={cn(
@@ -370,7 +474,19 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
         </div>
       </header>
 
-      {variant === "cs" && csTeam.length > 0 && (
+      {variant === "cs" && csFlat.length > 0 && (
+        <CsVincularClienteCard grupos={csGrupos} gestoresSomenteDireto={csDiretos} />
+      )}
+
+      {variant === "cs" && csGrupos.length > 0 && (
+        <section className="mb-4">
+          <Button type="button" className="w-full" onClick={() => navigate("/cs/agendar-reuniao")}>
+            Agendar Reunião
+          </Button>
+        </section>
+      )}
+
+      {variant === "cs" && csFlat.length > 0 && (
         <section className="mb-4">
           <Card className="rounded-xl border-border/80 bg-white/95 shadow-nubank dark:border-border dark:bg-card">
             <CardHeader className="pb-2 pt-4">
@@ -379,68 +495,47 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
                 Gestores da sua equipe
               </p>
               <p className="text-xs text-muted-foreground">
-                {csTeam.length} gestor(es) · {kpis.totalClientesAtivos} cliente(s) na carteira consolidada
+                {csFlat.length} gestor(es)
+                {csGrupos.length > 0 ? ` · ${csGrupos.length} grupo(s) nomeado(s)` : ""}
+                {csDiretos.length > 0 ? ` · ${csDiretos.length} vínculo(s) direto(s)` : ""} ·{" "}
+                {kpis.totalClientesAtivos} cliente(s) na carteira consolidada
               </p>
             </CardHeader>
-            <CardContent className="space-y-2 pb-4 pt-0">
-              {csTeam.map((g) => (
-                <Collapsible key={g.gestorId}>
-                  <Card className="rounded-lg border-border/60 bg-muted/20">
-                    <CollapsibleTrigger asChild>
-                      <button
-                        type="button"
-                        className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm"
-                      >
-                        <span className="truncate font-medium">{g.gestorNome}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {g.clientes.length}{" "}
-                          {g.clientes.length === 1 ? "cliente" : "clientes"}
-                        </span>
-                      </button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="border-t border-border/60 px-3 pb-3 pt-2">
-                        <div className="mb-2 flex justify-end">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 gap-1 text-[#8A05BE]"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingGestor({ id: g.gestorId, nome: g.gestorNome });
-                            }}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                            Editar nome
-                          </Button>
-                        </div>
-                        <ul className="max-h-36 space-y-1 overflow-y-auto text-xs">
-                          {g.clientes.length === 0 ? (
-                            <li className="text-muted-foreground">Nenhum cliente vinculado.</li>
-                          ) : (
-                            g.clientes.map((c) => (
-                              <li
-                                key={c.clienteId}
-                                className="flex justify-between gap-2 rounded-md bg-background/80 px-2 py-1"
-                              >
-                                <span className="truncate">{c.clienteNome}</span>
-                                <button
-                                  type="button"
-                                  className="shrink-0 text-[#8A05BE] underline-offset-2 hover:underline"
-                                  onClick={() => void handleOpenClient(c.clienteId)}
-                                >
-                                  Abrir
-                                </button>
-                              </li>
-                            ))
-                          )}
-                        </ul>
-                      </div>
-                    </CollapsibleContent>
-                  </Card>
-                </Collapsible>
+            <CardContent className="space-y-4 pb-4 pt-0">
+              {csGrupos.map((grupo) => (
+                <div key={grupo.equipeId} className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {grupo.nome}
+                  </p>
+                  <div className="space-y-2">
+                    {grupo.gestores.map((g) => (
+                      <CsGestorCollapsibleRow
+                        key={g.gestorId}
+                        g={g}
+                        onOpenClient={handleOpenClient}
+                        onEditNome={(row) => setEditingGestor({ id: row.gestorId, nome: row.gestorNome })}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
+              {csDiretos.length > 0 && (
+                <div className="space-y-2 border-t border-border/60 pt-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Vínculos diretos ao CS (fora de equipe nomeada)
+                  </p>
+                  <div className="space-y-2">
+                    {csDiretos.map((g) => (
+                      <CsGestorCollapsibleRow
+                        key={g.gestorId}
+                        g={g}
+                        onOpenClient={handleOpenClient}
+                        onEditNome={(row) => setEditingGestor({ id: row.gestorId, nome: row.gestorNome })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </section>
@@ -457,6 +552,61 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
           }}
         />
       </section>
+
+      {variant === "gestor" && (
+        <section className="mb-4">
+          <Card className="rounded-xl border-border/80 bg-white/95 shadow-nubank dark:border-border dark:bg-card">
+            <CardHeader className="pb-2 pt-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Minhas reuniões</p>
+                  <p className="text-xs text-muted-foreground">
+                    Próximas reuniões em que você está como participante.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate("/gestor/reunioes")}
+                >
+                  Ir para agenda
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2 pb-4 pt-0">
+              {minhasReunioesLoading ? (
+                <p className="text-xs text-muted-foreground">Carregando reuniões...</p>
+              ) : minhasReunioes.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhuma reunião agendada para você.</p>
+              ) : (
+                <div className="max-h-44 space-y-2 overflow-y-auto">
+                  {minhasReunioes.map((reuniao) => (
+                    <div
+                      key={reuniao.id}
+                      className="rounded-lg border border-border/70 bg-background/60 p-2"
+                    >
+                      <p className="text-xs font-semibold">{reuniao.titulo}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {new Date(reuniao.startsAt).toLocaleDateString("pt-BR")} às{" "}
+                        {new Date(reuniao.startsAt).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {reuniao.equipeNome}
+                        {reuniao.clienteNome ? ` · ${reuniao.clienteNome}` : ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       <Tabs
         value={activeTab}

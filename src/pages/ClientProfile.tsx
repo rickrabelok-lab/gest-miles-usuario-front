@@ -39,6 +39,7 @@ type ClientePerfilData = {
   hub: string;
   clubesAssinados: string;
   gestoresResponsaveis: string;
+  pauta: string;
 };
 
 const defaultPerfilData: ClientePerfilData = {
@@ -63,6 +64,7 @@ const defaultPerfilData: ClientePerfilData = {
   hub: "",
   clubesAssinados: "",
   gestoresResponsaveis: "",
+  pauta: "",
 };
 
 const slugify = (value: string) =>
@@ -269,6 +271,11 @@ const ClientProfile = () => {
           <Input placeholder="Hub (aeroporto principal)" value={perfilData.hub} onChange={(e) => setPerfilData((p) => ({ ...p, hub: e.target.value }))} />
           <Input placeholder="Clubes assinados" value={perfilData.clubesAssinados} onChange={(e) => setPerfilData((p) => ({ ...p, clubesAssinados: e.target.value }))} />
           <Textarea placeholder="Gestores que cuidam da carteira desse cliente" value={perfilData.gestoresResponsaveis} onChange={(e) => setPerfilData((p) => ({ ...p, gestoresResponsaveis: e.target.value }))} />
+          <Textarea
+            placeholder="Pauta do cliente (especificações, prioridades, combinados e restrições)"
+            value={perfilData.pauta}
+            onChange={(e) => setPerfilData((p) => ({ ...p, pauta: e.target.value }))}
+          />
         </section>
 
         <section className="space-y-2 rounded-xl border border-border bg-card p-3">

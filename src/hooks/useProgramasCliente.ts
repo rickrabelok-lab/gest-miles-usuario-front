@@ -4,7 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import {
-  emptyProgramState,
+  normalizePersistedProgramState,
+  stripPersistedMetaForServer,
   type PersistedProgramState,
   type ProgramaClienteRow,
 } from "@/lib/program-state";
@@ -17,19 +18,6 @@ type SaveProgramInput = {
   logoImageUrl?: string | null;
   clubeNome?: string | null;
   state: PersistedProgramState;
-};
-
-const normalizeState = (
-  rowState: PersistedProgramState | null | undefined,
-): PersistedProgramState => {
-  if (!rowState) return emptyProgramState;
-  return {
-    saldo: Number(rowState.saldo ?? 0),
-    movimentos: Array.isArray(rowState.movimentos) ? rowState.movimentos : [],
-    custoSaldo: Number(rowState.custoSaldo ?? 0),
-    custoMedioMilheiro: Number(rowState.custoMedioMilheiro ?? 0),
-    lotes: Array.isArray(rowState.lotes) ? rowState.lotes : [],
-  };
 };
 
 export const useProgramasCliente = (managerClientId?: string | null) => {
@@ -68,7 +56,7 @@ export const useProgramasCliente = (managerClientId?: string | null) => {
         saldo: input.state.saldo,
         custo_medio_milheiro: input.state.custoMedioMilheiro,
         custo_saldo: input.state.custoSaldo,
-        state: input.state,
+        state: stripPersistedMetaForServer(input.state),
         updated_at: new Date().toISOString(),
       };
 
@@ -89,7 +77,7 @@ export const useProgramasCliente = (managerClientId?: string | null) => {
   }, [query.data]);
 
   const getProgramState = (programId: string): PersistedProgramState =>
-    normalizeState(byProgramId.get(programId)?.state);
+    normalizePersistedProgramState(byProgramId.get(programId)?.state);
 
   return {
     ...query,

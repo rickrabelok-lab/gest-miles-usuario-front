@@ -54,7 +54,8 @@ const DashboardHeader = () => {
   const navigate = useNavigate();
   const { user, role, signOut } = useAuth();
   const isGestorView = role === "gestor" || role === "admin";
-  const { data: csTeam = [] } = useCsGestores(role === "cs");
+  const { data: csDashboard } = useCsGestores(role === "cs");
+  const csTeam = csDashboard?.flat ?? [];
   const showDemandOpenBanner = isGestorView || role === "cs";
 
   useEffect(() => {

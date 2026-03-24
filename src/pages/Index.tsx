@@ -32,6 +32,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProgramasCliente } from "@/hooks/useProgramasCliente";
 import { useGestor } from "@/hooks/useGestor";
 import { useVincularCliente } from "@/hooks/useVincularCliente";
+import { useReunioesNotificacoes } from "@/hooks/useReunioesNotificacoes";
 import { supabase } from "@/lib/supabase";
 import { homePathForRole } from "@/lib/homeRoute";
 import { CARD_DESTINATION_TO_AIRPORT_CODE } from "@/lib/airports";
@@ -201,6 +202,12 @@ const DEMAND_STATUS_LABELS: Record<string, string> = {
   cancelada: "Cancelada",
 };
 const ACTION_PLAN_BUTTON_MAX_ICONS = 3;
+
+type DemandGestorOption = {
+  id: string;
+  nome: string;
+  perfil: "nacional" | "internacional";
+};
 
 type VencimentoItem = {
   programSlug: string;
@@ -451,6 +458,7 @@ const Index = () => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { role, user } = useAuth();
+  const { resumo: reunioesResumoDia } = useReunioesNotificacoes(role !== "cliente");
   const managerClientIdParam = searchParams.get("clientId");
   const managerClientId =
     role === "gestor" || role === "admin" || role === "cs"
@@ -462,6 +470,20 @@ const Index = () => {
     role === "admin" ||
     (role === "cs" && !!managerClientIdParam);
   const demandTargetClientId = managerClientId ?? user?.id ?? null;
+
+  useEffect(() => {
+    if (!role || reunioesResumoDia.total <= 0) return;
+    if (typeof window === "undefined") return;
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const storageKey = `mile-manager:agenda-notified:${todayKey}:${role}`;
+    if (window.localStorage.getItem(storageKey)) return;
+    const horarios = reunioesResumoDia.horarios.join(", ");
+    toast.info(
+      `Você tem ${reunioesResumoDia.total} reunião(ões) hoje${horarios ? `: ${horarios}` : "."}`,
+      { duration: 6000 },
+    );
+    window.localStorage.setItem(storageKey, "1");
+  }, [reunioesResumoDia.total, reunioesResumoDia.horarios, role]);
   const [activeTab, setActiveTab] = useState("saldo");
   const [activeNav, setActiveNav] = useState("programas");
   const [showAll, setShowAll] = useState(false);
@@ -483,6 +505,9 @@ const Index = () => {
   const [demandaAssentoDescricao, setDemandaAssentoDescricao] = useState("");
   const [demandaFlexDatas, setDemandaFlexDatas] = useState<"sim" | "nao">("nao");
   const [demandaOutrosDetalhes, setDemandaOutrosDetalhes] = useState("");
+  const [demandaEscopo, setDemandaEscopo] = useState<"nacional" | "internacional">("nacional");
+  const [demandaGestores, setDemandaGestores] = useState<DemandGestorOption[]>([]);
+  const [demandaGestorId, setDemandaGestorId] = useState("");
   const [isClientesAtivosOpen, setIsClientesAtivosOpen] = useState(false);
   const [isClientesVencendoOpen, setIsClientesVencendoOpen] = useState(false);
   const [vincularIdInput, setVincularIdInput] = useState("");
@@ -540,6 +565,9 @@ const Index = () => {
       return Array.from(ids);
     }, [managerMode, managerClientId, user?.id, accessedClientsVersion]),
   );
+  const managerClientName = managerClientId
+    ? resumoClientes.find((cliente) => cliente.clienteId === managerClientId)?.nome ?? null
+    : null;
   const { vincular, desvincular, isVincularLoading, isDesvincularLoading, getErrorMessage } =
     useVincularCliente(
       role === "gestor" || role === "admin" ? user?.id : undefined,
@@ -922,8 +950,22 @@ const Index = () => {
         toast.error("A data de volta deve ser igual ou posterior à data de ida.");
         return;
       }
+      if (!demandaGestorId) {
+        toast.error("Selecione o gestor responsável por essa demanda.");
+        return;
+      }
     } else if (!demandaOutrosDetalhes.trim()) {
       toast.error("Descreva a solicitação em 'Outros'.");
+      return;
+    }
+
+    const gestorNacional = gestoresNacionais[0];
+    const targetGestorId =
+      demandType === "outros"
+        ? (gestorNacional?.id ?? "")
+        : demandaGestorId;
+    if (!targetGestorId) {
+      toast.error("Não foi possível identificar o gestor Nacional para esta demanda.");
       return;
     }
 
@@ -942,9 +984,13 @@ const Index = () => {
               bagagemDespachadaDescricao: demandaBagagemDescricao.trim(),
               selecaoAssentoDescricao: demandaAssentoDescricao.trim(),
               flexibilidadeDatas: demandaFlexDatas,
+              escopo: demandaEscopo,
+              targetGestorId,
             }
           : {
               detalhes: demandaOutrosDetalhes.trim(),
+              escopo: "nacional",
+              targetGestorId,
             };
 
       const { error } = await supabase.from("demandas_cliente").insert({
@@ -968,6 +1014,8 @@ const Index = () => {
       setDemandaAssentoDescricao("");
       setDemandaFlexDatas("nao");
       setDemandaOutrosDetalhes("");
+      setDemandaEscopo("nacional");
+      setDemandaGestorId("");
     } catch (err) {
       const rawMsg = err instanceof Error ? err.message : "Erro ao enviar demanda.";
       const msg = /row-level security|permission denied|new row violates/i.test(rawMsg)
@@ -997,6 +1045,92 @@ const Index = () => {
     if (Number.isNaN(ms) || ms < 0) return null;
     return Math.round(ms / (1000 * 60 * 60 * 24));
   }, [demandaDataIda, demandaDataVolta]);
+  const gestoresNacionais = useMemo(
+    () => demandaGestores.filter((g) => g.perfil === "nacional"),
+    [demandaGestores],
+  );
+  const gestoresInternacionais = useMemo(
+    () => demandaGestores.filter((g) => g.perfil === "internacional"),
+    [demandaGestores],
+  );
+  const gestoresDisponiveisEmissao = useMemo(
+    () => (demandaEscopo === "nacional" ? gestoresNacionais : gestoresInternacionais),
+    [demandaEscopo, gestoresNacionais, gestoresInternacionais],
+  );
+
+  useEffect(() => {
+    const inferPerfil = (nome: string, tema: Record<string, unknown>) => {
+      const raw = String(tema?.gestorPerfilDemanda ?? tema?.especialidadeGestor ?? "")
+        .trim()
+        .toLowerCase();
+      if (raw === "nacional" || raw === "internacional") return raw as "nacional" | "internacional";
+      // Regra operacional atual: Silmaria/Silmara atua como gestora internacional.
+      if (/silmaria|silmara/i.test(nome)) return "internacional";
+      return /internacional/i.test(nome) ? "internacional" : "nacional";
+    };
+
+    const loadDemandGestores = async () => {
+      if (!isDemandDialogOpen || !demandTargetClientId) return;
+      const { data: links, error: linksErr } = await supabase
+        .from("cliente_gestores")
+        .select("gestor_id")
+        .eq("cliente_id", demandTargetClientId);
+      if (linksErr) {
+        setDemandaGestores([]);
+        setDemandaGestorId("");
+        return;
+      }
+      const gestorIds = [...new Set((links ?? []).map((l) => l.gestor_id as string).filter(Boolean))];
+      if (gestorIds.length === 0) {
+        setDemandaGestores([]);
+        setDemandaGestorId("");
+        return;
+      }
+
+      const { data: perfis, error: perfisErr } = await supabase
+        .from("perfis")
+        .select("usuario_id, nome_completo, configuracao_tema")
+        .in("usuario_id", gestorIds);
+      if (perfisErr) {
+        setDemandaGestores([]);
+        setDemandaGestorId("");
+        return;
+      }
+
+      const options = (perfis ?? [])
+        .map((p) => {
+          const nome = String(p.nome_completo ?? "Gestor").trim() || "Gestor";
+          const tema = (p.configuracao_tema ?? {}) as Record<string, unknown>;
+          return {
+            id: String(p.usuario_id ?? ""),
+            nome,
+            perfil: inferPerfil(nome, tema),
+          } satisfies DemandGestorOption;
+        })
+        .filter((p) => p.id)
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+      setDemandaGestores(options);
+    };
+
+    void loadDemandGestores();
+  }, [isDemandDialogOpen, demandTargetClientId]);
+
+  useEffect(() => {
+    if (!isDemandDialogOpen) return;
+    if (demandType === "outros") {
+      setDemandaGestorId(gestoresNacionais[0]?.id ?? "");
+      return;
+    }
+    const first = gestoresDisponiveisEmissao[0];
+    if (!first) {
+      setDemandaGestorId("");
+      return;
+    }
+    setDemandaGestorId((prev) =>
+      gestoresDisponiveisEmissao.some((g) => g.id === prev) ? prev : first.id,
+    );
+  }, [isDemandDialogOpen, demandType, demandaEscopo, gestoresNacionais, gestoresDisponiveisEmissao]);
   const gestorClientOptions = useMemo(
     () =>
       resumoClientes.map((client) => ({
@@ -1590,10 +1724,17 @@ const Index = () => {
 
       {managerClientId && (
         <div className="px-5 pb-3">
-          <div className="inline-flex rounded-full bg-primary/10 px-4 py-2 text-xs font-semibold text-primary">
-            {role === "cs"
-              ? "Visualizando como CS (supervisão)"
-              : "Visualizando como gestor"}
+          <div className="inline-flex flex-col rounded-full bg-primary/10 px-4 py-2 text-xs font-semibold text-primary">
+            <span>
+              {role === "cs"
+                ? "Visualizando como CS (supervisão)"
+                : "Visualizando como gestor"}
+            </span>
+            {managerClientName && (
+              <span className="max-w-[220px] truncate text-[10px] font-medium text-primary/90">
+                {managerClientName}
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -1954,6 +2095,7 @@ const Index = () => {
                     key={prog.programId}
                     {...prog}
                     managerClientId={managerClientId}
+                    managerClientName={managerClientName}
                     onLogoImageChange={(imageDataUrl) =>
                       handleProgramLogoChange(prog.programId, imageDataUrl)
                     }
@@ -2571,6 +2713,42 @@ const Index = () => {
 
             {demandType === "emissao" ? (
               <div className="space-y-2">
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">Tipo de emissão</p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={demandaEscopo === "nacional" ? "default" : "outline"}
+                      onClick={() => setDemandaEscopo("nacional")}
+                    >
+                      Nacional
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={demandaEscopo === "internacional" ? "default" : "outline"}
+                      onClick={() => setDemandaEscopo("internacional")}
+                    >
+                      Internacional
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">Gestor responsável</p>
+                  <select
+                    value={demandaGestorId}
+                    onChange={(event) => setDemandaGestorId(event.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Selecione</option>
+                    {gestoresDisponiveisEmissao.map((gestor) => (
+                      <option key={gestor.id} value={gestor.id}>
+                        {gestor.nome} ({gestor.perfil === "nacional" ? "Nacional" : "Internacional"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <Input
                     placeholder="Origem"
@@ -2673,11 +2851,17 @@ const Index = () => {
                 </div>
               </div>
             ) : (
-              <Textarea
-                placeholder="Descreva sua demanda..."
-                value={demandaOutrosDetalhes}
-                onChange={(event) => setDemandaOutrosDetalhes(event.target.value)}
-              />
+              <div className="space-y-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Essa demanda será direcionada ao gestor Nacional.
+                  {gestoresNacionais[0] ? ` (${gestoresNacionais[0].nome})` : ""}
+                </p>
+                <Textarea
+                  placeholder="Descreva sua demanda..."
+                  value={demandaOutrosDetalhes}
+                  onChange={(event) => setDemandaOutrosDetalhes(event.target.value)}
+                />
+              </div>
             )}
 
             <Button

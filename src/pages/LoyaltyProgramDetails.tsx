@@ -47,6 +47,11 @@ import {
   type Workspace,
 } from "@/components/ui/workspaces";
 import { cn } from "@/lib/utils";
+import {
+  normalizePersistedProgramState,
+  stripPersistedMetaForServer,
+  type PersistedProgramState,
+} from "@/lib/program-state";
 import { useProgramasCliente } from "@/hooks/useProgramasCliente";
 import { useAuth } from "@/contexts/AuthContext";
 import { logAcao } from "@/lib/audit";
@@ -74,6 +79,7 @@ type Movimento = {
   tarifaPagante?: number;
   economiaReal?: number;
   custoMilheiroBase?: number;
+  codigoReserva?: string;
 };
 
 type LoteMilhas = {
@@ -82,17 +88,10 @@ type LoteMilhas = {
   quantidade: number;
 };
 
-type PersistedProgramState = {
-  saldo: number;
-  movimentos: Movimento[];
-  custoSaldo: number;
-  custoMedioMilheiro: number;
-  lotes: LoteMilhas[];
-};
-
 type ProgramState = {
   programId?: string;
   managerClientId?: string | null;
+  managerClientName?: string | null;
   name: string;
   logo: string;
   logoColor: string;
@@ -269,7 +268,13 @@ const LoyaltyProgramDetails = () => {
     ((role === "gestor" || role === "admin")
       ? searchParams.get("clientId")
       : null);
+  const managerClientName = program?.managerClientName ?? null;
   const isManagerView = !!managerClientId && (role === "gestor" || role === "admin");
+  const roleViewLabel = role === "cs"
+    ? "CS"
+    : role === "admin"
+      ? "admin"
+      : "gestor";
 
   const {
     byProgramId: remoteByProgramId,
@@ -550,17 +555,35 @@ const LoyaltyProgramDetails = () => {
     );
   }, [storageKey, saldoInicial]);
 
+  /**
+   * Sincroniza com Supabase sem apagar edições locais:
+   * - refetch após save / HMR não pode trazer snapshot mais “antigo” que o que o usuário acabou de digitar.
+   * - Se houver mais movimentos no storage local que no servidor, não sobrescreve.
+   * - Se a quantidade for igual, só aplica remoto se `updated_at` do servidor for mais recente
+   *   que `_localRevisionMs` (folga de relógio).
+   */
   useEffect(() => {
     const row = remoteByProgramId.get(programId ?? "");
-    const remoteState = row?.state as PersistedProgramState | undefined;
-    if (!remoteState) return;
+    if (!row?.state) return;
 
-    setSaldo(Number(remoteState.saldo ?? 0));
-    setMovimentos(Array.isArray(remoteState.movimentos) ? remoteState.movimentos : []);
-    setLotes(Array.isArray(remoteState.lotes) ? remoteState.lotes : []);
-    setCustoSaldo(Number(remoteState.custoSaldo ?? 0));
-    setCustoMedioMilheiro(Number(remoteState.custoMedioMilheiro ?? 0));
-  }, [remoteByProgramId, programId]);
+    const remoteNorm = normalizePersistedProgramState(row.state as PersistedProgramState);
+    const remoteTs = new Date(row.updated_at).getTime();
+    const local = readPersistedProgramState(storageKey);
+    const localRev = local?._localRevisionMs ?? 0;
+    const localMov = local?.movimentos?.length ?? 0;
+    const remoteMov = remoteNorm.movimentos.length;
+
+    if (localMov > remoteMov) return;
+
+    const CLOCK_SKEW_MS = 3_000;
+    if (localMov === remoteMov && localRev > remoteTs + CLOCK_SKEW_MS) return;
+
+    setSaldo(remoteNorm.saldo);
+    setMovimentos(remoteNorm.movimentos);
+    setLotes(remoteNorm.lotes);
+    setCustoSaldo(remoteNorm.custoSaldo);
+    setCustoMedioMilheiro(remoteNorm.custoMedioMilheiro);
+  }, [remoteByProgramId, programId, storageKey]);
 
   // Regra de negócio: custo do saldo = saldo * custo médio por milheiro / 1000
   useEffect(() => {
@@ -578,6 +601,7 @@ const LoyaltyProgramDetails = () => {
       custoSaldo,
       custoMedioMilheiro,
       lotes,
+      _localRevisionMs: Date.now(),
     };
     window.localStorage.setItem(storageKey, JSON.stringify(stateToPersist));
     if (programId && effectiveClientId) {
@@ -587,7 +611,7 @@ const LoyaltyProgramDetails = () => {
         logo: program?.logo ?? null,
         logoColor: program?.logoColor ?? null,
         logoImageUrl: program?.logoImageUrl ?? null,
-        state: stateToPersist,
+        state: stripPersistedMetaForServer(stateToPersist),
       });
     }
   }, [
@@ -815,13 +839,18 @@ const LoyaltyProgramDetails = () => {
   const [emitDescricao, setEmitDescricao] = useState("");
   const [emitOrigem, setEmitOrigem] = useState("");
   const [emitDestino, setEmitDestino] = useState("");
-  const [emitDataVoo, setEmitDataVoo] = useState("");
+  const [emitTipoViagem, setEmitTipoViagem] = useState<"somente_ida" | "ida_e_volta">(
+    "somente_ida",
+  );
+  const [emitDataIda, setEmitDataIda] = useState("");
+  const [emitDataVolta, setEmitDataVolta] = useState("");
   const [emitPax, setEmitPax] = useState(1);
   const [emitClasse, setEmitClasse] = useState("executiva");
   const [emitBagagem, setEmitBagagem] = useState(false);
   const [emitAssento, setEmitAssento] = useState(false);
   const [emitSeguro, setEmitSeguro] = useState(false);
   const [emitOutroAdd, setEmitOutroAdd] = useState("");
+  const [emitCodigoReserva, setEmitCodigoReserva] = useState("");
 
   const [emitMilhas, setEmitMilhas] = useState(0);
   const [emitTaxas, setEmitTaxas] = useState(0);
@@ -910,7 +939,7 @@ const LoyaltyProgramDetails = () => {
 
     const hoje = new Date();
     const dataMovimento =
-      emitDataVoo || hoje.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+      emitDataIda || hoje.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 
     const rota =
       emitOrigem && emitDestino ? `${emitOrigem.toUpperCase()} – ${emitDestino.toUpperCase()}` : "";
@@ -935,6 +964,7 @@ const LoyaltyProgramDetails = () => {
       tarifaPagante: emitTarifaPagante,
       economiaReal: economiaRealEmissao,
       custoMilheiroBase: custoMedioMilheiroReferencia,
+      codigoReserva: emitCodigoReserva.trim() || undefined,
     };
 
     setMovimentos((anterior) => [movimentoEmissao, ...anterior]);
@@ -978,9 +1008,16 @@ const LoyaltyProgramDetails = () => {
               {programName}
             </span>
             {managerClientId && (
-              <span className="rounded-full bg-header-foreground/15 px-2 py-0.5 text-[10px] text-header-foreground">
-                Visualizando como gestor
-              </span>
+              <>
+                <span className="rounded-full bg-header-foreground/15 px-2 py-0.5 text-[10px] text-header-foreground">
+                  {`Visualizando como ${roleViewLabel}`}
+                </span>
+                {managerClientName && (
+                  <span className="max-w-[200px] truncate text-[10px] text-header-foreground/85">
+                    {managerClientName}
+                  </span>
+                )}
+              </>
             )}
             {programId && (
               <span className="text-[10px] text-header-foreground/70">
@@ -1329,6 +1366,11 @@ const LoyaltyProgramDetails = () => {
                       <p className="text-[12px] text-slate-900">
                         {mov.descricao}
                       </p>
+                      {mov.tipo === "saida" && mov.codigoReserva && (
+                        <p className="mt-0.5 text-[10px] text-slate-500">
+                          Reserva: {mov.codigoReserva}
+                        </p>
+                      )}
                       {mov.lucrativa !== undefined && (
                         <p
                           className={cn(
@@ -1546,6 +1588,12 @@ const LoyaltyProgramDetails = () => {
 
               {movimentoSelecionado.tipo === "saida" && (
                 <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-slate-900 p-3 col-span-2">
+                    <p className="text-slate-400">Código da reserva</p>
+                    <p className="font-semibold text-slate-100">
+                      {movimentoSelecionado.codigoReserva ?? "-"}
+                    </p>
+                  </div>
                   <div className="rounded-xl bg-slate-900 p-3">
                     <p className="text-slate-400">Rota</p>
                     <p className="font-semibold text-slate-100">
@@ -1816,12 +1864,62 @@ const LoyaltyProgramDetails = () => {
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
+                  <div className="col-span-2">
+                    <p className="mb-1 text-[11px] text-slate-300">Tipo de viagem</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEmitTipoViagem("somente_ida")}
+                        className={cn(
+                          "rounded-full border px-2 py-1 text-[11px]",
+                          emitTipoViagem === "somente_ida"
+                            ? "border-violet-400 bg-violet-500/10 text-violet-200"
+                            : "border-slate-800 bg-slate-900 text-slate-300",
+                        )}
+                      >
+                        Apenas ida
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEmitTipoViagem("ida_e_volta")}
+                        className={cn(
+                          "rounded-full border px-2 py-1 text-[11px]",
+                          emitTipoViagem === "ida_e_volta"
+                            ? "border-violet-400 bg-violet-500/10 text-violet-200"
+                            : "border-slate-800 bg-slate-900 text-slate-300",
+                        )}
+                      >
+                        Ida e volta
+                      </button>
+                    </div>
+                  </div>
                   <Input
                     type="date"
-                    value={emitDataVoo}
-                    onChange={(event) => setEmitDataVoo(event.target.value)}
+                    value={emitDataIda}
+                    onChange={(event) => setEmitDataIda(event.target.value)}
                     className="h-8 border-slate-800 bg-slate-950 text-xs"
+                    placeholder="Data de ida"
                   />
+                  {emitTipoViagem === "ida_e_volta" ? (
+                    <Input
+                      type="date"
+                      value={emitDataVolta}
+                      onChange={(event) => setEmitDataVolta(event.target.value)}
+                      className="h-8 border-slate-800 bg-slate-950 text-xs"
+                      placeholder="Data de volta"
+                    />
+                  ) : (
+                    <Input
+                      type="number"
+                      min={1}
+                      value={emitPax}
+                      onChange={(event) => setEmitPax(Number(event.target.value) || 1)}
+                      className="h-8 border-slate-800 bg-slate-950 text-xs"
+                      placeholder="Qtd. passageiros"
+                    />
+                  )}
+                </div>
+                {emitTipoViagem === "ida_e_volta" && (
                   <Input
                     type="number"
                     min={1}
@@ -1830,7 +1928,7 @@ const LoyaltyProgramDetails = () => {
                     className="h-8 border-slate-800 bg-slate-950 text-xs"
                     placeholder="Qtd. passageiros"
                   />
-                </div>
+                )}
                 <div className="grid grid-cols-2 gap-2">
                   <Select value={emitClasse} onValueChange={setEmitClasse}>
                     <SelectTrigger className="h-8 border-slate-800 bg-slate-950 text-xs">
@@ -1877,6 +1975,12 @@ const LoyaltyProgramDetails = () => {
                   value={emitOutroAdd}
                   onChange={(event) => setEmitOutroAdd(event.target.value)}
                   placeholder="Outros adicionais (opcional)"
+                  className="h-8 border-slate-800 bg-slate-950 text-xs"
+                />
+                <Input
+                  value={emitCodigoReserva}
+                  onChange={(event) => setEmitCodigoReserva(event.target.value)}
+                  placeholder="Código da reserva (ex: ABC123)"
                   className="h-8 border-slate-800 bg-slate-950 text-xs"
                 />
               </div>

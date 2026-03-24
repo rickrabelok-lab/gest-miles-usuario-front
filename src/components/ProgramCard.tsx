@@ -15,6 +15,7 @@ interface ProgramCardProps {
   expiring?: boolean;
   expiringTag?: "-90d" | "-60d" | "-30d";
   managerClientId?: string | null;
+  managerClientName?: string | null;
   logoImageUrl?: string;
   onLogoImageChange?: (imageDataUrl: string) => void;
 }
@@ -33,6 +34,7 @@ const ProgramCard = (props: ProgramCardProps) => {
     expiring,
     expiringTag,
     managerClientId,
+    managerClientName,
     logoImageUrl,
     onLogoImageChange,
   } =
@@ -58,6 +60,7 @@ const ProgramCard = (props: ProgramCardProps) => {
           expiring,
           expiringTag,
           managerClientId,
+          managerClientName,
         },
       },
     });

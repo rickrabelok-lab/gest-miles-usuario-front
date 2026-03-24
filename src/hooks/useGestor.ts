@@ -283,7 +283,24 @@ export const useGestor = (
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return data ?? [];
+      const rows = data ?? [];
+      if (supervisedGestorIds && supervisedGestorIds.length > 0) {
+        return rows;
+      }
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const currentGestorId = user?.id ?? null;
+      if (!currentGestorId) return rows;
+
+      // Se a demanda foi roteada para um gestor específico, cada gestor enxerga só as suas.
+      // Demandas legadas sem `payload.targetGestorId` continuam visíveis.
+      return rows.filter((row) => {
+        const payload = (row.payload ?? {}) as Record<string, unknown>;
+        const target = String(payload.targetGestorId ?? "").trim();
+        if (!target) return true;
+        return target === currentGestorId;
+      });
     },
   });
 
