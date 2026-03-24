@@ -9,6 +9,8 @@ import LoyaltyProgramDetails from "./pages/LoyaltyProgramDetails";
 import Auth from "./pages/Auth";
 import Me from "./pages/Me";
 import GestorDashboard from "./pages/GestorDashboard";
+import CsAgendarReuniaoPage from "./pages/CsAgendarReuniaoPage";
+import GestorReunioesPage from "./pages/GestorReunioesPage";
 import ClientProfile from "./pages/ClientProfile";
 import SearchFlightsScreen from "./pages/SearchFlightsScreen";
 import PriceCalendarScreen from "./pages/PriceCalendarScreen";
@@ -96,6 +98,14 @@ const App = () => {
                 }
               />
               <Route
+                path="/gestor/reunioes"
+                element={
+                  <ProtectedByRole allow={["gestor", "admin"]}>
+                    <GestorReunioesPage />
+                  </ProtectedByRole>
+                }
+              />
+              <Route
                 path="/cliente"
                 element={
                   <ProtectedByRole allow={["gestor", "admin"]}>
@@ -116,6 +126,14 @@ const App = () => {
                 element={
                   <ProtectedByRole allow={["cs", "admin"]}>
                     <GestorDashboard variant="cs" />
+                  </ProtectedByRole>
+                }
+              />
+              <Route
+                path="/cs/agendar-reuniao"
+                element={
+                  <ProtectedByRole allow={["cs", "admin"]}>
+                    <CsAgendarReuniaoPage />
                   </ProtectedByRole>
                 }
               />

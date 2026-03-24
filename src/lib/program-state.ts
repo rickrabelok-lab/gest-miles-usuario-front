@@ -32,6 +32,11 @@ export type PersistedProgramState = {
   custoSaldo: number;
   custoMedioMilheiro: number;
   lotes: LoteMilhas[];
+  /**
+   * Marca quando o cliente gravou o estado localmente (ms). Usado para não
+   * sobrescrever edições com um snapshot do servidor mais antigo (HMR, refetch).
+   */
+  _localRevisionMs?: number;
 };
 
 export type ProgramaClienteRow = {
@@ -58,6 +63,31 @@ export const emptyProgramState: PersistedProgramState = {
   custoMedioMilheiro: 0,
   lotes: [],
 };
+
+/** Normaliza JSON vindo do servidor ou do storage (sem metadados só-cliente). */
+export function normalizePersistedProgramState(
+  rowState: PersistedProgramState | null | undefined,
+): PersistedProgramState {
+  if (!rowState) return { ...emptyProgramState };
+  return {
+    saldo: Number(rowState.saldo ?? 0),
+    movimentos: Array.isArray(rowState.movimentos) ? rowState.movimentos : [],
+    custoSaldo: Number(rowState.custoSaldo ?? 0),
+    custoMedioMilheiro: Number(rowState.custoMedioMilheiro ?? 0),
+    lotes: Array.isArray(rowState.lotes) ? rowState.lotes : [],
+  };
+}
+
+/** Payload enviado ao Supabase (sem `_localRevisionMs`). */
+export function stripPersistedMetaForServer(state: PersistedProgramState): PersistedProgramState {
+  return {
+    saldo: state.saldo,
+    movimentos: state.movimentos,
+    custoSaldo: state.custoSaldo,
+    custoMedioMilheiro: state.custoMedioMilheiro,
+    lotes: state.lotes,
+  };
+}
 
 export const parseMovimentoDate = (value?: string) => {
   if (!value) return null;
