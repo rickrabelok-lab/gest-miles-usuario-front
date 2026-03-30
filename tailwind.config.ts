@@ -73,11 +73,30 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        nubank: {
+          bg: "#F7F7F8",
+          surface: "#FFFFFF",
+          text: "#1F1F1F",
+          "text-secondary": "#6B6B6B",
+          border: "#ECECEC",
+          primary: "#8A05BE",
+          dark: "#6A00A3",
+          light: "#B56CFF",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "2xl": "1rem",
+        "3xl": "1.125rem",
+        card: "1rem",
+        "card-lg": "1.125rem",
+      },
+      boxShadow: {
+        "nubank": "0 2px 8px -2px rgba(0, 0, 0, 0.04), 0 4px 16px -4px rgba(0, 0, 0, 0.03)",
+        "nubank-hover": "0 8px 24px -4px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(138, 5, 190, 0.05)",
+        "nubank-card": "0 2px 8px -2px rgba(0, 0, 0, 0.04), 0 4px 16px -4px rgba(0, 0, 0, 0.03)",
       },
       keyframes: {
         "accordion-down": {
