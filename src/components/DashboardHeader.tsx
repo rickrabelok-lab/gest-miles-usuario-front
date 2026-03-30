@@ -32,6 +32,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCsGestores } from "@/hooks/useCsGestores";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import NotificationsDropdown from "@/components/notifications/NotificationsDropdown";
 
 const getInitials = (email: string | undefined) => {
   if (!email) return "?";
@@ -221,43 +222,47 @@ const DashboardHeader = () => {
     <div className="gradient-primary text-header-foreground">
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-3.5 pb-3.5">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-[16px] bg-white/15 px-3 py-2 text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:bg-white/25"
-            >
-              <User size={16} />
-              <span>{user ? getInitials(user.email) : "?"}</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-44">
-            {user ? (
-              <>
-                <DropdownMenuItem disabled className="text-muted-foreground">
-                  <span className="truncate">{user.email}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/perfil")}>
-                  Meu perfil
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sair
-                </DropdownMenuItem>
-              </>
-            ) : (
-              <>
-                <DropdownMenuItem onClick={() => navigate("/auth")}>
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Entrar
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/auth")}>
-                  Criar conta
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-[16px] bg-white/15 px-3 py-2 text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:bg-white/25"
+              >
+                <User size={16} />
+                <span>{user ? getInitials(user.email) : "?"}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-44">
+              {user ? (
+                <>
+                  <DropdownMenuItem disabled className="text-muted-foreground">
+                    <span className="truncate">{user.email}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/perfil")}>
+                    Meu perfil
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => navigate("/auth")}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Entrar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/auth")}>
+                    Criar conta
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <NotificationsDropdown />
+        </div>
         <div className="flex flex-1 justify-center">
           <div className="flex items-center gap-2">
             <GestMilesLogo size={26} variant="light" className="shrink-0" />

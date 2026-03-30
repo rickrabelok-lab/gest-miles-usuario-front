@@ -11,13 +11,15 @@ import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
 
-export type AppRole = "admin" | "cs" | "gestor" | "cliente";
+export type AppRole = "admin" | "cs" | "gestor" | "cliente" | "cliente_gestao";
 
 type AuthContextValue = {
   user: User | null;
   session: Session | null;
   loading: boolean;
   role: AppRole | null;
+  /** Quando definido, o usuário participa da estrutura por equipe (RLS no Supabase). */
+  equipeId: string | null;
   roleLoading: boolean;
   signInWithPassword: (email: string, password: string) => Promise<boolean>;
   signUpWithPassword: (email: string, password: string) => Promise<boolean>;
@@ -34,34 +36,54 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [equipeId, setEquipeId] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
 
   const fetchRole = useCallback(async (userId?: string | null) => {
     if (!userId) {
       setRole(null);
+      setEquipeId(null);
       setRoleLoading(false);
       return;
     }
 
     setRoleLoading(true);
-    const { data, error } = await supabase
+    let data: { role?: string; equipe_id?: string | null } | null = null;
+
+    const full = await supabase
       .from("perfis")
-      .select("role")
+      .select("role, equipe_id")
       .eq("usuario_id", userId)
       .maybeSingle();
 
-    if (error) {
-      setRole(null);
-      setRoleLoading(false);
-      return;
+    if (full.error) {
+      const legacy = await supabase
+        .from("perfis")
+        .select("role")
+        .eq("usuario_id", userId)
+        .maybeSingle();
+      if (legacy.error) {
+        setRole(null);
+        setEquipeId(null);
+        setRoleLoading(false);
+        return;
+      }
+      data = legacy.data;
+    } else {
+      data = full.data;
     }
 
     const raw = data?.role as string | undefined;
     const mapped: AppRole =
-      raw === "admin" || raw === "cs" || raw === "gestor" || raw === "cliente"
+      raw === "admin" ||
+      raw === "cs" ||
+      raw === "gestor" ||
+      raw === "cliente" ||
+      raw === "cliente_gestao"
         ? raw
         : "cliente";
     setRole(mapped);
+    setEquipeId((data?.equipe_id as string | null | undefined) ?? null);
     setRoleLoading(false);
   }, []);
 
@@ -83,6 +105,37 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       setUser(nextSession?.user ?? null);
       setLoading(false);
       fetchRole(nextSession?.user?.id ?? null);
+
+      // Timeline login: apenas quando o usuário logado é `cliente_gestao`.
+      // Se a migration do timeline ainda não estiver aplicada, ignoramos o erro.
+      if (_event === "SIGNED_IN" && nextSession?.user?.id) {
+        const userId = nextSession.user.id;
+        void (async () => {
+          try {
+            const { data: full } = await supabase
+              .from("perfis")
+              .select("role, equipe_id")
+              .eq("usuario_id", userId)
+              .maybeSingle();
+
+            const rawRole = (full?.role as string | undefined) ?? null;
+            if (rawRole !== "cliente_gestao") return;
+
+            await supabase.rpc("timeline_eventos_push", {
+              p_cliente_id: userId,
+              p_gestor_id: null,
+              p_equipe_id: (full as { equipe_id?: string | null } | null)?.equipe_id ?? null,
+              p_tipo_evento: "LOGIN",
+              p_titulo: "Login",
+              p_descricao: "Usuário efetuou login no app.",
+              p_metadata: {},
+              p_data_evento: new Date().toISOString(),
+            });
+          } catch {
+            // noop: evita quebrar login caso timeline_eventos_push não exista ainda
+          }
+        })();
+      }
     });
 
     return () => {
@@ -145,6 +198,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       session,
       loading,
       role,
+      equipeId,
       roleLoading,
       signInWithPassword,
       signUpWithPassword,
@@ -158,6 +212,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       session,
       loading,
       role,
+      equipeId,
       roleLoading,
       signInWithPassword,
       signUpWithPassword,

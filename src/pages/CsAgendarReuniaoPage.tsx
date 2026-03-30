@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 
 type ReuniaoParticipanteOption = {
   id: string;
@@ -384,11 +385,11 @@ const CsAgendarReuniaoPage = () => {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
               <Label htmlFor="agenda-data">Data</Label>
-              <Input
+              <DatePickerField
                 id="agenda-data"
-                type="date"
                 value={reuniaoData}
-                onChange={(e) => setReuniaoData(e.target.value)}
+                onChange={setReuniaoData}
+                placeholder="Escolher data"
               />
             </div>
             <div className="space-y-2">

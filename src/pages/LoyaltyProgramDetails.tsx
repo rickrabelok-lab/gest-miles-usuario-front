@@ -47,6 +47,8 @@ import {
   type Workspace,
 } from "@/components/ui/workspaces";
 import { cn } from "@/lib/utils";
+import { parseYmdToLocalDate } from "@/lib/dateYmd";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import {
   normalizePersistedProgramState,
   stripPersistedMetaForServer,
@@ -1717,11 +1719,12 @@ const LoyaltyProgramDetails = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="mb-1 text-[11px] text-slate-300">Data</p>
-                <Input
-                  type="date"
+                <DatePickerField
                   value={entradaData}
-                  onChange={(event) => setEntradaData(event.target.value)}
-                  className="h-9 border-slate-800 bg-slate-900 text-xs"
+                  onChange={setEntradaData}
+                  placeholder="Escolher data"
+                  triggerClassName="h-9 border-slate-800 bg-slate-900 text-xs text-slate-100 hover:bg-slate-800 hover:text-slate-100"
+                  contentClassName="border-slate-700"
                 />
               </div>
               <div>
@@ -1755,11 +1758,12 @@ const LoyaltyProgramDetails = () => {
                   <p className="mb-1 text-[11px] text-slate-300">
                     Validade manual (data)
                   </p>
-                  <Input
-                    type="date"
+                  <DatePickerField
                     value={entradaValidadeLote}
-                    onChange={(event) => setEntradaValidadeLote(event.target.value)}
-                    className="h-9 border-slate-800 bg-slate-900 text-xs"
+                    onChange={setEntradaValidadeLote}
+                    placeholder="Escolher data"
+                    triggerClassName="h-9 border-slate-800 bg-slate-900 text-xs text-slate-100 hover:bg-slate-800 hover:text-slate-100"
+                    contentClassName="border-slate-700"
                   />
                 </div>
               </div>
@@ -1893,20 +1897,28 @@ const LoyaltyProgramDetails = () => {
                       </button>
                     </div>
                   </div>
-                  <Input
-                    type="date"
+                  <DatePickerField
                     value={emitDataIda}
-                    onChange={(event) => setEmitDataIda(event.target.value)}
-                    className="h-8 border-slate-800 bg-slate-950 text-xs"
+                    onChange={(ymd) => {
+                      setEmitDataIda(ymd);
+                      if (emitDataVolta && emitDataVolta < ymd) setEmitDataVolta("");
+                    }}
                     placeholder="Data de ida"
+                    triggerClassName="h-8 border-slate-800 bg-slate-950 px-2.5 text-xs text-slate-100 hover:bg-slate-900 hover:text-slate-100"
+                    contentClassName="border-slate-700"
                   />
                   {emitTipoViagem === "ida_e_volta" ? (
-                    <Input
-                      type="date"
+                    <DatePickerField
                       value={emitDataVolta}
-                      onChange={(event) => setEmitDataVolta(event.target.value)}
-                      className="h-8 border-slate-800 bg-slate-950 text-xs"
+                      onChange={setEmitDataVolta}
                       placeholder="Data de volta"
+                      disabled={
+                        emitDataIda
+                          ? { before: parseYmdToLocalDate(emitDataIda)! }
+                          : undefined
+                      }
+                      triggerClassName="h-8 border-slate-800 bg-slate-950 px-2.5 text-xs text-slate-100 hover:bg-slate-900 hover:text-slate-100"
+                      contentClassName="border-slate-700"
                     />
                   ) : (
                     <Input

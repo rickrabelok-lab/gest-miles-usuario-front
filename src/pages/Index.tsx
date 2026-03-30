@@ -16,9 +16,14 @@ import DestinationCarousel from "@/components/DestinationCarousel";
 import BonusOffersSection from "@/components/bonus/BonusOffersSection";
 import BottomNav from "@/components/BottomNav";
 import SmartRedemptionSuggestions from "@/components/SmartRedemptionSuggestions";
+import NpsClientePrompt from "@/components/nps/NpsClientePrompt";
+import CsatClientePrompt from "@/components/csat/CsatClientePrompt";
+import ClientTimelineSection from "@/components/timeline/ClientTimelineSection";
+import ClientInsightsSection from "@/components/insights/ClientInsightsSection";
 import AirlineLogo from "@/components/AirlineLogo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -36,6 +41,7 @@ import { useReunioesNotificacoes } from "@/hooks/useReunioesNotificacoes";
 import { supabase } from "@/lib/supabase";
 import { homePathForRole } from "@/lib/homeRoute";
 import { CARD_DESTINATION_TO_AIRPORT_CODE } from "@/lib/airports";
+import { parseYmdToLocalDate } from "@/lib/dateYmd";
 import airlineLatamLogo from "@/assets/airline-latam.png";
 import airlineAzulLogo from "@/assets/airline-azul.png";
 import airlineGolLogo from "@/assets/airline-gol.png";
@@ -60,44 +66,58 @@ stable
 security definer
 set search_path = public
 as $$
-  select
-    coalesce(
-      auth.uid() = target_cliente_id
-      or public.is_admin()
-      or exists (
-        select 1
-        from public.cliente_gestores cg
-        where cg.gestor_id = auth.uid()
-          and cg.cliente_id = target_cliente_id
-      ),
-      false
-    );
+  select coalesce(
+    auth.uid() = target_cliente_id
+    or public.is_legacy_platform_admin()
+    or exists (
+      select 1
+      from public.cliente_gestores cg
+      where cg.gestor_id = auth.uid()
+        and cg.cliente_id = target_cliente_id
+    )
+    -- legado (se a tabela ainda existir)
+    or exists (
+      select 1
+      from public.gestor_clientes gc
+      where gc.gestor_id = auth.uid()
+        and gc.cliente_id = target_cliente_id
+    )
+    -- CS que consegue visualizar o cliente também pode atualizar o perfil
+    -- (necessário para salvar/remover Plano de Ação).
+    or public.can_cs_view_client(target_cliente_id)
+    -- admin de equipe (mesma equipe via perfis.equipe_id)
+    or exists (
+      select 1
+      from public.perfis me
+      join public.perfis c on c.equipe_id is not distinct from me.equipe_id
+      where me.usuario_id = auth.uid()
+        and me.role = 'admin'
+        and me.equipe_id is not null
+        and c.usuario_id = target_cliente_id
+        and c.equipe_id is not null
+    ),
+    false
+  );
 $$;
 
-drop policy if exists perfis_update_own_or_admin on public.perfis;
+-- Restaurar policy de UPDATE no formato esperado nas migrations recentes.
+-- Isso evita perder permissões que podem ser necessárias quando o token é de CS/admin de equipe.
 drop policy if exists perfis_update_own_or_gestor_or_admin on public.perfis;
-
 create policy perfis_update_own_or_gestor_or_admin on public.perfis
   for update
   using (
     auth.uid() = usuario_id
-    or public.is_admin()
+    or public.is_legacy_platform_admin()
+    or public.team_admin_sees_perfil(usuario_id)
     or public.can_manage_client(usuario_id)
+    or public.cs_can_access_gestor(usuario_id)
   )
   with check (
     auth.uid() = usuario_id
-    or public.is_admin()
+    or public.is_legacy_platform_admin()
+    or public.team_admin_sees_perfil(usuario_id)
     or public.can_manage_client(usuario_id)
-  );
-
-drop policy if exists perfis_insert_own on public.perfis;
-drop policy if exists perfis_insert_own_or_gestor on public.perfis;
-
-create policy perfis_insert_own_or_gestor on public.perfis
-  for insert
-  with check (
-    auth.uid() = usuario_id
-    or public.can_manage_client(usuario_id)
+    or public.cs_can_access_gestor(usuario_id)
   );
 `;
 
@@ -458,18 +478,39 @@ const Index = () => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { role, user } = useAuth();
-  const { resumo: reunioesResumoDia } = useReunioesNotificacoes(role !== "cliente");
+  const { resumo: reunioesResumoDia } = useReunioesNotificacoes(
+    role === "gestor" || role === "cs" || role === "admin",
+  );
   const managerClientIdParam = searchParams.get("clientId");
   const managerClientId =
     role === "gestor" || role === "admin" || role === "cs"
       ? managerClientIdParam
       : null;
+
+  // Contexto de "visualização do cliente" usado pelos tabs avançados.
+  // - gestor/cs/admin: precisa do `clientId` na querystring
+  // - cliente_gestao: o cliente visualizado é o próprio usuário
+  const advancedClientId = role === "cliente_gestao" ? user?.id ?? null : managerClientId;
+  const canShowTimeline =
+    role === "gestor" || role === "admin" || role === "cs"
+      ? !!managerClientId
+      : role === "cliente_gestao"
+        ? !!user?.id
+        : false;
+
+  // Insights apenas para gestor/cs/admin (cliente_gestao pode ficar só no Timeline, por segurança/UX).
+  const canShowInsights = role === "gestor" || role === "admin" || role === "cs" ? !!managerClientId : false;
+
+  // Apenas gestores/CS/admin podem editar (incluir/remover) Plano de Ação.
+  const canEditActionPlan = role === "gestor" || role === "cs" || role === "admin";
   /** CS só entra em modo gestor quando há clientId (acompanhar cliente); gestor/admin veem o painel ampliado na home. */
   const managerMode =
     role === "gestor" ||
     role === "admin" ||
     (role === "cs" && !!managerClientIdParam);
   const demandTargetClientId = managerClientId ?? user?.id ?? null;
+  // Usado para controlar quando o botão/ícones do Plano de Ação devem aparecer.
+  const showActionPlanButton = !managerMode || !!managerClientId;
 
   useEffect(() => {
     if (!role || reunioesResumoDia.total <= 0) return;
@@ -1200,30 +1241,36 @@ const Index = () => {
   );
 
   useEffect(() => {
-    if (!isActionPlanDialogOpen || !demandTargetClientId) return;
+    if (!showActionPlanButton || !demandTargetClientId) return;
     let isMounted = true;
 
     const loadActionPlan = async () => {
       setActionPlanError(null);
 
       try {
-        const [perfilResult, demandasResult] = await Promise.all([
-          supabase
-            .from("perfis")
-            .select("configuracao_tema")
-            .eq("usuario_id", demandTargetClientId)
-            .limit(1),
-          supabase
-            .from("demandas_cliente")
-            .select("id, tipo, status, payload, created_at")
-            .eq("cliente_id", demandTargetClientId)
-            .order("created_at", { ascending: false })
-            .limit(40),
-        ]);
+        const perfilPromise = supabase
+          .from("perfis")
+          .select("configuracao_tema")
+          .eq("usuario_id", demandTargetClientId)
+          .limit(1);
+
+        // Só carregamos demandas/detalhes se o usuário realmente puder editar.
+        const shouldFetchDemands = canEditActionPlan && isActionPlanDialogOpen;
+
+        const [perfilResult, demandasResult] = shouldFetchDemands
+          ? await Promise.all([
+              perfilPromise,
+              supabase
+                .from("demandas_cliente")
+                .select("id, tipo, status, payload, created_at")
+                .eq("cliente_id", demandTargetClientId)
+                .order("created_at", { ascending: false })
+                .limit(40),
+            ])
+          : [await perfilPromise, null];
 
         if (!isMounted) return;
         if (perfilResult.error) throw perfilResult.error;
-        if (demandasResult.error) throw demandasResult.error;
 
         const perfilRow = (perfilResult.data ?? [])[0] as
           | { configuracao_tema?: Record<string, unknown> | null }
@@ -1237,26 +1284,34 @@ const Index = () => {
           .map(([key]) => key);
         setActionPlanProgramKeys(selectedProgramKeys);
 
-        const demands = ((demandasResult.data ?? []) as ActionPlanDemandRow[])
-          .filter((row) => row.tipo === "emissao")
-          .map((row) => {
-            const payload = (row.payload ?? {}) as Record<string, unknown>;
-            const destinoRaw = payload.destino;
-            const origemRaw = payload.origem;
-            const destino = typeof destinoRaw === "string" ? destinoRaw.trim() : "";
-            const origem = typeof origemRaw === "string" ? origemRaw.trim() : "";
-            if (!destino) return null;
-            return {
-              id: row.id,
-              origem: origem || null,
-              destino,
-              status: row.status ?? "pendente",
-              createdAt: row.created_at,
-            } as ActionPlanDemandItem;
-          })
-          .filter((item): item is ActionPlanDemandItem => !!item);
+        if (shouldFetchDemands) {
+          if (!demandasResult) return;
+          if (demandasResult.error) throw demandasResult.error;
 
-        setActionPlanDemands(demands);
+          const demands = ((demandasResult.data ?? []) as ActionPlanDemandRow[])
+            .filter((row) => row.tipo === "emissao")
+            .map((row) => {
+              const payload = (row.payload ?? {}) as Record<string, unknown>;
+              const destinoRaw = payload.destino;
+              const origemRaw = payload.origem;
+              const destino = typeof destinoRaw === "string" ? destinoRaw.trim() : "";
+              const origem = typeof origemRaw === "string" ? origemRaw.trim() : "";
+              if (!destino) return null;
+              return {
+                id: row.id,
+                origem: origem || null,
+                destino,
+                status: row.status ?? "pendente",
+                createdAt: row.created_at,
+              } as ActionPlanDemandItem;
+            })
+            .filter((item): item is ActionPlanDemandItem => !!item);
+
+          setActionPlanDemands(demands);
+        } else {
+          // Cliente só precisa ver quais programas já estão no plano.
+          setActionPlanDemands([]);
+        }
       } catch (error) {
         const msg =
           error instanceof Error
@@ -1273,7 +1328,7 @@ const Index = () => {
     return () => {
       isMounted = false;
     };
-  }, [isActionPlanDialogOpen, demandTargetClientId]);
+  }, [showActionPlanButton, demandTargetClientId, canEditActionPlan, isActionPlanDialogOpen]);
 
   const persistActionPlanPrograms = async (nextKeys: ActionPlanProgramKey[]) => {
     if (!demandTargetClientId) {
@@ -1360,7 +1415,7 @@ const Index = () => {
       const isPermissionError =
         /Sem permissão|row-level security|permission denied|violates|policy|RLS/i.test(rawMsg);
       const msg = isPermissionError
-        ? "Sem permissão para salvar. Abra o diálogo de ajuda (ao fechar este toast) e rode o SQL no Supabase. Confirme também que o cliente está em Clientes ativos."
+        ? `Sem permissão para salvar. Abra o diálogo de ajuda (ao fechar este toast) e rode o SQL no Supabase. Confirme também que o cliente está em Clientes ativos.\n\nDetalhes: ${rawMsg}`
         : rawMsg;
       toast.error(msg);
       if (isPermissionError) setShowPlanoAcaoPermissionHelp(true);
@@ -1674,6 +1729,12 @@ const Index = () => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    // Evita "tela em branco": se a aba ativa não é permitida para o role atual, volta para a home.
+    if (activeTab === "timeline" && !canShowTimeline) setActiveTab("saldo");
+    if (activeTab === "insights" && !canShowInsights) setActiveTab("saldo");
+  }, [activeTab, canShowInsights, canShowTimeline]);
+
   const handleDownloadEconomiaPdf = async () => {
     if (!economiaReportRef.current) return;
 
@@ -1720,6 +1781,8 @@ const Index = () => {
         onTabChange={setActiveTab}
         economyTrend={analiseEconomia.trend}
         economyLabel={managerMode && !managerClientId ? "Plano de Ação" : "R$"}
+        canShowInsights={canShowInsights}
+        canShowTimeline={canShowTimeline}
       />
 
       {managerClientId && (
@@ -1909,8 +1972,14 @@ const Index = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setIsActionPlanDialogOpen(true)}
-                          className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-full border border-nubank-border bg-transparent px-2 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-white/90 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-700"
+                          onClick={() => {
+                            if (!canEditActionPlan) return;
+                            setIsActionPlanDialogOpen(true);
+                          }}
+                          disabled={!canEditActionPlan}
+                          className={`inline-flex h-9 w-full items-center justify-center gap-1 rounded-full border border-nubank-border bg-transparent px-2 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-white/90 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-700 ${
+                            !canEditActionPlan ? "cursor-not-allowed opacity-60" : ""
+                          }`}
                         >
                           {actionPlanSelectedPrograms.length > 1 ? (
                             <span className="inline-flex items-center gap-1">
@@ -1956,13 +2025,17 @@ const Index = () => {
                                   className="h-4 w-4 bg-transparent object-contain"
                                 />
                               )}
-                              <span className="truncate">{actionPlanSelectedPrograms[0].label}</span>
+                              {canEditActionPlan && (
+                                <span className="truncate">{actionPlanSelectedPrograms[0].label}</span>
+                              )}
                             </>
                           ) : (
                             <>
-                              <span className="truncate">
-                                {actionPlanSelectedPrograms[0]?.label ?? "Plano de Ação"}
-                              </span>
+                              {canEditActionPlan ? (
+                                <span className="truncate">
+                                  {actionPlanSelectedPrograms[0]?.label ?? "Plano de Ação"}
+                                </span>
+                              ) : null}
                             </>
                           )}
                         </button>
@@ -2676,6 +2749,17 @@ const Index = () => {
         </div>
       )}
 
+      {activeTab === "timeline" && canShowTimeline && advancedClientId && (
+        <ClientTimelineSection
+          enabled={true}
+          clienteId={advancedClientId}
+        />
+      )}
+
+      {activeTab === "insights" && canShowInsights && advancedClientId && (
+        <ClientInsightsSection enabled={true} clienteId={advancedClientId} />
+      )}
+
       {activeTab === "sugestoes" && (
         <SmartRedemptionSuggestions
           clientId={managerClientId ?? user?.id ?? null}
@@ -2683,15 +2767,16 @@ const Index = () => {
       )}
 
       <Dialog open={isDemandDialogOpen} onOpenChange={setIsDemandDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-4 pt-11 sm:p-5 sm:pt-12">
+          <DialogHeader className="shrink-0 space-y-1.5 pr-6 text-left">
             <DialogTitle>Solicitar demanda</DialogTitle>
             <DialogDescription>
               Envie uma solicitação para o seu gestor.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch]">
+            <div className="space-y-3 pb-1">
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -2764,19 +2849,28 @@ const Index = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <p className="text-[11px] text-muted-foreground">Data de ida</p>
-                    <Input
-                      type="date"
+                    <DatePickerField
                       value={demandaDataIda}
-                      onChange={(event) => setDemandaDataIda(event.target.value)}
+                      onChange={(ymd) => {
+                        setDemandaDataIda(ymd);
+                        if (demandaDataVolta && demandaDataVolta < ymd) setDemandaDataVolta("");
+                      }}
+                      placeholder="Escolher data"
                     />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Data de volta</p>
-                    <Input
-                      type="date"
+                    <p className="text-[11px] text-muted-foreground">
+                      (Opcional) Data de volta
+                    </p>
+                    <DatePickerField
                       value={demandaDataVolta}
-                      min={demandaDataIda || undefined}
-                      onChange={(event) => setDemandaDataVolta(event.target.value)}
+                      onChange={setDemandaDataVolta}
+                      placeholder="Escolher data"
+                      disabled={
+                        demandaDataIda
+                          ? { before: parseYmdToLocalDate(demandaDataIda)! }
+                          : undefined
+                      }
                     />
                   </div>
                 </div>
@@ -2863,7 +2957,10 @@ const Index = () => {
                 />
               </div>
             )}
+            </div>
+          </div>
 
+          <div className="mt-3 shrink-0 border-t border-nubank-border pt-3">
             <Button
               type="button"
               className="w-full"
@@ -2917,7 +3014,13 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isActionPlanDialogOpen} onOpenChange={setIsActionPlanDialogOpen}>
+      <Dialog
+        open={isActionPlanDialogOpen && canEditActionPlan}
+        onOpenChange={(open) => {
+          if (!canEditActionPlan) return;
+          setIsActionPlanDialogOpen(open);
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Plano de Ação</DialogTitle>
@@ -3073,6 +3176,9 @@ const Index = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <CsatClientePrompt />
+      <NpsClientePrompt />
 
       <BottomNav
         activeItem={activeNav}

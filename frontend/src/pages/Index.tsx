@@ -3,11 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDownRight,
   ArrowUpRight,
+  Calendar as CalendarIcon,
   ChevronDown,
   Download,
   Plus,
   X,
 } from "lucide-react";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardHeader from "@/components/DashboardHeader";
 import BalanceTabs from "@/components/BalanceTabs";
@@ -18,6 +20,8 @@ import BottomNav from "@/components/BottomNav";
 import AirlineLogo from "@/components/AirlineLogo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -37,6 +41,27 @@ import airlineLatamLogo from "@/assets/airline-latam.png";
 import airlineAzulLogo from "@/assets/airline-azul.png";
 import airlineGolLogo from "@/assets/airline-gol.png";
 import programAviosLogo from "@/assets/program-avios.svg";
+
+function parseYmdToLocalDate(ymd: string): Date | undefined {
+  if (!ymd) return undefined;
+  const parts = ymd.split("-").map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return undefined;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d);
+}
+
+function formatLocalDateToYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatYmdAsPtBr(ymd: string): string {
+  const date = parseYmdToLocalDate(ymd);
+  if (!date) return "";
+  return date.toLocaleDateString("pt-BR");
+}
 
 const STORAGE_PREFIX = "mile-manager:program-state:";
 const LOGO_STORAGE_PREFIX = "mile-manager:program-logo:";
@@ -469,6 +494,8 @@ const Index = () => {
   const [demandaDestino, setDemandaDestino] = useState("");
   const [demandaDataIda, setDemandaDataIda] = useState("");
   const [demandaDataVolta, setDemandaDataVolta] = useState("");
+  const [demandaCalIdaOpen, setDemandaCalIdaOpen] = useState(false);
+  const [demandaCalVoltaOpen, setDemandaCalVoltaOpen] = useState(false);
   const [demandaPassageiros, setDemandaPassageiros] = useState(1);
   const [demandaClasse, setDemandaClasse] = useState("");
   const [demandaBagagemDescricao, setDemandaBagagemDescricao] = useState("");
@@ -2361,15 +2388,16 @@ const Index = () => {
       )}
 
       <Dialog open={isDemandDialogOpen} onOpenChange={setIsDemandDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-4 pt-11 sm:p-5 sm:pt-12">
+          <DialogHeader className="shrink-0 space-y-1.5 pr-6 text-left">
             <DialogTitle>Solicitar demanda</DialogTitle>
             <DialogDescription>
               Envie uma solicitação para o seu gestor.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch]">
+            <div className="space-y-3 pb-1">
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -2406,20 +2434,66 @@ const Index = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <p className="text-[11px] text-muted-foreground">Data de ida</p>
-                    <Input
-                      type="date"
-                      value={demandaDataIda}
-                      onChange={(event) => setDemandaDataIda(event.target.value)}
-                    />
+                    <Popover open={demandaCalIdaOpen} onOpenChange={setDemandaCalIdaOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-10 w-full justify-start rounded-[14px] border-nubank-border bg-white px-3 text-left text-sm font-normal"
+                        >
+                          <CalendarIcon className="mr-2 size-4 shrink-0 opacity-70" aria-hidden />
+                          {demandaDataIda ? formatYmdAsPtBr(demandaDataIda) : "Escolher data"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto border-nubank-border p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          locale={ptBR}
+                          selected={parseYmdToLocalDate(demandaDataIda)}
+                          onSelect={(date) => {
+                            if (!date) return;
+                            const ymd = formatLocalDateToYmd(date);
+                            setDemandaDataIda(ymd);
+                            if (demandaDataVolta && demandaDataVolta < ymd) setDemandaDataVolta("");
+                            setDemandaCalIdaOpen(false);
+                          }}
+                          autoFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] text-muted-foreground">Data de volta</p>
-                    <Input
-                      type="date"
-                      value={demandaDataVolta}
-                      min={demandaDataIda || undefined}
-                      onChange={(event) => setDemandaDataVolta(event.target.value)}
-                    />
+                    <Popover open={demandaCalVoltaOpen} onOpenChange={setDemandaCalVoltaOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-10 w-full justify-start rounded-[14px] border-nubank-border bg-white px-3 text-left text-sm font-normal"
+                        >
+                          <CalendarIcon className="mr-2 size-4 shrink-0 opacity-70" aria-hidden />
+                          {demandaDataVolta ? formatYmdAsPtBr(demandaDataVolta) : "Escolher data"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto border-nubank-border p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          locale={ptBR}
+                          selected={parseYmdToLocalDate(demandaDataVolta)}
+                          disabled={
+                            demandaDataIda
+                              ? { before: parseYmdToLocalDate(demandaDataIda)! }
+                              : undefined
+                          }
+                          onSelect={(date) => {
+                            if (!date) return;
+                            setDemandaDataVolta(formatLocalDateToYmd(date));
+                            setDemandaCalVoltaOpen(false);
+                          }}
+                          autoFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
                 {demandaDiasViagem !== null && (
@@ -2499,7 +2573,10 @@ const Index = () => {
                 onChange={(event) => setDemandaOutrosDetalhes(event.target.value)}
               />
             )}
+            </div>
+          </div>
 
+          <div className="mt-3 shrink-0 border-t border-nubank-border pt-3">
             <Button
               type="button"
               className="w-full"
