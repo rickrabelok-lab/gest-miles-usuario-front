@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Clock, Pencil, Shield, Moon, Sun, Users } from "lucide-react";
+import { ArrowLeft, BarChart3, Bell, ClipboardList, Clock, Pencil, Shield, Moon, Star, Sun, Trophy, Users } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -33,6 +33,11 @@ import GestorComparativo from "@/components/gestor/GestorComparativo";
 import GestorHistorico from "@/components/gestor/GestorHistorico";
 import GestorExport from "@/components/gestor/GestorExport";
 import CsVincularClienteCard from "@/components/gestor/CsVincularClienteCard";
+import CsNpsCarteiraSection from "@/components/nps/CsNpsCarteiraSection";
+import CsCsatSection from "@/components/csat/CsCsatSection";
+import CsGestorPerformanceSection from "@/components/gestor/CsGestorPerformanceSection";
+import CsAlertasInteligentesSection from "@/components/gestor/CsAlertasInteligentesSection";
+import NotificationsDropdown from "@/components/notifications/NotificationsDropdown";
 import { logAcao } from "@/lib/audit";
 import type { RiscoCarteira } from "@/hooks/useGestor";
 import { cn } from "@/lib/utils";
@@ -57,6 +62,9 @@ const GESTOR_TABS = [
   "dre",
   "comparativo",
   "historico",
+  "nps",
+  "csat",
+  "performance",
   "exportar",
 ] as const;
 
@@ -77,7 +85,8 @@ type CsGestorCollapsibleRowProps = {
 };
 
 const CsGestorCollapsibleRow = ({ g, onOpenClient, onEditNome }: CsGestorCollapsibleRowProps) => (
-  <Collapsible>
+  <div id={`cs-gestor-${g.gestorId}`} className="scroll-mt-28">
+    <Collapsible>
     <Card className="rounded-lg border-border/60 bg-muted/20">
       <CollapsibleTrigger asChild>
         <button
@@ -131,13 +140,14 @@ const CsGestorCollapsibleRow = ({ g, onOpenClient, onEditNome }: CsGestorCollaps
         </div>
       </CollapsibleContent>
     </Card>
-  </Collapsible>
+    </Collapsible>
+  </div>
 );
 
 const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
   const navigate = useNavigate();
-  const { role } = useAuth();
-  const [searchParams] = useSearchParams();
+  const { role, user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const requestedStatus = searchParams.get("status");
   const initialTab: GestorTab = GESTOR_TABS.includes(requestedTab as GestorTab)
@@ -155,6 +165,7 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
   const [demandStatusFilter, setDemandStatusFilter] = useState<DemandFilter>(initialDemandFilter);
   const [editingGestor, setEditingGestor] = useState<{ id: string; nome: string } | null>(null);
   const [savingGestorNome, setSavingGestorNome] = useState(false);
+  const [scrollToGestorId, setScrollToGestorId] = useState<string | null>(null);
 
   const csQueryEnabled =
     variant === "cs" && (role === "cs" || role === "admin");
@@ -178,6 +189,11 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
     () => (variant === "cs" ? csFlat.map((g) => g.gestorId) : []),
     [variant, csFlat],
   );
+
+  const npsTabEnabled =
+    variant === "cs"
+      ? (role === "cs" || role === "admin") && supervisedGestorIds.length > 0
+      : role === "gestor" || role === "admin";
 
   const gestorDataEnabled =
     variant === "gestor"
@@ -262,6 +278,18 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
     }
     setDemandStatusFilter("todos");
   }, [requestedStatus]);
+
+  useEffect(() => {
+    if (!scrollToGestorId) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById(`cs-gestor-${scrollToGestorId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      setScrollToGestorId(null);
+    }, 160);
+    return () => window.clearTimeout(timer);
+  }, [scrollToGestorId]);
 
 
   const demandasFiltradas = useMemo(() => {
@@ -463,6 +491,7 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
             Risco:{" "}
             {riscoGlobal === "baixo" ? "Baixo" : riscoGlobal === "medio" ? "Médio" : "Alto"}
           </span>
+          <NotificationsDropdown />
           <button
             type="button"
             onClick={toggleDark}
@@ -473,6 +502,29 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
           </button>
         </div>
       </header>
+
+      {variant === "cs" && (role === "cs" || role === "admin") && csFlat.length > 0 && (
+        <section className="mb-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              type="button"
+              className="w-full gap-2 border-2 border-amber-500/60 bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md hover:from-amber-600 hover:to-amber-700 dark:border-amber-500/50 text-xs"
+              onClick={() => navigate("/cs/alertas")}
+            >
+              <Bell className="h-4 w-4 shrink-0" />
+              Alertas inteligentes
+            </Button>
+            <Button
+              type="button"
+              className="w-full gap-2 border-2 border-slate-400/60 bg-gradient-to-r from-slate-600 to-slate-700 text-white shadow-md hover:from-slate-700 hover:to-slate-800 dark:border-slate-500/50 text-xs"
+              onClick={() => navigate("/cs/tarefas")}
+            >
+              <ClipboardList className="h-4 w-4 shrink-0" />
+              Tarefas do CS
+            </Button>
+          </div>
+        </section>
+      )}
 
       {variant === "cs" && csFlat.length > 0 && (
         <CsVincularClienteCard grupos={csGrupos} gestoresSomenteDireto={csDiretos} />
@@ -552,6 +604,19 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
           }}
         />
       </section>
+
+      {variant === "gestor" && (role === "gestor" || role === "admin") && (
+        <CsAlertasInteligentesSection
+          enabled={!!user?.id}
+          canSync={false}
+          gestoresFlat={[]}
+          onOpenClient={handleOpenClient}
+          onOpenGestor={(_id) => {
+            void _id;
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+      )}
 
       {variant === "gestor" && (
         <section className="mb-4">
@@ -638,6 +703,24 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
           </TabsTrigger>
           <TabsTrigger value="historico" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Histórico
+          </TabsTrigger>
+          <TabsTrigger value="nps" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
+            <span className="inline-flex items-center gap-1">
+              <BarChart3 className="h-3 w-3" />
+              NPS
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="csat" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
+            <span className="inline-flex items-center gap-1">
+              <Star className="h-3 w-3" />
+              CSAT
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
+            <span className="inline-flex items-center gap-1">
+              <Trophy className="h-3 w-3" />
+              Performance
+            </span>
           </TabsTrigger>
           <TabsTrigger value="exportar" className="shrink-0 rounded-lg px-2.5 text-xs data-[state=active]:!shadow-[0_2px_10px_-2px_rgba(138,5,190,0.4)] data-[state=active]:gradient-primary data-[state=active]:!border-transparent data-[state=active]:text-primary-foreground focus-visible:!ring-primary/50">
             Exportar
@@ -897,6 +980,33 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
 
         <TabsContent value="historico" className="mt-3">
           <GestorHistorico logs={logs} loading={logsLoading} />
+        </TabsContent>
+
+        <TabsContent value="nps" className="mt-3">
+          <CsNpsCarteiraSection
+            restrictToGestorIds={variant === "cs" ? supervisedGestorIds : null}
+            enabled={npsTabEnabled && (variant === "cs" || !!user?.id)}
+            gestoresFlat={variant === "cs" ? csFlat : []}
+            onOpenClient={handleOpenClient}
+          />
+        </TabsContent>
+
+        <TabsContent value="csat" className="mt-3">
+          <CsCsatSection
+            restrictToGestorIds={variant === "cs" ? supervisedGestorIds : null}
+            enabled={npsTabEnabled && (variant === "cs" || !!user?.id)}
+            gestoresFlat={variant === "cs" ? csFlat : []}
+            onOpenClient={handleOpenClient}
+          />
+        </TabsContent>
+
+        <TabsContent value="performance" className="mt-3">
+          <CsGestorPerformanceSection
+            restrictToGestorIds={variant === "cs" ? supervisedGestorIds : null}
+            enabled={npsTabEnabled && (variant === "cs" || !!user?.id)}
+            gestoresFlat={variant === "cs" ? csFlat : []}
+            canRefresh={variant === "cs" && (role === "cs" || role === "admin")}
+          />
         </TabsContent>
 
         <TabsContent value="exportar" className="mt-3">

@@ -1,10 +1,14 @@
-import { ArrowDownRight, ArrowUpRight, Clock, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Clock, Sparkles, TrendingUp, History, Lightbulb } from "lucide-react";
+
+import { useAuth } from "@/contexts/AuthContext";
 
 interface BalanceTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   economyTrend?: "up" | "down" | "none";
   economyLabel?: string;
+  canShowInsights?: boolean;
+  canShowTimeline?: boolean;
 }
 
 const tabs = [
@@ -13,6 +17,8 @@ const tabs = [
   { id: "extrato", label: "Extrato", icon: TrendingUp },
   { id: "economia", label: "R$", icon: null },
   { id: "sugestoes", label: "Sugestões", icon: Sparkles },
+  { id: "insights", label: "Insights", icon: Lightbulb },
+  { id: "timeline", label: "Timeline", icon: History },
 ];
 
 const BalanceTabs = ({
@@ -20,10 +26,35 @@ const BalanceTabs = ({
   onTabChange,
   economyTrend = "none",
   economyLabel = "R$",
+  canShowInsights,
+  canShowTimeline,
 }: BalanceTabsProps) => {
+  const { role, roleLoading } = useAuth();
+
+  // Regras: segurança real vem das queries do backend/RLS. Aqui é apenas UX/permissão de navegação.
+  const roleCanShowInsights = role === "gestor" || role === "cs" || role === "admin";
+  const roleCanShowTimeline =
+    role === "gestor" || role === "cs" || role === "admin" || role === "cliente_gestao";
+
+  const resolvedCanShowInsights = canShowInsights ?? (!roleLoading && roleCanShowInsights);
+  const resolvedCanShowTimeline = canShowTimeline ?? (!roleLoading && roleCanShowTimeline);
+
+  const visibleTabs = tabs.filter((tab) => {
+    if (tab.id === "insights") return resolvedCanShowInsights;
+    if (tab.id === "timeline") return resolvedCanShowTimeline;
+    return true;
+  });
+
+  const gridColsClass =
+    visibleTabs.length === 5
+      ? "grid-cols-5"
+      : visibleTabs.length === 6
+        ? "grid-cols-6"
+        : "grid-cols-7";
+
   return (
-    <div className="grid grid-cols-5 gap-1.5 px-5 py-3">
-      {tabs.map((tab) => {
+    <div className={`grid ${gridColsClass} gap-1.5 px-5 py-3`}>
+      {visibleTabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
         const isEconomyTab = tab.id === "economia";

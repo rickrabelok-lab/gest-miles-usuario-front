@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePickerField } from "@/components/ui/date-picker-field";
+import { parseYmdToLocalDate } from "@/lib/dateYmd";
 
 const PROGRAMAS = [
   { id: "latam_pass", name: "LATAM Pass" },
@@ -215,20 +217,26 @@ const RegistrarEmissaoPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="data-ida">Data de ida</Label>
-                  <Input
+                  <DatePickerField
                     id="data-ida"
-                    type="date"
                     value={dataIda}
-                    onChange={(e) => setDataIda(e.target.value)}
+                    onChange={(ymd) => {
+                      setDataIda(ymd);
+                      if (dataVolta && dataVolta < ymd) setDataVolta("");
+                    }}
+                    placeholder="Escolher data"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="data-volta">Data de volta (opcional)</Label>
-                  <Input
+                  <DatePickerField
                     id="data-volta"
-                    type="date"
                     value={dataVolta}
-                    onChange={(e) => setDataVolta(e.target.value)}
+                    onChange={setDataVolta}
+                    placeholder="Escolher data"
+                    disabled={
+                      dataIda ? { before: parseYmdToLocalDate(dataIda)! } : undefined
+                    }
                   />
                 </div>
               </div>
@@ -262,12 +270,11 @@ const RegistrarEmissaoPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="data">Data da emissão</Label>
-                <Input
+                <DatePickerField
                   id="data"
-                  type="date"
                   value={dataEmissao}
-                  onChange={(e) => setDataEmissao(e.target.value)}
-                  required
+                  onChange={setDataEmissao}
+                  placeholder="Escolher data"
                 />
               </div>
 

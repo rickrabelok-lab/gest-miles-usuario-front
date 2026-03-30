@@ -44,13 +44,50 @@ export const useCsGestores = (enabled: boolean) => {
       } = await supabase.auth.getUser();
       if (!user?.id) return empty;
 
+      let gestoresPorPerfisEquipe: string[] = [];
+      let csEquipeIdFromPerfil: string | null = null;
+      let nomeEquipePerfil: string | null = null;
+
+      const { data: mePerfil, error: mePerfilErr } = await supabase
+        .from("perfis")
+        .select("role, equipe_id")
+        .eq("usuario_id", user.id)
+        .maybeSingle();
+
+      if (!mePerfilErr && mePerfil?.role === "cs" && mePerfil.equipe_id) {
+        csEquipeIdFromPerfil = mePerfil.equipe_id as string;
+        const { data: nomeRow } = await supabase
+          .from("equipes")
+          .select("nome")
+          .eq("id", csEquipeIdFromPerfil)
+          .maybeSingle();
+        nomeEquipePerfil = ((nomeRow as { nome?: string } | null)?.nome ?? "").trim() || null;
+
+        const { data: gestorPerfis, error: gErr } = await supabase
+          .from("perfis")
+          .select("usuario_id")
+          .eq("role", "gestor")
+          .eq("equipe_id", csEquipeIdFromPerfil);
+        if (!gErr && gestorPerfis?.length) {
+          gestoresPorPerfisEquipe = [
+            ...new Set(
+              (gestorPerfis as { usuario_id: string }[])
+                .map((r) => r.usuario_id)
+                .filter(Boolean),
+            ),
+          ];
+        }
+      }
+
       const { data: csRows, error: csError } = await supabase
         .from("cs_gestores")
         .select("gestor_id")
         .eq("cs_id", user.id);
       if (csError) throw toQueryError(csError, "Não foi possível ler cs_gestores (verifique RLS e se a migration foi aplicada).");
 
-      const fromDirect = (csRows ?? []).map((r) => r.gestor_id as string).filter(Boolean);
+      const fromDirect = [...new Set([...(csRows ?? []).map((r) => r.gestor_id as string), ...gestoresPorPerfisEquipe])].filter(
+        Boolean,
+      );
 
       let equipeIds: string[] = [];
       const gestoresPorEquipe = new Map<string, string[]>();
@@ -191,7 +228,7 @@ export const useCsGestores = (enabled: boolean) => {
           }))
           .sort((a, b) => a.clienteNome.localeCompare(b.clienteNome, "pt-BR"));
 
-      const grupos: CsGrupoGestores[] = equipeIds
+      let grupos: CsGrupoGestores[] = equipeIds
         .map((eid) => {
           const gids = [...new Set(gestoresPorEquipe.get(eid) ?? [])];
           const idsUniao = clienteIdsUniaoPorEquipe(eid);
@@ -208,6 +245,33 @@ export const useCsGestores = (enabled: boolean) => {
         })
         .filter((g) => g.gestores.length > 0)
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+      if (
+        csEquipeIdFromPerfil &&
+        gestoresPorPerfisEquipe.length > 0 &&
+        !grupos.some((g) => g.equipeId === csEquipeIdFromPerfil)
+      ) {
+        const idsUniaoSynthetic = (() => {
+          const uni = new Set<string>();
+          for (const g of gestoresPorPerfisEquipe) {
+            for (const cid of clientesByGestor.get(g) ?? []) uni.add(cid);
+          }
+          return [...uni];
+        })();
+        const clientesMesmaCarteira = toListaClientesOrdenada(idsUniaoSynthetic);
+        grupos = [
+          {
+            equipeId: csEquipeIdFromPerfil,
+            nome: nomeEquipePerfil ?? "Equipe",
+            gestores: gestoresPorPerfisEquipe.map((gid) => ({
+              gestorId: gid,
+              gestorNome: gestorNames.get(gid) ?? "Gestor",
+              clientes: clientesMesmaCarteira,
+            })),
+          },
+          ...grupos,
+        ].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      }
 
       const gestoresSomenteDireto = diretoIds.map(toItemDireto);
 

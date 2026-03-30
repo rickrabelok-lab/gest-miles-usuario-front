@@ -10,6 +10,8 @@ import Auth from "./pages/Auth";
 import Me from "./pages/Me";
 import GestorDashboard from "./pages/GestorDashboard";
 import CsAgendarReuniaoPage from "./pages/CsAgendarReuniaoPage";
+import CsAlertasInteligentesPage from "./pages/CsAlertasInteligentesPage";
+import CsTarefasPage from "./pages/CsTarefasPage";
 import GestorReunioesPage from "./pages/GestorReunioesPage";
 import ClientProfile from "./pages/ClientProfile";
 import SearchFlightsScreen from "./pages/SearchFlightsScreen";
@@ -26,6 +28,8 @@ import FaleConoscoPage from "./pages/FaleConoscoPage";
 import PreferenciasSugestoesPage from "./pages/PreferenciasSugestoesPage";
 import SimularCompraMilhasPage from "./pages/SimularCompraMilhasPage";
 import RadarOportunidadesPage from "./pages/RadarOportunidadesPage";
+import ClienteInsightsPage from "./pages/ClienteInsightsPage";
+import ClienteTimelinePage from "./pages/ClienteTimelinePage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
 import ProtectedByRole from "@/components/RequireRole";
@@ -138,6 +142,22 @@ const App = () => {
                 }
               />
               <Route
+                path="/cs/alertas"
+                element={
+                  <ProtectedByRole allow={["cs", "admin"]}>
+                    <CsAlertasInteligentesPage />
+                  </ProtectedByRole>
+                }
+              />
+              <Route
+                path="/cs/tarefas"
+                element={
+                  <ProtectedByRole allow={["cs", "admin"]}>
+                    <CsTarefasPage />
+                  </ProtectedByRole>
+                }
+              />
+              <Route
                 path="/preferencias-sugestoes"
                 element={
                   <RequireAuth>
@@ -202,6 +222,8 @@ const App = () => {
                   </RequireAuth>
                 }
               />
+              <Route path="/cliente/:id/insights" element={<ClienteInsightsPage />} />
+              <Route path="/cliente/:id/timeline" element={<ClienteTimelinePage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

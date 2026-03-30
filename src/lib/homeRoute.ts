@@ -7,5 +7,6 @@ import type { AppRole } from "@/contexts/AuthContext";
 export function homePathForRole(role: AppRole | null): string {
   if (role === "cs") return "/cs";
   if (role === "gestor") return "/gestor";
+  if (role === "cliente_gestao") return "/";
   return "/";
 }

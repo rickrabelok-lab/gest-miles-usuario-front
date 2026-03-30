@@ -43,7 +43,11 @@ const Me = () => {
         await refreshRole();
         const raw = existing.role as string | undefined;
         const mapped: AppRole =
-          raw === "admin" || raw === "cs" || raw === "gestor" || raw === "cliente"
+          raw === "admin" ||
+          raw === "cs" ||
+          raw === "gestor" ||
+          raw === "cliente" ||
+          raw === "cliente_gestao"
             ? raw
             : "cliente";
         setRedirectTo(homePathForRole(mapped));

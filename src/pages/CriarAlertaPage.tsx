@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 const CriarAlertaPage = () => {
   const navigate = useNavigate();
+  const [dataAlvo, setDataAlvo] = useState("");
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-24">
@@ -47,7 +50,12 @@ const CriarAlertaPage = () => {
                 <label className="text-xs font-medium text-muted-foreground" htmlFor="data">
                   Data alvo (opcional)
                 </label>
-                <Input id="data" type="date" />
+                <DatePickerField
+                  id="data"
+                  value={dataAlvo}
+                  onChange={setDataAlvo}
+                  placeholder="Escolher data"
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground" htmlFor="programa">
