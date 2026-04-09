@@ -1,6 +1,9 @@
 # API Mile Manager Pro
 
-Base URL: `API_URL` (ex: `http://localhost:3000`)
+> **Contrato atual (Seção D — bônus, calendário, voos demo):** use o documento canónico  
+> **[`../backend/docs/api.md`](../backend/docs/api.md)** (`VITE_API_URL` no front).
+
+Base URL: `VITE_API_URL` ou `API_URL` (ex: `http://localhost:3000`)
 
 Todas as rotas protegidas exigem header: `Authorization: Bearer <access_token>`
 

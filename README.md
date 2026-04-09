@@ -5,15 +5,19 @@ Sistema de gestão de milhas e pontos de fidelidade.
 ## Arquitetura
 
 ```
-/backend     → API Express (porta 3000) - Supabase, lógica, dados
-/frontend    → App React (exportável para Lovable) - UI/UX
-/docs        → Documentação da API
+/backend     → API Express (porta 3000) — Supabase, BFF, rotas /api/*
+/src         → App React (Vite) — única árvore de código do front
+/docs        → Documentação complementar (ex.: prd)
 ```
+
+Contrato HTTP do BFF: **`backend/docs/api.md`**.  
+SQL consolidado para produção (bônus, calendário, voos demo): **`MIGRATION_TOTAL_DATA.sql`** na raiz deste repositório.
 
 ## Desenvolvimento
 
 ### Modo padrão (Supabase direto)
-O frontend usa Supabase diretamente (comportamento atual).
+
+O app na raiz usa Supabase diretamente no browser (comportamento atual).
 
 ```bash
 npm install
@@ -23,9 +27,9 @@ npm run dev
 Acesse: http://localhost:3080
 
 ### Modo com backend separado
-Para usar o backend API (ex: Lovable, produção):
 
 1. Configure o backend:
+
 ```bash
 cd backend
 cp .env.example .env
@@ -34,24 +38,27 @@ npm install
 npm run dev
 ```
 
-2. Configure o frontend:
+2. Na raiz, crie `.env.local` com:
+
 ```bash
-# Na raiz, crie .env com:
 VITE_API_URL=http://localhost:3000
 ```
 
 3. Rode ambos:
+
 ```bash
 npm run dev:all
 ```
 
 - Backend: http://localhost:3000
-- Frontend: http://localhost:3080
+- Front: http://localhost:3080
 
-## Exportar para Lovable
+## Deploy Supabase (produção)
 
-A pasta `/frontend` contém o app React completo e pode ser exportada para o Lovable. Configure `VITE_API_URL` apontando para o backend em produção.
+1. No painel do projeto → **SQL Editor**, execute o ficheiro **`MIGRATION_TOTAL_DATA.sql`** (ou a migration equivalente em `supabase/migrations/`).
+2. Confirme que as tabelas `bonus_offers`, `calendar_prices` e `demo_flights` existem e têm políticas RLS de leitura conforme o script.
 
 ## Documentação da API
 
-Ver [docs/api.md](docs/api.md).
+- BFF: [backend/docs/api.md](backend/docs/api.md)  
+- Cópia / índice legado na raiz: [docs/api.md](docs/api.md) (se existir)
