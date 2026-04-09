@@ -1,67 +1,59 @@
 import { Router } from "express";
-
-const hash = (value) => {
-  let output = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    output = (output << 5) - output + value.charCodeAt(i);
-    output |= 0;
-  }
-  return Math.abs(output);
-};
-
-const getMonthDays = (date) => {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  return new Date(year, month + 1, 0).getDate();
-};
-
-const monthKey = (date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-const generateMockMonthPrices = ({ originCode, destinationCode, mode, month }) => {
-  const totalDays = getMonthDays(month);
-  const monthToken = monthKey(month);
-  const pricesByDay = new Map();
-
-  for (let day = 1; day <= totalDays; day += 1) {
-    const seed = hash(`${originCode}-${destinationCode}-${mode}-${monthToken}-${day}`);
-    const hasPrice = seed % 9 !== 0;
-    if (!hasPrice) continue;
-
-    if (mode === "points") {
-      const value = 3500 + (seed % 17000);
-      pricesByDay.set(day, Math.round(value / 100) * 100);
-      continue;
-    }
-
-    const moneyValue = 220 + (seed % 1700);
-    pricesByDay.set(day, Math.round(moneyValue));
-  }
-
-  return Object.fromEntries(pricesByDay);
-};
+import { supabase } from "../lib/supabase.js";
+import { generateEstimatedMonthPrices } from "../lib/calendarEstimate.js";
 
 const router = Router();
 
-/** GET /api/calendar-prices?origin=SAO&destination=RIO&mode=money&month=2026-03 - Preços do calendário (mock) */
+const monthKeyFromDate = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+/** GET /api/calendar-prices?origin=SAO&destination=RIO&mode=money&month=2026-04 */
 router.get("/", async (req, res) => {
   try {
-    await new Promise((r) => setTimeout(r, 220));
-    const originCode = req.query.origin || "SAO";
-    const destinationCode = req.query.destination || "RIO";
-    const mode = req.query.mode || "money";
+    const originCode = String(req.query.origin || "SAO").toUpperCase();
+    const destinationCode = String(req.query.destination || "RIO").toUpperCase();
+    const mode = req.query.mode === "points" ? "points" : "money";
     const monthStr = req.query.month || new Date().toISOString().slice(0, 7);
     const [year, month] = monthStr.split("-").map(Number);
     const monthDate = new Date(year, (month || 1) - 1, 1);
+    const yearMonth = monthStr;
 
-    const prices = generateMockMonthPrices({
+    const { data, error } = await supabase
+      .from("calendar_prices")
+      .select("prices")
+      .eq("origin_code", originCode)
+      .eq("destination_code", destinationCode)
+      .eq("mode", mode)
+      .eq("year_month", yearMonth)
+      .maybeSingle();
+
+    if (error) {
+      return res.status(500).json({ error: error.message || "Erro ao obter preços" });
+    }
+
+    const raw = data?.prices;
+    const fromDb =
+      raw && typeof raw === "object" && !Array.isArray(raw) && Object.keys(raw).length > 0;
+
+    if (fromDb) {
+      const out = {};
+      for (const [k, v] of Object.entries(raw)) {
+        const day = Number(k);
+        const num = Number(v);
+        if (Number.isFinite(day) && day >= 1 && day <= 31 && Number.isFinite(num)) {
+          out[day] = num;
+        }
+      }
+      return res.json(out);
+    }
+
+    const estimated = generateEstimatedMonthPrices({
       originCode,
       destinationCode,
       mode,
       month: monthDate,
     });
-
-    return res.json(prices);
+    return res.json(estimated);
   } catch (err) {
     return res.status(500).json({ error: err.message || "Erro ao obter preços" });
   }
