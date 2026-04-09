@@ -10,6 +10,21 @@ const MissingSupabaseConfig = () => (
       (antes o app quebrava com tela branca).
     </p>
     <div className="max-w-lg rounded-xl border border-slate-700 bg-slate-900/80 p-4 text-left text-sm">
+      <p className="mb-2 font-medium text-white">Desenvolvimento local (Vite):</p>
+      <ol className="mb-4 list-decimal space-y-1 pl-5 text-slate-300">
+        <li>
+          Na raiz do projeto, crie ou edite <span className="font-mono text-emerald-300">.env.local</span> (não commitar).
+        </li>
+        <li>
+          Copie a <strong>Project URL</strong> e a chave <strong>anon / publishable</strong> em Supabase →{" "}
+          <strong>Project Settings</strong> → <strong>API</strong>.
+        </li>
+        <li>
+          Substitua qualquer texto de exemplo (<span className="font-mono">your-project</span>,{" "}
+          <span className="font-mono">SEU-PROJETO</span>, etc.) pelos valores reais e rode de novo{" "}
+          <span className="font-mono">npm run dev</span>.
+        </li>
+      </ol>
       <p className="mb-2 font-medium text-white">No Vercel:</p>
       <ol className="list-decimal space-y-2 pl-5 text-slate-300">
         <li>Abra o projeto → <strong>Settings</strong> → <strong>Environment Variables</strong></li>
