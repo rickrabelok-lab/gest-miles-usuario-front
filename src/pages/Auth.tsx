@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -26,6 +27,19 @@ const Auth = () => {
     [email],
   );
 
+  const formatAuthError = (error: unknown): string => {
+    const msg = error instanceof Error ? error.message : "Falha no login.";
+    if (/failed to fetch/i.test(msg)) {
+      return [
+        "Não foi possível contactar o Supabase (rede ou URL).",
+        "Confira no .env.local: VITE_SUPABASE_URL (https://….supabase.co) e VITE_SUPABASE_ANON_KEY;",
+        "reinicie o npm run dev após alterar o .env;",
+        "no painel Supabase, confirme se o projeto não está pausado.",
+      ].join(" ");
+    }
+    return msg;
+  };
+
   if (!loading && user) {
     return <Navigate to="/me" replace />;
   }
@@ -38,7 +52,7 @@ const Auth = () => {
       await signInWithMagicLink(email.trim());
       setMessage("Link mágico enviado. Verifique seu e-mail.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Falha no login.");
+      setMessage(formatAuthError(error));
     } finally {
       setPending(false);
     }
@@ -50,7 +64,7 @@ const Auth = () => {
     try {
       await signInWithGoogle();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Falha no login Google.");
+      setMessage(formatAuthError(error));
       setPending(false);
     }
   };
@@ -64,7 +78,7 @@ const Auth = () => {
       setMessage("Login realizado com sucesso.");
       if (ok) navigate("/me");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Falha no login.");
+      setMessage(formatAuthError(error));
     } finally {
       setPending(false);
     }
@@ -85,7 +99,7 @@ const Auth = () => {
         );
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Falha ao criar conta.");
+      setMessage(formatAuthError(error));
     } finally {
       setPending(false);
     }
@@ -98,6 +112,13 @@ const Auth = () => {
           <CardTitle className="text-2xl font-bold tracking-tight text-nubank-text">Login e criação de conta</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {!isSupabaseConfigured && (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+              Supabase não configurado: edite <span className="font-mono">.env.local</span> na raiz do projeto com{" "}
+              <span className="font-mono">VITE_SUPABASE_URL</span> e <span className="font-mono">VITE_SUPABASE_ANON_KEY</span>{" "}
+              (valores em Supabase → Project Settings → API) e reinicie o servidor de desenvolvimento.
+            </p>
+          )}
           <Input
             type="email"
             value={email}

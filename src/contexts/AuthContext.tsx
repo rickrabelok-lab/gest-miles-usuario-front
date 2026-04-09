@@ -9,9 +9,10 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
+import { mapPerfilRoleForOperationalUi, type AppRole } from "@/lib/roles";
 import { supabase } from "@/lib/supabase";
 
-export type AppRole = "admin" | "cs" | "gestor" | "cliente" | "cliente_gestao";
+export type { AppRole };
 
 type AuthContextValue = {
   user: User | null;
@@ -73,16 +74,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       data = full.data;
     }
 
-    const raw = data?.role as string | undefined;
-    const mapped: AppRole =
-      raw === "admin" ||
-      raw === "cs" ||
-      raw === "gestor" ||
-      raw === "cliente" ||
-      raw === "cliente_gestao"
-        ? raw
-        : "cliente";
-    setRole(mapped);
+    setRole(mapPerfilRoleForOperationalUi(data?.role));
     setEquipeId((data?.equipe_id as string | null | undefined) ?? null);
     setRoleLoading(false);
   }, []);

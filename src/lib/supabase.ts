@@ -11,8 +11,19 @@ const rawKey = (
   ""
 ).trim();
 
+/** Ainda com texto do .env.example / template → tratar como não configurado (evita "Failed to fetch" opaco). */
+function looksLikeEnvPlaceholder(url: string, anonKey: string): boolean {
+  const u = url.toLowerCase();
+  const k = anonKey.toLowerCase();
+  if (/your-project|seu-projeto|placeholder\.supabase\.co/.test(u)) return true;
+  if (/your-anon-key|cole-sua-anon|cole-sua|publica-aqui/.test(k)) return true;
+  return false;
+}
+
 /** False em produção se o Vercel não tiver definido as envs no build → mostrar aviso em vez de tela branca. */
-export const isSupabaseConfigured = Boolean(rawUrl && rawKey);
+export const isSupabaseConfigured = Boolean(
+  rawUrl && rawKey && !looksLikeEnvPlaceholder(rawUrl, rawKey),
+);
 
 // Placeholders só para satisfazer o tipo; com isSupabaseConfigured false a UI não usa o client de verdade.
 const fallbackUrl = "https://placeholder.supabase.co";
