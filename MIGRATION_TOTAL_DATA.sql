@@ -98,3 +98,74 @@ values
   ('SAO', 'RIO', 'money', '2026-04', '{"5":320,"6":315,"12":298,"18":305,"25":330}'::jsonb),
   ('SAO', 'RIO', 'points', '2026-04', '{"5":4200,"6":4100,"12":3900,"18":4000,"25":4300}'::jsonb)
 on conflict (origin_code, destination_code, mode, year_month) do nothing;
+
+-- =============================================================================
+-- Extensão: auth / e-mail / convites (migration 20260411140000_email_auth_flow.sql)
+-- =============================================================================
+-- Requer backend com SUPABASE_SERVICE_ROLE_KEY + Brevo para envio transacional.
+-- Espelho: supabase/migrations/20260411140000_email_auth_flow.sql
+
+create table if not exists public.organizacoes_cliente (
+  id uuid primary key default gen_random_uuid(),
+  cnpj text not null,
+  nome_fantasia text not null,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  constraint organizacoes_cliente_cnpj_chk check (length(trim(cnpj)) >= 8)
+);
+
+create unique index if not exists organizacoes_cliente_cnpj_norm_uidx
+  on public.organizacoes_cliente (regexp_replace(cnpj, '[^0-9]', '', 'g'));
+
+alter table if exists public.perfis
+  add column if not exists organizacao_id uuid references public.organizacoes_cliente (id) on delete set null;
+
+create index if not exists idx_perfis_organizacao_id on public.perfis (organizacao_id);
+
+create table if not exists public.password_reset_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  token_hash text not null,
+  expires_at timestamptz not null,
+  consumed_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (token_hash)
+);
+
+create index if not exists idx_password_reset_tokens_user_id on public.password_reset_tokens (user_id);
+create index if not exists idx_password_reset_tokens_expires on public.password_reset_tokens (expires_at);
+
+alter table public.password_reset_tokens enable row level security;
+
+create table if not exists public.convites_cliente_gestao (
+  id uuid primary key default gen_random_uuid(),
+  token_hash text not null unique,
+  email text not null,
+  equipe_id uuid,
+  invited_by uuid not null references auth.users (id) on delete cascade,
+  expires_at timestamptz not null,
+  consumed_at timestamptz,
+  consumed_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_convites_email on public.convites_cliente_gestao (lower(email));
+create index if not exists idx_convites_expires on public.convites_cliente_gestao (expires_at);
+
+alter table public.convites_cliente_gestao enable row level security;
+
+alter table if exists public.perfis
+  add column if not exists email_boas_vindas_enviado_at timestamptz;
+
+create or replace function public.get_user_id_by_email_for_service(p_email text)
+returns uuid
+language sql
+stable
+security definer
+set search_path = auth, public
+as $$
+  select id from auth.users where lower(email) = lower(trim(p_email)) limit 1;
+$$;
+
+revoke all on function public.get_user_id_by_email_for_service(text) from public;
+grant execute on function public.get_user_id_by_email_for_service(text) to service_role;

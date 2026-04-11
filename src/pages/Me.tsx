@@ -6,6 +6,9 @@ import { mapPerfilRoleForOperationalUi } from "@/lib/roles";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { homePathForRole } from "@/lib/homeRoute";
+import { staffWebAppBaseUrlForRole } from "@/lib/staffAppUrls";
+import { PENDING_INVITE_TOKEN_KEY } from "@/lib/authFlowStorage";
+import { apiFetch, hasApiUrl } from "@/services/api";
 
 const slugify = (value: string) =>
   value
@@ -43,7 +46,13 @@ const Me = () => {
 
       if (existing?.slug) {
         await refreshRole();
-        setRedirectTo(homePathForRole(mapPerfilRoleForOperationalUi(existing.role)));
+        const mapped = mapPerfilRoleForOperationalUi(existing.role);
+        const staffBase = staffWebAppBaseUrlForRole(mapped);
+        if (staffBase) {
+          window.location.replace(`${staffBase}/auth`);
+          return;
+        }
+        setRedirectTo(homePathForRole(mapped));
         return;
       }
 
@@ -73,6 +82,36 @@ const Me = () => {
       }
 
       await refreshRole();
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (accessToken && hasApiUrl()) {
+        const inviteTok = sessionStorage.getItem(PENDING_INVITE_TOKEN_KEY);
+        if (inviteTok) {
+          try {
+            await apiFetch<{ ok: boolean }>("/api/invites/accept", {
+              method: "POST",
+              body: JSON.stringify({ token: inviteTok }),
+              token: accessToken,
+            });
+            sessionStorage.removeItem(PENDING_INVITE_TOKEN_KEY);
+            await refreshRole();
+          } catch {
+            /* convite inválido ou e-mail diferente — utilizador pode corrigir depois */
+          }
+        }
+
+        try {
+          await apiFetch("/api/invites/welcome", {
+            method: "POST",
+            body: "{}",
+            token: accessToken,
+          });
+        } catch {
+          /* e-mail opcional */
+        }
+      }
+
       setRedirectTo("/");
     };
 
