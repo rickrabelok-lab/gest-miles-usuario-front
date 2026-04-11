@@ -69,9 +69,9 @@ Usa o mesmo GitHub; crias **outro** projeto na Vercel só para a pasta `backend/
 2. **Configure Project**:
    - **Root Directory**: `gest-miles-usuario-front/backend`  
      (se o repo for só `gest-miles-usuario-front`, usa **`backend`**).
-   - **Framework Preset**: *Other* (ou deixa detetar; Express com `index.js` / `src/index.js` é [suportado](https://vercel.com/docs/frameworks/backend/express)).
-   - **Build Command**: deixa vazio ou `npm install` (não há build de bundler).
-   - **Output Directory**: vazio (não é SPA).
+   - **Framework Preset**: **Express** (ou *Other*; o `backend/vercel.json` fixa `framework: express`).
+   - **Build Command**: `npm run build` (o script só confirma o passo; podes deixar igual ao repo).
+   - **Output Directory**: **`.`** (ponto = raiz do pacote) ou deixa em branco — **não** uses `dist` (isso é para Vite). O ficheiro `vercel.json` no backend força `outputDirectory: "."` para não herdar `dist` de outro projeto.
 3. **Environment Variables** (Production): cola `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `PUBLIC_APP_URL` (URL do teu front, ex. `https://gest-miles-usuario-front-xxx.vercel.app`). Ainda **sem** `STRIPE_WEBHOOK_SECRET` se ainda não tens o endpoint no Stripe.
 4. **Deploy**.
 5. Anota o domínio gerado, ex. `https://gest-miles-api-xxx.vercel.app`.
@@ -167,6 +167,7 @@ No projeto **`gest-miles-usuario-front`** (front) → **Settings → Environment
 | API 404 na Vercel | Root Directory não é `backend/`; ou deploy do repo errado |
 | Build remove `/backend/package.json` | `.vercelignore` na **raiz** do repo não pode conter `backend` — esse ficheiro aplica-se a todos os projetos Vercel do mesmo repo |
 | `Missing script: "build"` | O `backend/package.json` inclui `npm run build` (passo vazio); na Vercel deixa **Build Command** por defeito ou `npm run build` |
+| `No entrypoint found in output directory: "dist"` | O preset do projeto estava como front (Vite): **Output Directory** deve ser **`.`** ou vazio, não `dist`. O `backend/vercel.json` define `outputDirectory: "."` e `framework: express` |
 | Front não chama API | `VITE_API_URL` em falta / redeploy |
 
 Mais detalhes Stripe: [stripe_setup.md](./stripe_setup.md).
