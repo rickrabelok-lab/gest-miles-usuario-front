@@ -6,7 +6,8 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    // true = 0.0.0.0: aceita localhost (IPv4) no Windows; "::" sozinho costuma recusar 127.0.0.1
+    host: true,
     // Deixe 3000 livre para o Express (backend/). Front em :3080.
     port: 3080,
     proxy: {

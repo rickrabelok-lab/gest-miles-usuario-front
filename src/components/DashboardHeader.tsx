@@ -240,25 +240,25 @@ const DashboardHeader = () => {
                   <DropdownMenuItem disabled className="text-muted-foreground">
                     <span className="truncate">{user.email}</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/perfil")}>
+                  <DropdownMenuItem onSelect={() => navigate("/perfil")}>
                     Meu perfil
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/assinatura")}>
+                  <DropdownMenuItem onSelect={() => navigate("/assinatura")}>
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Planos e subscrição
+                    Planos
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem onSelect={() => void handleLogout()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Sair
                   </DropdownMenuItem>
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem onClick={() => navigate("/auth")}>
+                  <DropdownMenuItem onSelect={() => navigate("/auth")}>
                     <LogIn className="mr-2 h-4 w-4" />
                     Entrar
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/auth")}>
+                  <DropdownMenuItem onSelect={() => navigate("/auth")}>
                     Criar conta
                   </DropdownMenuItem>
                 </>
