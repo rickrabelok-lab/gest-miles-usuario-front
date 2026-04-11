@@ -20,22 +20,40 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
-app.use("/api/auth", authRoutes);
-app.use("/api/auth", passwordResetRoutes);
-app.use("/api/programas-cliente", programasClienteRoutes);
-app.use("/api/gestor", gestorRoutes);
-app.use("/api/perfis", perfisRoutes);
-app.use("/api/demandas", demandasRoutes);
-app.use("/api/bonus-offers", bonusOffersRoutes);
-app.use("/api/calendar-prices", calendarPricesRoutes);
-app.use("/api/demo-flights", demoFlightsRoutes);
-app.use("/api/invites", invitesRoutes);
-app.use("/api/registration", registrationRoutes);
+const routes = express.Router();
 
-app.get("/api/health", (_, res) => {
+routes.use("/api/auth", authRoutes);
+routes.use("/api/auth", passwordResetRoutes);
+routes.use("/api/programas-cliente", programasClienteRoutes);
+routes.use("/api/gestor", gestorRoutes);
+routes.use("/api/perfis", perfisRoutes);
+routes.use("/api/demandas", demandasRoutes);
+routes.use("/api/bonus-offers", bonusOffersRoutes);
+routes.use("/api/calendar-prices", calendarPricesRoutes);
+routes.use("/api/demo-flights", demoFlightsRoutes);
+routes.use("/api/invites", invitesRoutes);
+routes.use("/api/registration", registrationRoutes);
+
+routes.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend API rodando em http://localhost:${PORT}`);
-});
+// Na Vercel (Services) o pedido pode vir como /_/backend/api/... ou já sem o prefixo.
+if (process.env.VERCEL) {
+  app.use((req, _res, next) => {
+    if (req.url.startsWith("/_/backend")) {
+      req.url = req.url.slice("/_/backend".length) || "/";
+    }
+    next();
+  });
+}
+app.use(routes);
+
+export default app;
+
+// Desenvolvimento local: `npm run dev` em backend/. Na Vercel (Services) usa-se o export default.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Backend API rodando em http://localhost:${PORT}`);
+  });
+}
