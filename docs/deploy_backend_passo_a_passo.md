@@ -166,6 +166,7 @@ No projeto **`gest-miles-usuario-front`** (front) → **Settings → Environment
 | Webhook 400 signature | `whsec` errado ou variável só no projeto do front |
 | API 404 na Vercel | Root Directory não é `backend/`; ou deploy do repo errado |
 | Build remove `/backend/package.json` | `.vercelignore` na **raiz** do repo não pode conter `backend` — esse ficheiro aplica-se a todos os projetos Vercel do mesmo repo |
+| `Missing script: "build"` | O `backend/package.json` inclui `npm run build` (passo vazio); na Vercel deixa **Build Command** por defeito ou `npm run build` |
 | Front não chama API | `VITE_API_URL` em falta / redeploy |
 
 Mais detalhes Stripe: [stripe_setup.md](./stripe_setup.md).

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "node --watch src/index.js",
+    "build": "node -e \"console.log('backend: no compile step')\"",
     "start": "node src/index.js"
   },
   "dependencies": {
