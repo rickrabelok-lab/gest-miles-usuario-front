@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +34,7 @@ type MeResponse = {
  * e, com assinatura ativa, o portal de faturação.
  */
 const AssinaturaClientePage = () => {
+  const navigate = useNavigate();
   const { session } = useAuth();
   const token = session?.access_token ?? null;
 
@@ -147,6 +150,16 @@ const AssinaturaClientePage = () => {
   if (!hasApiUrl()) {
     return (
       <div className="mx-auto max-w-lg p-6">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="mb-4 -ml-1 h-8 px-2 text-xs text-muted-foreground"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </Button>
         <Card>
           <CardHeader>
             <CardTitle>Indisponível</CardTitle>
@@ -165,6 +178,16 @@ const AssinaturaClientePage = () => {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 pb-24 md:p-8">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="-ml-1 h-8 px-2 text-xs text-muted-foreground"
+        onClick={() => navigate(-1)}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Voltar
+      </Button>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Planos e subscrição</h1>
         <p className="text-sm text-muted-foreground">
