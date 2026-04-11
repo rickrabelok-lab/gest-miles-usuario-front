@@ -6,7 +6,7 @@ import { mapPerfilRoleForOperationalUi } from "@/lib/roles";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { homePathForRole } from "@/lib/homeRoute";
-import { staffWebAppBaseUrlForRole } from "@/lib/staffAppUrls";
+import { staffAppEntryUrl } from "@/lib/staffAppUrls";
 import { PENDING_INVITE_TOKEN_KEY } from "@/lib/authFlowStorage";
 import { apiFetch, hasApiUrl } from "@/services/api";
 
@@ -47,9 +47,9 @@ const Me = () => {
       if (existing?.slug) {
         await refreshRole();
         const mapped = mapPerfilRoleForOperationalUi(existing.role);
-        const staffBase = staffWebAppBaseUrlForRole(mapped);
-        if (staffBase) {
-          window.location.replace(`${staffBase}/auth`);
+        const entry = staffAppEntryUrl(mapped);
+        if (entry) {
+          window.location.replace(entry);
           return;
         }
         setRedirectTo(homePathForRole(mapped));

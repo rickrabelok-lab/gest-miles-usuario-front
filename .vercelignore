@@ -1,2 +1,3 @@
-# Deploy na Vercel = apenas o front (Vite). O Express em ./backend corre em dev ou noutro host (Railway, Render, VM, segundo projeto Vercel com root=backend).
-backend
+# Não listar `backend` aqui: um segundo projeto na Vercel usa Root Directory = `backend`
+# e o .vercelignore da raiz aplica-se a todo o clone — ignorar `backend` quebrava esse deploy.
+# O build do front (Vite) não inclui o Express no bundle; só sobe mais ficheiros no upload.

@@ -1,7 +1,7 @@
 import type { AppRole } from "@/lib/roles";
 
 /**
- * Home no app de utilizadores (só clientes). CS/gestor/admin usam outros fronts — ver `staffAppUrls.ts`.
+ * Destino pós-login / onboarding no app de clientes (admin usa o painel Admin externo).
  */
 export function homePathForRole(_role: AppRole | null): string {
   return "/";

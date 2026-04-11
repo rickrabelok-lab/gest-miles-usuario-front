@@ -3,7 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LoyaltyProgramDetails from "./pages/LoyaltyProgramDetails";
 import Auth from "./pages/Auth";
@@ -28,9 +27,11 @@ import SimularCompraMilhasPage from "./pages/SimularCompraMilhasPage";
 import RadarOportunidadesPage from "./pages/RadarOportunidadesPage";
 import ClienteInsightsPage from "./pages/ClienteInsightsPage";
 import ClienteTimelinePage from "./pages/ClienteTimelinePage";
+import AssinaturaClientePage from "./pages/AssinaturaClientePage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
 import RequireAuth from "@/components/RequireAuth";
+import HomeGate from "@/components/HomeGate";
 import RequireClienteApp from "@/components/RequireClienteApp";
 import MissingSupabaseConfig from "@/components/MissingSupabaseConfig";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -65,11 +66,12 @@ const App = () => {
             }}
           >
             <Routes>
+              <Route path="/" element={<HomeGate />} />
               <Route
-                path="/"
+                path="/assinatura"
                 element={
                   <ClienteOnly>
-                    <Index />
+                    <AssinaturaClientePage />
                   </ClienteOnly>
                 }
               />

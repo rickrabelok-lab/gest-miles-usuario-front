@@ -23,9 +23,19 @@ export function managerOperationalRoles(): AppRole[] {
  */
 export function staffWebAppBaseUrlForRole(role: AppRole | null): string | null {
   if (!role) return null;
-  if (role === "admin") return adminAppBaseUrl();
+  if (role === "admin") {
+    return adminAppBaseUrl();
+  }
   if (managerOperationalRoles().includes(role)) return managerAppBaseUrl();
   return null;
+}
+
+/** URL de login no painel Manager ou Admin (o Admin usa `/login`, o Manager `/auth`). */
+export function staffAppEntryUrl(role: AppRole | null): string | null {
+  const base = staffWebAppBaseUrlForRole(role);
+  if (!base) return null;
+  if (role === "admin") return `${base}/login`;
+  return `${base}/auth`;
 }
 
 export function isClienteAppRole(role: AppRole | null): boolean {

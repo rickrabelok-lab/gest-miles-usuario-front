@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { isClienteAppRole, staffWebAppBaseUrlForRole } from "@/lib/staffAppUrls";
+import { isClienteAppRole, staffAppEntryUrl } from "@/lib/staffAppUrls";
 
 type Props = {
   children: JSX.Element;
@@ -16,10 +16,8 @@ const RequireClienteApp = ({ children }: Props) => {
 
   useEffect(() => {
     if (roleLoading || !role) return;
-    const base = staffWebAppBaseUrlForRole(role);
-    if (base) {
-      window.location.replace(`${base}/auth`);
-    }
+    const url = staffAppEntryUrl(role);
+    if (url) window.location.replace(url);
   }, [role, roleLoading]);
 
   if (roleLoading) {
@@ -38,7 +36,7 @@ const RequireClienteApp = ({ children }: Props) => {
     );
   }
 
-  if (staffWebAppBaseUrlForRole(role)) {
+  if (staffAppEntryUrl(role)) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
         A redirecionar...
