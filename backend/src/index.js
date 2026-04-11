@@ -18,6 +18,11 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: true, credentials: true }));
 
+/** Raiz — evita 404 ao abrir o URL do deploy na Vercel */
+app.get("/", (_req, res) => {
+  res.json({ ok: true, service: "gest-miles-api", health: "/api/health" });
+});
+
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),

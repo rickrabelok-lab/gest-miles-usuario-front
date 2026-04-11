@@ -51,13 +51,14 @@ O `whsec_…` do webhook só depois de criares o endpoint no Stripe (passo 5).
 | Variável | Obrigatório | Onde |
 |----------|---------------|------|
 | `SUPABASE_URL` | Sim | API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Sim | API |
+| `SUPABASE_ANON_KEY` | Sim | API — chave **anon** (o `backend/src/lib/supabase.js` falha ao arrancar sem ela) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Sim | API — rotas admin / Stripe / service |
 | `STRIPE_SECRET_KEY` | Sim | API |
 | `PUBLIC_APP_URL` | Sim | API — URL do **front** Vercel (checkout / portal) |
 | `STRIPE_WEBHOOK_SECRET` | Sim após passo 5 | API |
 | `VITE_API_URL` | Sim | **Só no front** — URL base da API |
 
-Opcional: `SUPABASE_ANON_KEY`, `BREVO_*`, etc.
+Opcional: `BREVO_*`, etc.
 
 ---
 
@@ -72,10 +73,12 @@ Usa o mesmo GitHub; crias **outro** projeto na Vercel só para a pasta `backend/
    - **Framework Preset**: **Express** (ou *Other*; o `backend/vercel.json` fixa `framework: express`).
    - **Build Command**: `npm run build` (o script só confirma o passo; podes deixar igual ao repo).
    - **Output Directory**: **`.`** (ponto = raiz do pacote) ou deixa em branco — **não** uses `dist` (isso é para Vite). O ficheiro `vercel.json` no backend força `outputDirectory: "."` para não herdar `dist` de outro projeto.
-3. **Environment Variables** (Production): cola `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `PUBLIC_APP_URL` (URL do teu front, ex. `https://gest-miles-usuario-front-xxx.vercel.app`). Ainda **sem** `STRIPE_WEBHOOK_SECRET` se ainda não tens o endpoint no Stripe.
+3. **Environment Variables** (Production): `SUPABASE_URL`, **`SUPABASE_ANON_KEY`**, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `PUBLIC_APP_URL` (URL do teu front). Ainda **sem** `STRIPE_WEBHOOK_SECRET` se ainda não tens o endpoint no Stripe.
 4. **Deploy**.
 5. Anota o domínio gerado, ex. `https://gest-miles-api-xxx.vercel.app`.
-6. Testa no browser: `https://<teu-dominio-api>/api/health` → deve responder JSON com `ok: true`.
+6. Testa no browser: `https://<teu-dominio-api>/` (JSON com `service` e `health`) e `https://<teu-dominio-api>/api/health` → `ok: true`.
+
+Se vires **500 / FUNCTION_INVOCATION_FAILED**: confirma variáveis (sobretudo `SUPABASE_*`) e vê **Logs** do deployment na Vercel; falta de módulo ou `Missing SUPABASE_URL` aparece aí.
 
 Ficheiros relevantes no repo:
 
