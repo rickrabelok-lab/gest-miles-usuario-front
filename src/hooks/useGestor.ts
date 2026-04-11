@@ -34,6 +34,16 @@ export type GestorClienteResumo = {
   /** Score estratégico 0-100 */
   scoreEstrategico: number;
   riscoCarteira: RiscoCarteira;
+  cpf: string | null;
+  dataNascimento: string | null;
+  email: string | null;
+  endereco: string | null;
+  passaporte: string | null;
+  telefone: string | null;
+  /** Programas ativos no plano de ação (ex.: ["smiles", "avios"]) */
+  planoAcaoAtivo: string[];
+  demandasPendentes: number;
+  demandasAndamento: number;
 };
 
 export type DrePeriodo = {
@@ -176,7 +186,7 @@ export const useGestor = (
     queryFn: async () => {
       const { data, error } = await supabase
         .from("perfis")
-        .select("usuario_id, nome_completo, configuracao_tema")
+        .select("usuario_id, nome_completo, configuracao_tema, cpf, data_nascimento, email, numero_telefone")
         .in("usuario_id", allClientIds);
       if (error) throw error;
       return data ?? [];
@@ -375,8 +385,48 @@ export const useGestor = (
 
   const resumoClientes = useMemo<GestorClienteResumo[]>(() => {
     const profiles = new Map<string, string>();
+    const profileExtras = new Map<
+      string,
+      {
+        cpf: string | null;
+        dataNascimento: string | null;
+        email: string | null;
+        endereco: string | null;
+        passaporte: string | null;
+        telefone: string | null;
+        planoAcaoAtivo: string[];
+      }
+    >();
     (profilesQuery.data ?? []).forEach((row) => {
-      profiles.set(row.usuario_id as string, (row.nome_completo as string) ?? "Cliente");
+      const uid = row.usuario_id as string;
+      profiles.set(uid, (row.nome_completo as string) ?? "Cliente");
+
+      const config = (row.configuracao_tema ?? {}) as Record<string, unknown>;
+      const perfil = (config.clientePerfil ?? {}) as Record<string, unknown>;
+      const planoObj = (perfil.planoAcao ?? {}) as Record<string, boolean>;
+      const programasAtivos = Object.entries(planoObj)
+        .filter(([, v]) => v === true)
+        .map(([k]) => k);
+
+      profileExtras.set(uid, {
+        cpf: (row.cpf as string) ?? (perfil.cpf as string) ?? null,
+        dataNascimento: (row.data_nascimento as string) ?? (perfil.dataNascimento as string) ?? null,
+        email: (row.email as string) ?? (perfil.emailContato as string) ?? null,
+        endereco: (perfil.endereco as string) ?? null,
+        passaporte: (perfil.passaporte as string) ?? null,
+        telefone: (row.numero_telefone as string) ?? null,
+        planoAcaoAtivo: programasAtivos,
+      });
+    });
+
+    const demandasByCliente = new Map<string, { pendentes: number; andamento: number }>();
+    (demandasQuery.data ?? []).forEach((row) => {
+      const cid = row.cliente_id as string;
+      const status = (row.status as string) ?? "";
+      const cur = demandasByCliente.get(cid) ?? { pendentes: 0, andamento: 0 };
+      if (status === "pendente") cur.pendentes += 1;
+      else if (status === "em_andamento" || status === "andamento") cur.andamento += 1;
+      demandasByCliente.set(cid, cur);
     });
 
     const gestoresByCliente = gestoresPorClienteQuery.data ?? {};
@@ -548,6 +598,7 @@ export const useGestor = (
         cur.riscoCarteira = "baixo";
       }
 
+      const extras = profileExtras.get(cur.clienteId);
       result.push({
         clienteId: cur.clienteId,
         nome: cur.nome,
@@ -563,11 +614,20 @@ export const useGestor = (
         concentracaoMaxima: cur.concentracaoMaxima,
         scoreEstrategico: cur.scoreEstrategico,
         riscoCarteira: cur.riscoCarteira,
+        cpf: extras?.cpf ?? null,
+        dataNascimento: extras?.dataNascimento ?? null,
+        email: extras?.email ?? null,
+        endereco: extras?.endereco ?? null,
+        passaporte: extras?.passaporte ?? null,
+        telefone: extras?.telefone ?? null,
+        planoAcaoAtivo: extras?.planoAcaoAtivo ?? [],
+        demandasPendentes: demandasByCliente.get(cur.clienteId)?.pendentes ?? 0,
+        demandasAndamento: demandasByCliente.get(cur.clienteId)?.andamento ?? 0,
       });
     });
 
     return result;
-  }, [allClientIds, profilesQuery.data, programsQuery.data, gestoresPorClienteQuery.data]);
+  }, [allClientIds, profilesQuery.data, programsQuery.data, gestoresPorClienteQuery.data, demandasQuery.data]);
 
   const vencimentosTodosClientes = useMemo<GestorVencimentoItem[]>(() => {
     const profiles = new Map<string, string>();

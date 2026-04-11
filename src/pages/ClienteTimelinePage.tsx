@@ -3,6 +3,7 @@ import { Navigate, useParams } from "react-router-dom";
 
 import DashboardHeader from "@/components/DashboardHeader";
 import RequireAuth from "@/components/RequireAuth";
+import RequireClienteApp from "@/components/RequireClienteApp";
 import ClientTimelineSection from "@/components/timeline/ClientTimelineSection";
 import { useAuth } from "@/contexts/AuthContext";
 import { homePathForRole } from "@/lib/homeRoute";
@@ -10,7 +11,9 @@ import { homePathForRole } from "@/lib/homeRoute";
 export default function ClienteTimelinePage() {
   return (
     <RequireAuth>
-      <ClienteTimelinePageInner />
+      <RequireClienteApp>
+        <ClienteTimelinePageInner />
+      </RequireClienteApp>
     </RequireAuth>
   );
 }
@@ -27,7 +30,6 @@ function ClienteTimelinePageInner() {
 
     // Segurança/permite reais dependem de RLS no Supabase.
     // Nota: esta regra é de UX/navegação.
-    if (role === "gestor" || role === "cs" || role === "admin") return true;
     if (role === "cliente_gestao") return user.id === id;
     return false;
   }, [id, role, user]);

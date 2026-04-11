@@ -1,12 +1,8 @@
 import type { AppRole } from "@/lib/roles";
 
 /**
- * Rota "home" por perfil — evita CS cair em `/` (carteira pessoal / UX de cliente).
- * Nota: só UX; a API/RLS continua sendo a fonte da verdade.
+ * Home no app de utilizadores (só clientes). CS/gestor/admin usam outros fronts — ver `staffAppUrls.ts`.
  */
-export function homePathForRole(role: AppRole | null): string {
-  if (role === "cliente_gestao") return "/";
-  if (role === "cs" || role === "admin_equipe") return "/cs";
-  if (role === "gestor") return "/gestor";
+export function homePathForRole(_role: AppRole | null): string {
   return "/";
 }

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, BarChart3, Bell, ClipboardList, Clock, Pencil, Shield, Moon, Star, Sun, Trophy, Users } from "lucide-react";
 
@@ -33,6 +34,7 @@ import GestorComparativo from "@/components/gestor/GestorComparativo";
 import GestorHistorico from "@/components/gestor/GestorHistorico";
 import GestorExport from "@/components/gestor/GestorExport";
 import CsVincularClienteCard from "@/components/gestor/CsVincularClienteCard";
+import GestorConviteGestaoCard from "@/components/gestor/GestorConviteGestaoCard";
 import CsNpsCarteiraSection from "@/components/nps/CsNpsCarteiraSection";
 import CsCsatSection from "@/components/csat/CsCsatSection";
 import CsGestorPerformanceSection from "@/components/gestor/CsGestorPerformanceSection";
@@ -146,6 +148,7 @@ const CsGestorCollapsibleRow = ({ g, onOpenClient, onEditNome }: CsGestorCollaps
 
 const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { role, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
@@ -309,6 +312,40 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
     });
     navigate(`/?clientId=${encodeURIComponent(clientId)}`);
   };
+
+  const handleTogglePlanoAcao = useCallback(
+    async (clientId: string, program: string, active: boolean) => {
+      try {
+        const { data: row, error: readErr } = await supabase
+          .from("perfis")
+          .select("configuracao_tema")
+          .eq("usuario_id", clientId)
+          .maybeSingle();
+        if (readErr) throw readErr;
+
+        const config = ((row?.configuracao_tema ?? {}) as Record<string, unknown>);
+        const perfil = ((config.clientePerfil ?? {}) as Record<string, unknown>);
+        const planoAcao = { ...((perfil.planoAcao ?? {}) as Record<string, boolean>), [program]: active };
+        const nextConfig = { ...config, clientePerfil: { ...perfil, planoAcao } };
+
+        const { error: upErr } = await supabase
+          .from("perfis")
+          .update({ configuracao_tema: nextConfig })
+          .eq("usuario_id", clientId);
+        if (upErr) throw upErr;
+
+        void queryClient.invalidateQueries({ queryKey: ["cliente_gestores_perfis"] });
+        toast.success(
+          active
+            ? `${program.charAt(0).toUpperCase() + program.slice(1)} adicionado ao plano.`
+            : `${program.charAt(0).toUpperCase() + program.slice(1)} removido do plano.`,
+        );
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Erro ao atualizar plano de ação.");
+      }
+    },
+    [queryClient],
+  );
 
   const vencimentosOrdenados = useMemo(
     () => [...vencimentosTodosClientes].slice(0, 100),
@@ -530,6 +567,8 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
         <CsVincularClienteCard grupos={csGrupos} gestoresSomenteDireto={csDiretos} />
       )}
 
+      {variant === "cs" && (role === "cs" || role === "admin_equipe") && <GestorConviteGestaoCard />}
+
       {variant === "cs" && csGrupos.length > 0 && (
         <section className="mb-4">
           <Button type="button" className="w-full" onClick={() => navigate("/cs/agendar-reuniao")}>
@@ -729,7 +768,12 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
         </div>
 
         <TabsContent value="clientes" className="mt-3">
-          <GestorClientsTable clients={resumoClientes} onOpenClient={handleOpenClient} />
+          <GestorClientsTable
+            clients={resumoClientes}
+            onOpenClient={handleOpenClient}
+            onTogglePlanoAcao={handleTogglePlanoAcao}
+            variant={variant}
+          />
         </TabsContent>
 
         <TabsContent value="vencendo" className="mt-3 space-y-3">

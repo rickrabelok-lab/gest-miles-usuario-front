@@ -7,7 +7,15 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
+    // Deixe 3000 livre para o Express (backend/). Front em :3080.
     port: 3080,
+    proxy: {
+      // Com VITE_API_URL=/ no .env.local, o browser chama /api/* no Vite e o dev server encaminha para o Express.
+      "/api": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+    },
     hmr: {
       overlay: false,
     },
