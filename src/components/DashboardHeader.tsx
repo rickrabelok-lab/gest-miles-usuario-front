@@ -16,6 +16,7 @@ import {
   MessageCircle,
   Calculator,
   Radio,
+  CreditCard,
 } from "lucide-react";
 import GestMilesLogo from "@/components/GestMilesLogo";
 import { useEffect, useState } from "react";
@@ -241,6 +242,10 @@ const DashboardHeader = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/perfil")}>
                     Meu perfil
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/assinatura")}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Planos e subscrição
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
