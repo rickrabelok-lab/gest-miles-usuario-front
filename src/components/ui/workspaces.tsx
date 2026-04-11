@@ -11,7 +11,9 @@ import {
 export interface Workspace {
   id: string;
   name: string;
-  [key: string]: any;
+  logo?: string;
+  plan?: string;
+  [key: string]: unknown;
 }
 
 interface WorkspaceContextValue<T extends Workspace> {
@@ -24,7 +26,7 @@ interface WorkspaceContextValue<T extends Workspace> {
   getWorkspaceName: (workspace: T) => string;
 }
 
-const WorkspaceContext = React.createContext<WorkspaceContextValue<any> | null>(
+const WorkspaceContext = React.createContext<WorkspaceContextValue<Workspace> | null>(
   null,
 );
 
@@ -141,7 +143,7 @@ function WorkspaceTrigger({
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Avatar className="h-6 w-6">
             <AvatarImage
-              src={(selectedWorkspace as any).logo}
+              src={selectedWorkspace.logo}
               alt={getWorkspaceName(selectedWorkspace)}
             />
             <AvatarFallback className="text-xs">
@@ -204,7 +206,7 @@ function WorkspaceContent({
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <Avatar className="h-6 w-6">
         <AvatarImage
-          src={(workspace as any).logo}
+          src={workspace.logo}
           alt={getWorkspaceName(workspace)}
         />
         <AvatarFallback className="text-xs">
@@ -213,9 +215,9 @@ function WorkspaceContent({
       </Avatar>
       <div className="flex min-w-0 flex-1 flex-col items-start">
         <span className="truncate text-sm">{getWorkspaceName(workspace)}</span>
-        {(workspace as any).plan && (
+        {workspace.plan && (
           <span className="text-muted-foreground text-xs">
-            {(workspace as any).plan}
+            {workspace.plan}
           </span>
         )}
       </div>
