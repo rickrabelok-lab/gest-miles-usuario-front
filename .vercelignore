@@ -1,0 +1,2 @@
+# Deploy na Vercel = apenas o front (Vite). O Express em ./backend corre em dev ou noutro host (Railway, Render, VM, segundo projeto Vercel com root=backend).
+backend
