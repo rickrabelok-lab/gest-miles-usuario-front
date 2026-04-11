@@ -7,17 +7,15 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LoyaltyProgramDetails from "./pages/LoyaltyProgramDetails";
 import Auth from "./pages/Auth";
+import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import AcceptInvite from "./pages/AcceptInvite";
 import Me from "./pages/Me";
-import GestorDashboard from "./pages/GestorDashboard";
-import CsAgendarReuniaoPage from "./pages/CsAgendarReuniaoPage";
-import CsAlertasInteligentesPage from "./pages/CsAlertasInteligentesPage";
-import CsTarefasPage from "./pages/CsTarefasPage";
-import GestorReunioesPage from "./pages/GestorReunioesPage";
 import ClientProfile from "./pages/ClientProfile";
 import SearchFlightsScreen from "./pages/SearchFlightsScreen";
 import PriceCalendarScreen from "./pages/PriceCalendarScreen";
 import BonusOffersScreen from "./pages/BonusOffersScreen";
-import ClientePage from "./pages/ClientePage";
 import VencimentosPage from "./pages/VencimentosPage";
 import RegistrarEmissaoPage from "./pages/RegistrarEmissaoPage";
 import CriarAlertaPage from "./pages/CriarAlertaPage";
@@ -32,13 +30,21 @@ import ClienteInsightsPage from "./pages/ClienteInsightsPage";
 import ClienteTimelinePage from "./pages/ClienteTimelinePage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
-import ProtectedByRole from "@/components/RequireRole";
 import RequireAuth from "@/components/RequireAuth";
-import CsHomeRedirect from "@/components/CsHomeRedirect";
+import RequireClienteApp from "@/components/RequireClienteApp";
 import MissingSupabaseConfig from "@/components/MissingSupabaseConfig";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 const queryClient = new QueryClient();
+
+/** Rotas exclusivas de cliente / cliente gestão (equipa interna usa Manager ou Admin). */
+function ClienteOnly({ children }: { children: JSX.Element }) {
+  return (
+    <RequireAuth>
+      <RequireClienteApp>{children}</RequireClienteApp>
+    </RequireAuth>
+  );
+}
 
 const App = () => {
   if (!isSupabaseConfigured) {
@@ -52,174 +58,145 @@ const App = () => {
       <Sonner />
       <AuthProvider>
         <SearchFlightsProvider>
-          <BrowserRouter>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
             <Routes>
               <Route
                 path="/"
                 element={
-                  <RequireAuth>
-                    <CsHomeRedirect>
-                      <Index />
-                    </CsHomeRedirect>
-                  </RequireAuth>
+                  <ClienteOnly>
+                    <Index />
+                  </ClienteOnly>
                 }
               />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/sign-up" element={<SignUp />} />
+              <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/accept-invite" element={<AcceptInvite />} />
               <Route path="/me" element={<Me />} />
-              <Route path="/search-flights" element={<SearchFlightsScreen />} />
-              <Route path="/price-calendar" element={<PriceCalendarScreen />} />
-              <Route path="/bonus-offers" element={<BonusOffersScreen />} />
+              <Route
+                path="/search-flights"
+                element={
+                  <ClienteOnly>
+                    <SearchFlightsScreen />
+                  </ClienteOnly>
+                }
+              />
+              <Route
+                path="/price-calendar"
+                element={
+                  <ClienteOnly>
+                    <PriceCalendarScreen />
+                  </ClienteOnly>
+                }
+              />
+              <Route
+                path="/bonus-offers"
+                element={
+                  <ClienteOnly>
+                    <BonusOffersScreen />
+                  </ClienteOnly>
+                }
+              />
               <Route
                 path="/registrar-emissao"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <RegistrarEmissaoPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
               <Route
                 path="/alertas/novo"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <CriarAlertaPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
               <Route
                 path="/perfil"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <ClientProfile />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/gestor"
-                element={
-                  <ProtectedByRole allow={["gestor", "admin"]}>
-                    <GestorDashboard />
-                  </ProtectedByRole>
-                }
-              />
-              <Route
-                path="/gestor/reunioes"
-                element={
-                  <ProtectedByRole allow={["gestor", "admin"]}>
-                    <GestorReunioesPage />
-                  </ProtectedByRole>
-                }
-              />
-              <Route
-                path="/cliente"
-                element={
-                  <ProtectedByRole allow={["gestor", "admin"]}>
-                    <ClientePage />
-                  </ProtectedByRole>
-                }
-              />
-              <Route
-                path="/clientes"
-                element={
-                  <ProtectedByRole allow={["gestor", "admin"]}>
-                    <ClientePage />
-                  </ProtectedByRole>
-                }
-              />
-              <Route
-                path="/cs"
-                element={
-                  <ProtectedByRole allow={["cs", "admin"]}>
-                    <GestorDashboard variant="cs" />
-                  </ProtectedByRole>
-                }
-              />
-              <Route
-                path="/cs/agendar-reuniao"
-                element={
-                  <ProtectedByRole allow={["cs", "admin"]}>
-                    <CsAgendarReuniaoPage />
-                  </ProtectedByRole>
-                }
-              />
-              <Route
-                path="/cs/alertas"
-                element={
-                  <ProtectedByRole allow={["cs", "admin"]}>
-                    <CsAlertasInteligentesPage />
-                  </ProtectedByRole>
-                }
-              />
-              <Route
-                path="/cs/tarefas"
-                element={
-                  <ProtectedByRole allow={["cs", "admin"]}>
-                    <CsTarefasPage />
-                  </ProtectedByRole>
+                  </ClienteOnly>
                 }
               />
               <Route
                 path="/preferencias-sugestoes"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <PreferenciasSugestoesPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
               <Route
                 path="/simular-compra-milhas"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <SimularCompraMilhasPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
               <Route
                 path="/radar-oportunidades"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <RadarOportunidadesPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
               <Route
                 path="/vencimentos"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <VencimentosPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
-              <Route path="/program/:programId" element={<LoyaltyProgramDetails />} />
+              <Route
+                path="/program/:programId"
+                element={
+                  <ClienteOnly>
+                    <LoyaltyProgramDetails />
+                  </ClienteOnly>
+                }
+              />
               <Route
                 path="/sobre"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <SobreGestMilesPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
               <Route
                 path="/convide-amigos"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <ConvideAmigosPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
               <Route
                 path="/duvidas"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <DuvidasPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
               <Route
                 path="/fale-conosco"
                 element={
-                  <RequireAuth>
+                  <ClienteOnly>
                     <FaleConoscoPage />
-                  </RequireAuth>
+                  </ClienteOnly>
                 }
               />
               <Route path="/cliente/:id/insights" element={<ClienteInsightsPage />} />

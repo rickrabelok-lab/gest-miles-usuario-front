@@ -28,6 +28,7 @@ export function mapPerfilRoleForOperationalUi(raw: unknown): AppRole {
   const r = String(raw ?? "")
     .trim()
     .toLowerCase();
+  if (r === "admin") return "admin";
   const operational = normalizeManagerRole(r);
   if (operational) return operational;
   if (r === "cliente" || r === "cliente_gestao") return r as AppRole;

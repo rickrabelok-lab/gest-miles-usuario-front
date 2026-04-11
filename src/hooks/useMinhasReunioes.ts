@@ -70,13 +70,19 @@ export function useMinhasReunioes(enabled = true) {
         clienteNomeById.set(c.usuario_id as string, ((c.nome_completo as string) ?? "").trim() || "Cliente");
       });
 
-      return (reunioes ?? []).map((r) => ({
-        id: r.id as string,
-        titulo: (r.titulo as string) ?? "Reunião",
-        startsAt: r.starts_at as string,
-        equipeNome: equipeNomeById.get(r.equipe_id as string) ?? "Equipe",
-        clienteNome: r.cliente_id ? (clienteNomeById.get(r.cliente_id as string) ?? "Cliente") : null,
-      }));
+      const nowMs = Date.now();
+      return (reunioes ?? [])
+        .map((r) => ({
+          id: r.id as string,
+          titulo: (r.titulo as string) ?? "Reunião",
+          startsAt: r.starts_at as string,
+          equipeNome: equipeNomeById.get(r.equipe_id as string) ?? "Equipe",
+          clienteNome: r.cliente_id ? (clienteNomeById.get(r.cliente_id as string) ?? "Cliente") : null,
+        }))
+        .filter((item) => {
+          const t = new Date(item.startsAt).getTime();
+          return Number.isFinite(t) && t >= nowMs;
+        });
     },
   });
 

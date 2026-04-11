@@ -17,6 +17,21 @@ Base URL: defina `VITE_API_URL` no front (ex.: `http://localhost:3000`).
 | POST | `/api/auth/magic-link` | Corpo: `{ email, redirectTo? }` |
 | GET | `/api/auth/session?token=` | Valida token |
 | GET | `/api/auth/user?token=` | Utilizador |
+| POST | `/api/auth/request-password-reset` | Corpo: `{ email }` — envia link (Brevo); requer `SUPABASE_SERVICE_ROLE_KEY` |
+| POST | `/api/auth/complete-password-reset` | Corpo: `{ token, password }` — conclui reset; envia e-mail de confirmação |
+
+## Convites e cadastro empresa (Bearer quando assinalado)
+
+| Método | Caminho | Descrição |
+|--------|---------|-----------|
+| GET | `/api/invites/preview?token=` | Público: valida convite |
+| POST | `/api/invites/convidar` | Gestor/CS/admin: `{ email }` — envia convite cliente gestão |
+| POST | `/api/invites/accept` | Bearer: `{ token }` — aceita convite após signup |
+| POST | `/api/invites/welcome` | Bearer: envia boas-vindas uma vez |
+| POST | `/api/registration/check-cnpj` | Bearer **admin**: `{ cnpj }` — `available` para dedupe |
+| POST | `/api/registration/attach-organizacao` | Bearer **admin**: `{ cnpj, nomeFantasia, usuarioId }` — associa organização ao perfil `usuarioId` |
+
+Variáveis de ambiente: `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `PUBLIC_APP_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Carteira / gestor
 
