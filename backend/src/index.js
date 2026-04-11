@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./load-env.js";
 import express from "express";
 import cors from "cors";
 
@@ -10,6 +10,9 @@ import demandasRoutes from "./routes/demandas.js";
 import bonusOffersRoutes from "./routes/bonusOffers.js";
 import calendarPricesRoutes from "./routes/calendarPrices.js";
 import demoFlightsRoutes from "./routes/demoFlights.js";
+import passwordResetRoutes from "./routes/passwordReset.js";
+import invitesRoutes from "./routes/invites.js";
+import registrationRoutes from "./routes/registration.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +21,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/auth", passwordResetRoutes);
 app.use("/api/programas-cliente", programasClienteRoutes);
 app.use("/api/gestor", gestorRoutes);
 app.use("/api/perfis", perfisRoutes);
@@ -25,6 +29,8 @@ app.use("/api/demandas", demandasRoutes);
 app.use("/api/bonus-offers", bonusOffersRoutes);
 app.use("/api/calendar-prices", calendarPricesRoutes);
 app.use("/api/demo-flights", demoFlightsRoutes);
+app.use("/api/invites", invitesRoutes);
+app.use("/api/registration", registrationRoutes);
 
 app.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
