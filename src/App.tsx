@@ -36,7 +36,15 @@ import RequireClienteApp from "@/components/RequireClienteApp";
 import MissingSupabaseConfig from "@/components/MissingSupabaseConfig";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 /** Rotas exclusivas de cliente / cliente gestão (equipa interna usa Manager ou Admin). */
 function ClienteOnly({ children }: { children: JSX.Element }) {

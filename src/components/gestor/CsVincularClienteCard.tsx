@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import type { CsGestorItem, CsGrupoGestores } from "@/hooks/useCsGestores";
 import { useCsVincularCliente, useCsVincularClienteNaEquipe } from "@/hooks/useCsVincularCliente";
-import { logAcao } from "@/lib/audit";
+import { logAuditoria } from "@/lib/audit";
 import { nomeGestorParaExibicao } from "@/lib/csGestorDisplay";
 import { toast } from "sonner";
 
@@ -58,7 +58,7 @@ const CsVincularClienteCard = ({ grupos, gestoresSomenteDireto }: Props) => {
         `Cliente vinculado a ${r.linked} gestor(es) da equipe${r.skipped ? ` (${r.skipped} já vinculado)` : ""}.`,
       );
       setClienteUuid("");
-      await logAcao({
+      await logAuditoria({
         tipoAcao: "cs_vinculou_cliente_equipe",
         entidadeAfetada: "cliente_gestores",
         entidadeId: cid,
@@ -92,7 +92,7 @@ const CsVincularClienteCard = ({ grupos, gestoresSomenteDireto }: Props) => {
       await mutUmGestor.mutateAsync({ clienteId: cid, gestorId: gid });
       toast.success("Cliente vinculado ao gestor.");
       setClienteUuid("");
-      await logAcao({
+      await logAuditoria({
         tipoAcao: "cs_vinculou_cliente_gestor",
         entidadeAfetada: "cliente_gestores",
         entidadeId: cid,

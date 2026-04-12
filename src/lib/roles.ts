@@ -34,3 +34,17 @@ export function mapPerfilRoleForOperationalUi(raw: unknown): AppRole {
   if (r === "cliente" || r === "cliente_gestao") return r as AppRole;
   return "cliente";
 }
+
+/** Alinhado com `@gest/core` — tipo de ação para log “visualizou cliente”. */
+export function tipoLogVisualizacaoCliente(role: AppRole | null): string {
+  switch (role) {
+    case "cs":
+      return "cs_visualizou_cliente";
+    case "admin_equipe":
+      return "admin_equipe_visualizou_cliente";
+    case "admin":
+      return "admin_visualizou_cliente";
+    default:
+      return "gestor_visualizou_cliente";
+  }
+}

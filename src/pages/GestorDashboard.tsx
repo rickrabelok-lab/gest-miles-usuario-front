@@ -40,7 +40,8 @@ import CsCsatSection from "@/components/csat/CsCsatSection";
 import CsGestorPerformanceSection from "@/components/gestor/CsGestorPerformanceSection";
 import CsAlertasInteligentesSection from "@/components/gestor/CsAlertasInteligentesSection";
 import NotificationsDropdown from "@/components/notifications/NotificationsDropdown";
-import { logAcao } from "@/lib/audit";
+import { logOperacional } from "@/lib/audit";
+import { tipoLogVisualizacaoCliente } from "@/lib/roles";
 import type { RiscoCarteira } from "@/hooks/useGestor";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -301,9 +302,8 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
   }, [demandasLocal, demandStatusFilter]);
 
   const handleOpenClient = async (clientId: string) => {
-    await logAcao({
-      tipoAcao:
-        variant === "cs" ? "cs_visualizou_cliente" : "gestor_visualizou_cliente",
+    await logOperacional({
+      tipoAcao: tipoLogVisualizacaoCliente(role),
       entidadeAfetada: "cliente",
       entidadeId: clientId,
       details: {
