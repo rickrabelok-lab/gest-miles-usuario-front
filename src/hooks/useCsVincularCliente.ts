@@ -57,29 +57,24 @@ export function useCsVincularClienteNaEquipe() {
       } = await supabase.auth.getUser();
       if (!user?.id) throw new Error("Faça login novamente.");
 
-      const { data: rows, error: egErr } = await supabase
+      const { data: egRows, error: egErr } = await supabase
         .from("equipe_gestores")
         .select("gestor_id")
         .eq("equipe_id", equipe_id);
       if (egErr) throw egErr;
-      const gestorIds = [...new Set((rows ?? []).map((r) => r.gestor_id as string).filter(Boolean))];
+      const gestorIds = [...new Set((egRows ?? []).map((r) => r.gestor_id as string).filter(Boolean))];
       if (gestorIds.length === 0) {
         throw new Error("Esta equipe não tem gestores em equipe_gestores.");
       }
 
-      let linked = 0;
-      let skipped = 0;
-      for (const gestor_id of gestorIds) {
-        const { error } = await supabase.from("cliente_gestores").insert({ cliente_id, gestor_id });
-        if (error) {
-          if (error.code === "23505") {
-            skipped += 1;
-            continue;
-          }
-          throw error;
-        }
-        linked += 1;
-      }
+      const rows = gestorIds.map((gestor_id) => ({ cliente_id, gestor_id }));
+      const { data, error } = await supabase
+        .from("cliente_gestores")
+        .upsert(rows, { onConflict: "cliente_id,gestor_id", ignoreDuplicates: true })
+        .select();
+      if (error) throw error;
+      const linked = data?.length ?? 0;
+      const skipped = gestorIds.length - linked;
       return { linked, skipped, total: gestorIds.length };
     },
     onSuccess: () => invalidateCsClienteQueries(queryClient),

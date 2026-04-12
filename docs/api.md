@@ -220,6 +220,101 @@ Preços do calendário. Não requer auth.
 
 ---
 
+## Audit Logs
+
+**Pré-requisito (base de dados):** a tabela `public.audit_logs` tem de existir no mesmo projeto Supabase usado pelo backend (`SUPABASE_URL`). Caso contrário a API devolve **503** com instruções.
+
+**Escrita de eventos (app):** o helper `logAcao` nos fronts (`src/lib/audit.ts` no usuario-front; `apps/manager/src/lib/audit.ts` no manager) chama a RPC `audit_log_write` (além de `logs_acoes`). Ações que **não** passem por `logAcao` nem por triggers SQL em tabelas não aparecem em `audit_logs`.
+
+**Forma mais rápida:** no Supabase → **SQL Editor** → colar e executar o ficheiro único `gest-miles-usuario-front/supabase/RUN_AUDIT_LOGS.sql` (inclui as duas partes na ordem certa).
+
+**Alternativa (migrations incrementais):** por esta ordem em `gest-miles-usuario-front/supabase/migrations/`:
+
+1. `20260416120000_audit_logs.sql`
+2. `20260416130000_audit_logs_equipe_id.sql`  
+   (Opcional: `20260416140000_rls_hardening_indexes.sql` se fizer parte do teu pipeline.)
+
+### GET /api/audit-logs
+
+Logs de auditoria com paginação e filtros. **Requer auth** e um dos papéis abaixo.
+
+- **Admin master** (`role = admin`, `perfis.equipe_id` null): vê logs de todos os tenants.
+- **Admin de equipe (modelo RLS)** (`role = admin`, `equipe_id` preenchido): só logs dessa equipe.
+- **Admin de equipe (modelo manager)** (`role = admin_equipe`): logs das equipas em que o utilizador aparece em `equipe_admin` (`admin_equipe_id_1/2/3`, `ativo = true`), mais `perfis.equipe_id` se existir. Várias equipas → filtro `equipe_id IN (...)`.
+
+**Query params:**
+
+| Param    | Tipo   | Default | Descrição                              |
+| -------- | ------ | ------- | -------------------------------------- |
+| limit    | int    | 50      | Registos por página (max 200)          |
+| offset   | int    | 0       | Cursor de paginação                    |
+| tabela   | string | —       | Filtro exacto por tabela/recurso       |
+| acao     | string | —       | Filtro exacto por tipo de ação         |
+| user_id  | uuid   | —       | Filtro por autor da ação               |
+| from     | string | —       | Data mínima ISO 8601                   |
+| to       | string | —       | Data máxima ISO 8601                   |
+
+**Exemplo de request (admin master):**
+
+```
+GET /api/audit-logs?limit=10&tabela=perfis&from=2026-04-01T00:00:00Z
+Authorization: Bearer <access_token>
+```
+
+**Resposta 200:**
+
+```json
+{
+  "logs": [
+    {
+      "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "user_id": "11111111-2222-3333-4444-555555555555",
+      "user_name": "João Silva",
+      "user_role": "gestor",
+      "acao": "UPDATE",
+      "tabela": "perfis",
+      "antes": { "nome_completo": "João" },
+      "depois": { "nome_completo": "João Silva" },
+      "equipe_id": "ffffffff-0000-1111-2222-333333333333",
+      "created_at": "2026-04-12T15:30:00.000Z"
+    }
+  ],
+  "total": 42,
+  "limit": 10,
+  "offset": 0
+}
+```
+
+**Exemplo de request (admin equipe — filtro automático):**
+
+```
+GET /api/audit-logs?limit=20&acao=DELETE
+Authorization: Bearer <access_token_admin_equipe>
+```
+
+Resposta idêntica à anterior, mas `logs` só inclui registos cuja `equipe_id` coincida com a equipe do admin autenticado.
+
+**Erros:**
+
+| Status | Motivo                                |
+| ------ | ------------------------------------- |
+| 401    | Token ausente ou sessão inválida      |
+| 403    | Utilizador não é admin                |
+| 503    | Tabela `audit_logs` em falta no Supabase (aplicar migrations) |
+| 500    | Erro interno (Supabase ou inesperado) |
+
+### GET /api/audit-logs/tables
+
+Lista distinta de tabelas presentes nos logs (útil para popular filtros na UI).
+
+**Resposta 200:**
+
+```json
+{ "tables": ["perfis", "emissoes", "programas_cliente"] }
+```
+
+---
+
 ## Health
 
 ### GET /api/health

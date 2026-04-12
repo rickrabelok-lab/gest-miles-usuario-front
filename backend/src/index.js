@@ -12,6 +12,7 @@ import bonusOffersRoutes from "./routes/bonusOffers.js";
 import calendarPricesRoutes from "./routes/calendarPrices.js";
 import demoFlightsRoutes from "./routes/demoFlights.js";
 import stripeBillingRoutes from "./routes/stripeBilling.js";
+import auditLogsRoutes from "./routes/auditLogs.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +43,7 @@ routes.use("/api/bonus-offers", bonusOffersRoutes);
 routes.use("/api/calendar-prices", calendarPricesRoutes);
 routes.use("/api/demo-flights", demoFlightsRoutes);
 routes.use("/api/stripe", stripeBillingRoutes);
+routes.use("/api/audit-logs", auditLogsRoutes);
 
 routes.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });

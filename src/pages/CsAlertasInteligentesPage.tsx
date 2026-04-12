@@ -6,7 +6,8 @@ import { useCsGestores } from "@/hooks/useCsGestores";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import CsAlertasInteligentesSection from "@/components/gestor/CsAlertasInteligentesSection";
-import { logAcao } from "@/lib/audit";
+import { logOperacional } from "@/lib/audit";
+import { tipoLogVisualizacaoCliente } from "@/lib/roles";
 
 export default function CsAlertasInteligentesPage() {
   const navigate = useNavigate();
@@ -20,8 +21,8 @@ export default function CsAlertasInteligentesPage() {
   const csFlat = csDash?.flat ?? [];
 
   const handleOpenClient = async (clientId: string) => {
-    await logAcao({
-      tipoAcao: "cs_visualizou_cliente",
+    await logOperacional({
+      tipoAcao: tipoLogVisualizacaoCliente(role),
       entidadeAfetada: "cliente",
       entidadeId: clientId,
       details: { origem: "pagina_alertas_inteligentes" },

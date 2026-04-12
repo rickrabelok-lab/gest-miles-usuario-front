@@ -6,7 +6,8 @@ import { useCsGestores } from "@/hooks/useCsGestores";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import CsTarefasSection from "@/components/gestor/CsTarefasSection";
-import { logAcao } from "@/lib/audit";
+import { logOperacional } from "@/lib/audit";
+import { tipoLogVisualizacaoCliente } from "@/lib/roles";
 
 export default function CsTarefasPage() {
   const navigate = useNavigate();
@@ -17,8 +18,8 @@ export default function CsTarefasPage() {
   const csFlat = csDash?.flat ?? [];
 
   const handleOpenClient = async (clienteId: string) => {
-    await logAcao({
-      tipoAcao: "cs_visualizou_cliente",
+    await logOperacional({
+      tipoAcao: tipoLogVisualizacaoCliente(role),
       entidadeAfetada: "cliente",
       entidadeId: clienteId,
       details: { origem: "pagina_cs_tarefas" },

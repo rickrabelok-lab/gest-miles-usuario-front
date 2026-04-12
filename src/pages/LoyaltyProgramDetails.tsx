@@ -56,7 +56,7 @@ import {
 } from "@/lib/program-state";
 import { useProgramasCliente } from "@/hooks/useProgramasCliente";
 import { useAuth } from "@/contexts/AuthContext";
-import { logAcao } from "@/lib/audit";
+import { logOperacional } from "@/lib/audit";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -490,7 +490,7 @@ const LoyaltyProgramDetails = () => {
     });
     setUpdatedAtDisplay(`${data} às ${hora}`);
     if (isManagerView) {
-      void logAcao({
+      void logOperacional({
         tipoAcao: "atualizacao_manual_programa",
         entidadeAfetada: "programa_cliente",
         entidadeId: programId,
@@ -518,7 +518,7 @@ const LoyaltyProgramDetails = () => {
     setCustoMedioMilheiro(0);
     setUpdatedAtDisplay("Resetado agora");
     if (isManagerView) {
-      void logAcao({
+      void logOperacional({
         tipoAcao: "reset_saldos",
         entidadeAfetada: "programa_cliente",
         entidadeId: programId,
@@ -822,7 +822,7 @@ const LoyaltyProgramDetails = () => {
     setEntradaObs("");
     setEntradaTipo("compra");
     if (isManagerView) {
-      void logAcao({
+      void logOperacional({
         tipoAcao: "registro_entrada_milhas",
         entidadeAfetada: "movimentos_programa",
         entidadeId: novoMovimento.id,
@@ -974,7 +974,7 @@ const LoyaltyProgramDetails = () => {
     // Aqui você registraria histórico + ROI individual da emissão no backend.
     setSaidaOpen(false);
     if (isManagerView) {
-      void logAcao({
+      void logOperacional({
         tipoAcao: "registro_saida_milhas",
         entidadeAfetada: "movimentos_programa",
         entidadeId: movimentoEmissao.id,
