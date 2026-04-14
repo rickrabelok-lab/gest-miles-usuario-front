@@ -13,6 +13,42 @@ const AUDIT_LOGS_MISSING_HINT =
 
 const MERGE_FETCH_CAP = 4000;
 const PERFIS_IN_CHUNK = 120;
+/** PostgREST: `.in("user_id", …)` com centenas de UUIDs estoura o URL → `fetch failed` e 500 sem JSON. */
+const LOGS_USER_IN_CHUNK = 200;
+
+function chunkArray(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+/**
+ * Várias listas de linhas `logs_acoes`, cada uma ordenada por `timestamp` desc,
+ * fundidas numa única sequência global (merge k-vias).
+ */
+function mergeSortedLogRowsDesc(lists, cap) {
+  const heads = lists.map((arr) => ({ arr, i: 0 }));
+  const out = [];
+  while (out.length < cap) {
+    let bestJ = -1;
+    let bestTs = -Infinity;
+    for (let j = 0; j < heads.length; j += 1) {
+      const h = heads[j];
+      if (h.i >= h.arr.length) continue;
+      const row = h.arr[h.i];
+      const ts = new Date(row.timestamp).getTime();
+      if (bestJ === -1 || ts > bestTs) {
+        bestTs = ts;
+        bestJ = j;
+      }
+    }
+    if (bestJ === -1) break;
+    const row = heads[bestJ].arr[heads[bestJ].i];
+    heads[bestJ].i += 1;
+    out.push(row);
+  }
+  return out;
+}
 
 function mapAuditLogsSupabaseError(err) {
   const msg = String(err?.message ?? "");
@@ -371,15 +407,25 @@ async function fetchAuditRows(sb, access, req, rangeEnd) {
 }
 
 async function fetchLogsRows(sb, access, actorIds, req, rangeEnd) {
-  const base = buildLogsQuery(
-    sb,
-    access,
-    "id, user_id, tipo_acao, entidade_afetada, entidade_id, details, timestamp",
-    actorIds,
-  );
+  const selectList = "id, user_id, tipo_acao, entidade_afetada, entidade_id, details, timestamp";
+  const base = buildLogsQuery(sb, access, selectList, actorIds);
   if (!base) return [];
-  const q = applyLogsFilters(base, req).range(0, rangeEnd);
-  return safeFetch(q);
+  const limit = rangeEnd + 1;
+
+  if (!actorIds || actorIds.length <= LOGS_USER_IN_CHUNK) {
+    const q = applyLogsFilters(base, req).range(0, rangeEnd);
+    return safeFetch(q);
+  }
+
+  const slices = chunkArray(actorIds, LOGS_USER_IN_CHUNK);
+  const listOfLists = [];
+  for (const slice of slices) {
+    const b = buildLogsQuery(sb, access, selectList, slice);
+    if (!b) continue;
+    const rows = await safeFetch(applyLogsFilters(b, req).range(0, rangeEnd));
+    listOfLists.push(rows ?? []);
+  }
+  return mergeSortedLogRowsDesc(listOfLists, limit);
 }
 
 function normalizeMergedEntry({ kind, row }) {
@@ -453,13 +499,24 @@ async function countAudit(sb, access, req) {
 
 async function countLogs(sb, access, actorIds, req) {
   if (actorIds != null && actorIds.length === 0) return 0;
-  let q = sb.from("logs_acoes").select("id", { count: "exact", head: true });
-  if (actorIds != null) {
-    if (actorIds.length === 1) q = q.eq("user_id", actorIds[0]);
-    else q = q.in("user_id", actorIds);
+  if (actorIds == null || actorIds.length <= LOGS_USER_IN_CHUNK) {
+    let q = sb.from("logs_acoes").select("id", { count: "exact", head: true });
+    if (actorIds != null) {
+      if (actorIds.length === 1) q = q.eq("user_id", actorIds[0]);
+      else q = q.in("user_id", actorIds);
+    }
+    q = applyLogsFilters(q, req);
+    return safeCount(q);
   }
-  q = applyLogsFilters(q, req);
-  return safeCount(q);
+  let total = 0;
+  for (const slice of chunkArray(actorIds, LOGS_USER_IN_CHUNK)) {
+    let q = sb.from("logs_acoes").select("id", { count: "exact", head: true });
+    if (slice.length === 1) q = q.eq("user_id", slice[0]);
+    else q = q.in("user_id", slice);
+    q = applyLogsFilters(q, req);
+    total += await safeCount(q);
+  }
+  return total;
 }
 
 /**
@@ -659,12 +716,24 @@ router.get("/tables", requireAuth, async (req, res) => {
       auditTables = [...new Set((ad ?? []).map((r) => r.tabela).filter(Boolean))];
 
       const actorIds = await resolveLogsActorIds(sb, access, user.id, req);
-      const lq = buildLogsQuery(sb, access, "entidade_afetada", actorIds);
-      if (lq) {
-        const { data: ld, error: lErr } = await lq.limit(5000);
+      const logsTablesSet = new Set();
+      const collectEntidadeAfetada = async (ids) => {
+        const lq = buildLogsQuery(sb, access, "entidade_afetada", ids);
+        if (!lq) return;
+        const { data: ld, error: lErr } = await applyLogsFilters(lq, req).limit(5000);
         if (lErr) throw lErr;
-        logsTables = [...new Set((ld ?? []).map((r) => r.entidade_afetada).filter(Boolean))];
+        for (const r of ld ?? []) {
+          if (r?.entidade_afetada) logsTablesSet.add(r.entidade_afetada);
+        }
+      };
+      if (!actorIds || actorIds.length <= LOGS_USER_IN_CHUNK) {
+        await collectEntidadeAfetada(actorIds);
+      } else {
+        for (const slice of chunkArray(actorIds, LOGS_USER_IN_CHUNK)) {
+          await collectEntidadeAfetada(slice);
+        }
       }
+      logsTables = [...logsTablesSet];
     } catch (e) {
       const mapped = mapAuditLogsSupabaseError(e);
       if (mapped) return res.status(mapped.status).json({ error: mapped.message });
@@ -737,28 +806,60 @@ router.get("/meta", requireAuth, async (req, res) => {
         if (r?.user_id) userIdSet.add(r.user_id);
       }
 
-      const lqE = buildLogsQuery(sb, access, "entidade_afetada", actorIds);
-      if (lqE) {
-        const { data: ldE, error: lErrE } = await lqE.limit(3000);
-        if (lErrE) throw lErrE;
-        logsTables = [...new Set((ldE ?? []).map((r) => r.entidade_afetada).filter(Boolean))];
-      }
-
-      const lqA = buildLogsQuery(sb, access, "tipo_acao", actorIds);
-      if (lqA) {
-        const { data: ldA, error: lErrA } = await lqA.limit(3000);
-        if (lErrA) throw lErrA;
-        for (const r of ldA ?? []) {
-          if (r?.tipo_acao) acoesSet.add(r.tipo_acao);
+      const runLogsMetaChunk = async (ids, kind) => {
+        const lq = buildLogsQuery(
+          sb,
+          access,
+          kind === "E" ? "entidade_afetada" : kind === "A" ? "tipo_acao" : "user_id",
+          ids,
+        );
+        if (!lq) return;
+        const { data: rows, error: lErr } = await applyLogsFilters(lq, req).limit(3000);
+        if (lErr) throw lErr;
+        for (const r of rows ?? []) {
+          if (kind === "E" && r?.entidade_afetada) logsTables.push(r.entidade_afetada);
+          if (kind === "A" && r?.tipo_acao) acoesSet.add(r.tipo_acao);
+          if (kind === "U" && r?.user_id) userIdSet.add(r.user_id);
         }
-      }
+      };
 
-      const lqU = buildLogsQuery(sb, access, "user_id", actorIds);
-      if (lqU) {
-        const { data: ldU, error: lErrU } = await lqU.limit(3000);
-        if (lErrU) throw lErrU;
-        for (const r of ldU ?? []) {
-          if (r?.user_id) userIdSet.add(r.user_id);
+      if (!actorIds || actorIds.length <= LOGS_USER_IN_CHUNK) {
+        logsTables = [];
+        await runLogsMetaChunk(actorIds, "E");
+        logsTables = [...new Set(logsTables.filter(Boolean))];
+        await runLogsMetaChunk(actorIds, "A");
+        await runLogsMetaChunk(actorIds, "U");
+      } else {
+        const entSet = new Set();
+        for (const slice of chunkArray(actorIds, LOGS_USER_IN_CHUNK)) {
+          const lq = buildLogsQuery(sb, access, "entidade_afetada", slice);
+          if (!lq) continue;
+          const { data: ldE, error: lErrE } = await applyLogsFilters(lq, req).limit(3000);
+          if (lErrE) throw lErrE;
+          for (const r of ldE ?? []) {
+            if (r?.entidade_afetada) entSet.add(r.entidade_afetada);
+          }
+        }
+        logsTables = [...entSet];
+
+        for (const slice of chunkArray(actorIds, LOGS_USER_IN_CHUNK)) {
+          const lq = buildLogsQuery(sb, access, "tipo_acao", slice);
+          if (!lq) continue;
+          const { data: ldA, error: lErrA } = await applyLogsFilters(lq, req).limit(3000);
+          if (lErrA) throw lErrA;
+          for (const r of ldA ?? []) {
+            if (r?.tipo_acao) acoesSet.add(r.tipo_acao);
+          }
+        }
+
+        for (const slice of chunkArray(actorIds, LOGS_USER_IN_CHUNK)) {
+          const lq = buildLogsQuery(sb, access, "user_id", slice);
+          if (!lq) continue;
+          const { data: ldU, error: lErrU } = await applyLogsFilters(lq, req).limit(3000);
+          if (lErrU) throw lErrU;
+          for (const r of ldU ?? []) {
+            if (r?.user_id) userIdSet.add(r.user_id);
+          }
         }
       }
     } catch (e) {
