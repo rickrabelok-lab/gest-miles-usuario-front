@@ -12,10 +12,10 @@ import {
 } from "@/components/ui/select";
 import type { CsGestorItem } from "@/hooks/useCsGestores";
 import {
-  TIPO_ALERTA_LABEL,
+  ALERTA_SISTEMA_TIPOS_FILTRO,
+  tipoAlertaLabel,
   type AlertaSistemaEnriched,
   type AlertaSistemaNivel,
-  type AlertaSistemaTipo,
   useAlertasSistemaAtivos,
   useAlertasSistemaSync,
   useAlertaResolver,
@@ -70,17 +70,6 @@ function formatData(iso: string) {
     return iso;
   }
 }
-
-const TIPOS: AlertaSistemaTipo[] = [
-  "NPS_LOW",
-  "CSAT_LOW",
-  "CSAT_DROP",
-  "GESTOR_SCORE_DROP",
-  "CLIENT_INACTIVITY",
-  "MILES_EXPIRING",
-  "DEMANDA_ATRASADA",
-  "MILES_CONCENTRATION",
-];
 
 const NIVEIS: AlertaSistemaNivel[] = ["critico", "alto", "medio", "baixo"];
 
@@ -169,9 +158,9 @@ export default function CsAlertasInteligentesSection({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os tipos</SelectItem>
-                  {TIPOS.map((t) => (
+                  {ALERTA_SISTEMA_TIPOS_FILTRO.map((t) => (
                     <SelectItem key={t} value={t}>
-                      {TIPO_ALERTA_LABEL[t]}
+                      {tipoAlertaLabel(t)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -273,7 +262,7 @@ function AlertaCard({
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-semibold">{TIPO_ALERTA_LABEL[a.tipo_alerta]}</span>
+        <span className="text-xs font-semibold">{tipoAlertaLabel(a.tipo_alerta)}</span>
         <span className="rounded-full bg-black/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide dark:bg-white/10">
           {nivelLabel(a.nivel)}
         </span>

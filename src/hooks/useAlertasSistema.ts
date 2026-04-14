@@ -4,19 +4,42 @@ import { supabase } from "@/lib/supabase";
 
 export type AlertaSistemaTipo =
   | "NPS_LOW"
+  | "NPS_BAIXO_SEM_FOLLOWUP"
   | "CSAT_LOW"
+  | "CSAT_NEGATIVO_RECENTE"
   | "CSAT_DROP"
   | "GESTOR_SCORE_DROP"
   | "CLIENT_INACTIVITY"
-  | "MILES_EXPIRING"
+  | "SEM_INTERACAO_30D"
+  | "SEM_INTERACAO_60D"
+  | "MILHAS_VENCENDO_7D"
+  | "MILHAS_VENCENDO_30D"
+  | "CARTEIRA_SEM_MOVIMENTACAO"
+  | "SEM_COMPRA_6MESES"
   | "DEMANDA_ATRASADA"
-  | "MILES_CONCENTRATION";
+  | "SALDO_ZERADO_VENCIMENTO"
+  | "DETRATOR_SEM_PLANO"
+  | "CHURN_RISK_ALTO"
+  | "VIP_ABANDONO"
+  | "MILES_EXPIRING"
+  | "MILES_CONCENTRATION"
+  | "COTACAO_SEM_RESPOSTA"
+  | "COTACAO_SEM_RESPONSAVEL"
+  | "VENDA_SEM_POS_VENDA"
+  | "CHECKIN_SEM_CONFIRMACAO"
+  | "VIAGEM_SEM_DOCUMENTACAO"
+  | "DESPESA_ATRASADA"
+  | "COMISSAO_PENDENTE"
+  | "RECEITA_NAO_REGISTRADA"
+  | "SEM_PRIMEIRO_CONTATO"
+  | "MULTIPLAS_RECLAMACOES";
 
 export type AlertaSistemaNivel = "baixo" | "medio" | "alto" | "critico";
 
 export type AlertaSistemaRow = {
   id: string;
-  tipo_alerta: AlertaSistemaTipo;
+  /** Valores alinhados ao SQL; tipagem ampla para novos tipos no motor sem quebrar o build. */
+  tipo_alerta: AlertaSistemaTipo | string;
   cliente_id: string | null;
   gestor_id: string | null;
   equipe_id: string | null;
@@ -55,14 +78,74 @@ export const NIVEL_SORT: Record<AlertaSistemaNivel, number> = {
 
 export const TIPO_ALERTA_LABEL: Record<AlertaSistemaTipo, string> = {
   NPS_LOW: "NPS baixo",
+  NPS_BAIXO_SEM_FOLLOWUP: "NPS baixo sem follow-up",
   CSAT_LOW: "CSAT baixo",
+  CSAT_NEGATIVO_RECENTE: "CSAT negativo recente",
   CSAT_DROP: "Queda CSAT",
   GESTOR_SCORE_DROP: "Queda score gestor",
   CLIENT_INACTIVITY: "Inatividade",
-  MILES_EXPIRING: "Milhas a vencer",
+  SEM_INTERACAO_30D: "Sem interação (30 dias)",
+  SEM_INTERACAO_60D: "Sem interação (60 dias)",
+  MILHAS_VENCENDO_7D: "Milhas a vencer (7 dias)",
+  MILHAS_VENCENDO_30D: "Milhas a vencer (30 dias)",
+  CARTEIRA_SEM_MOVIMENTACAO: "Carteira sem movimentação",
+  SEM_COMPRA_6MESES: "Sem compra (6 meses)",
   DEMANDA_ATRASADA: "Demanda atrasada",
+  SALDO_ZERADO_VENCIMENTO: "Saldo zerado no vencimento",
+  DETRATOR_SEM_PLANO: "Detrator sem plano",
+  CHURN_RISK_ALTO: "Risco de churn alto",
+  VIP_ABANDONO: "VIP em abandono",
+  MILES_EXPIRING: "Milhas a vencer",
   MILES_CONCENTRATION: "Concentração de milhas",
+  COTACAO_SEM_RESPOSTA: "Cotação sem resposta",
+  COTACAO_SEM_RESPONSAVEL: "Cotação sem responsável",
+  VENDA_SEM_POS_VENDA: "Venda sem pós-venda",
+  CHECKIN_SEM_CONFIRMACAO: "Check-in sem confirmação",
+  VIAGEM_SEM_DOCUMENTACAO: "Viagem sem documentação",
+  DESPESA_ATRASADA: "Despesa atrasada",
+  COMISSAO_PENDENTE: "Comissão pendente",
+  RECEITA_NAO_REGISTRADA: "Receita não registada",
+  SEM_PRIMEIRO_CONTATO: "Sem primeiro contacto",
+  MULTIPLAS_RECLAMACOES: "Múltiplas reclamações",
 };
+
+/** Ordem do filtro “Tipo” na UI de alertas (subset legível; inclui todos os tipos conhecidos). */
+export const ALERTA_SISTEMA_TIPOS_FILTRO: AlertaSistemaTipo[] = [
+  "NPS_LOW",
+  "NPS_BAIXO_SEM_FOLLOWUP",
+  "CSAT_LOW",
+  "CSAT_NEGATIVO_RECENTE",
+  "CSAT_DROP",
+  "GESTOR_SCORE_DROP",
+  "CLIENT_INACTIVITY",
+  "SEM_INTERACAO_30D",
+  "SEM_INTERACAO_60D",
+  "MILHAS_VENCENDO_7D",
+  "MILHAS_VENCENDO_30D",
+  "CARTEIRA_SEM_MOVIMENTACAO",
+  "SEM_COMPRA_6MESES",
+  "DEMANDA_ATRASADA",
+  "SALDO_ZERADO_VENCIMENTO",
+  "DETRATOR_SEM_PLANO",
+  "CHURN_RISK_ALTO",
+  "VIP_ABANDONO",
+  "MILES_EXPIRING",
+  "MILES_CONCENTRATION",
+  "COTACAO_SEM_RESPOSTA",
+  "COTACAO_SEM_RESPONSAVEL",
+  "VENDA_SEM_POS_VENDA",
+  "CHECKIN_SEM_CONFIRMACAO",
+  "VIAGEM_SEM_DOCUMENTACAO",
+  "DESPESA_ATRASADA",
+  "COMISSAO_PENDENTE",
+  "RECEITA_NAO_REGISTRADA",
+  "SEM_PRIMEIRO_CONTATO",
+  "MULTIPLAS_RECLAMACOES",
+];
+
+export function tipoAlertaLabel(tipo: string): string {
+  return TIPO_ALERTA_LABEL[tipo as AlertaSistemaTipo] ?? tipo;
+}
 
 export function useAlertasSistemaAtivos(enabled: boolean) {
   return useQuery({
