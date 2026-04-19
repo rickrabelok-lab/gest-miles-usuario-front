@@ -18,6 +18,10 @@ export type Movimento = {
   tarifaPagante?: number;
   economiaReal?: number;
   custoMilheiroBase?: number;
+  /** Localizador / PNR quando aplicável. */
+  codigoReserva?: string;
+  /** Sobrenome como na emissão (bilheteira), para cruzar com o localizador. */
+  sobrenomeEmissao?: string;
 };
 
 export type LoteMilhas = {

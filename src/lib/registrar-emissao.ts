@@ -14,6 +14,8 @@ export type EmissaoInput = {
   data_emissao: string;
   usuario_responsavel: string;
   observacoes?: string | null;
+  /** Sobrenome como na bilheteira (obrigatório para cruzar com o localizador). */
+  sobrenome_emissao: string;
 };
 
 function normalizeProgramKey(name: string): string {
@@ -35,6 +37,11 @@ export async function registrarEmissao(input: EmissaoInput): Promise<void> {
   const milhas = Number(input.milhas_utilizadas) || 0;
   if (milhas <= 0) {
     throw new Error("Quantidade de milhas deve ser maior que zero.");
+  }
+
+  const sobrenomeEmissao = input.sobrenome_emissao?.trim() ?? "";
+  if (!sobrenomeEmissao) {
+    throw new Error("Informe o sobrenome na emissão (como na bilheteira).");
   }
 
   const { data: programRows, error: fetchError } = await supabase
@@ -108,6 +115,7 @@ export async function registrarEmissao(input: EmissaoInput): Promise<void> {
     origem: input.origem || undefined,
     destino: input.destino || undefined,
     classe: input.classe || undefined,
+    sobrenomeEmissao,
   };
 
   const newState: PersistedProgramState = {
