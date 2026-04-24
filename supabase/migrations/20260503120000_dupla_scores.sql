@@ -1,5 +1,6 @@
--- Pré-requisito: gestor_scores, contratos_cliente, perfis, equipes,
--- is_legacy_platform_admin, rls_team_admin_matches_equipe.
+-- Pré-requisito: gestor_scores, contratos_cliente (com colunas data_inicio,
+-- renovacao_confirmada, status_cliente, cliente_email), cliente_gestores,
+-- perfis, equipes, is_legacy_platform_admin, rls_team_admin_matches_equipe.
 
 -- ---------------------------------------------------------------------------
 -- 1) Tabela dupla_scores
@@ -26,6 +27,9 @@ create table if not exists public.dupla_scores (
 create index if not exists idx_dupla_scores_key_calc
   on public.dupla_scores (dupla_key, data_calculo desc);
 
+create index if not exists idx_dupla_scores_equipe
+  on public.dupla_scores (equipe_id);
+
 -- ---------------------------------------------------------------------------
 -- 2) RPC — refresh snapshot
 -- Pesos: NPS 20%, CSAT 20%, SLA 15%, Economia 20%, Retenção 15%, Renovações 10%
@@ -41,7 +45,7 @@ as $$
 declare
   n int := 0;
 begin
-  -- Apenas admin ou admin_equipe podem acionar
+  -- Apenas admin, admin_equipe ou cs podem acionar
   if not exists (
     select 1 from public.perfis p
     where p.usuario_id = auth.uid()
@@ -74,9 +78,9 @@ begin
       public.perfis_equipe_id_safe(p.usuario_id) as equipe_id
     from duplas d
     join public.perfis p
-      on lower(split_part(trim(p.nome_completo), ' ', 1)) = lower(d.nome_a)
-      or lower(split_part(trim(p.nome_completo), ' ', 1)) = lower(d.nome_b)
-    where p.role in ('cs', 'admin_equipe', 'admin')
+      on lower(split_part(trim(p.nome_completo), ' ', 1))
+         in (lower(d.nome_a), lower(d.nome_b))
+    where p.role in ('cs', 'admin_equipe')
   ),
   -- Pega o score mais recente por gestor de gestor_scores
   latest_gs as (
@@ -142,14 +146,19 @@ begin
       coalesce(
         avg(
           extract(epoch from (now() - cc3.data_inicio::timestamptz)) / 86400 / 365
-        ) filter (where cc3.status_cliente = 'ativo'),
+        ),
         0
       ) as avg_anos
     from dupla_clientes dc
     join public.perfis pf on pf.usuario_id = dc.cliente_id
-    left join public.contratos_cliente cc3
-      on lower(cc3.cliente_email) = lower(pf.email)
-     and cc3.status_cliente = 'ativo'
+    left join lateral (
+      select data_inicio
+      from public.contratos_cliente
+      where lower(cliente_email) = lower(pf.email)
+        and status_cliente = 'ativo'
+      order by data_inicio asc
+      limit 1
+    ) cc3 on true
     group by dc.dupla_key
   ),
   -- Renovações confirmadas nos últimos 12 meses
