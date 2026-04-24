@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import LoyaltyProgramDetails from "./pages/LoyaltyProgramDetails";
@@ -28,7 +29,7 @@ import RadarOportunidadesPage from "./pages/RadarOportunidadesPage";
 import ClienteInsightsPage from "./pages/ClienteInsightsPage";
 import ClienteTimelinePage from "./pages/ClienteTimelinePage";
 import AssinaturaClientePage from "./pages/AssinaturaClientePage";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
 import RequireAuth from "@/components/RequireAuth";
 import HomeGate from "@/components/HomeGate";
@@ -45,6 +46,20 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const APP_BOOT_READY_EVENT = "gest-miles:usuario-boot-ready";
+
+function AppBootReadySignal() {
+  const { loading, roleLoading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !roleLoading) {
+      window.dispatchEvent(new Event(APP_BOOT_READY_EVENT));
+    }
+  }, [loading, roleLoading]);
+
+  return null;
+}
 
 /** Rotas exclusivas de cliente / cliente gestão (equipa interna usa Manager ou Admin). */
 function ClienteOnly({ children }: { children: JSX.Element }) {
@@ -66,6 +81,7 @@ const App = () => {
       <Toaster />
       <Sonner />
       <AuthProvider>
+        <AppBootReadySignal />
         <SearchFlightsProvider>
           <BrowserRouter
             future={{

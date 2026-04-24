@@ -1,41 +1,5 @@
--- Pré-requisito: gestor_scores, contratos_cliente (com colunas data_inicio,
--- renovacao_confirmada, status_cliente, cliente_email), cliente_gestores,
--- perfis, equipes, is_legacy_platform_admin, rls_team_admin_matches_equipe.
-
--- ---------------------------------------------------------------------------
--- 1) Tabela dupla_scores
--- ---------------------------------------------------------------------------
-
-create table if not exists public.dupla_scores (
-  id                 uuid primary key default gen_random_uuid(),
-  dupla_key          text not null,
-  equipe_id          uuid references public.equipes (id) on delete set null,
-  score_total        numeric(6, 2) not null check (score_total >= 0 and score_total <= 100),
-  score_nps          numeric(6, 2) not null check (score_nps >= 0 and score_nps <= 100),
-  score_csat         numeric(6, 2) not null check (score_csat >= 0 and score_csat <= 100),
-  score_sla          numeric(6, 2) not null check (score_sla >= 0 and score_sla <= 100),
-  score_economia     numeric(6, 2) not null check (score_economia >= 0 and score_economia <= 100),
-  score_retencao     numeric(6, 2) not null check (score_retencao >= 0 and score_retencao <= 100),
-  score_renovacoes   numeric(6, 2) not null check (score_renovacoes >= 0 and score_renovacoes <= 100),
-  clientes_ativos    integer not null default 0,
-  clientes_inativos  integer not null default 0,
-  media_anos_cliente numeric(6, 2),
-  renovacoes_count   integer not null default 0,
-  data_calculo       timestamptz not null default now()
-);
-
-create index if not exists idx_dupla_scores_key_calc
-  on public.dupla_scores (dupla_key, data_calculo desc);
-
-create index if not exists idx_dupla_scores_equipe
-  on public.dupla_scores (equipe_id);
-
--- ---------------------------------------------------------------------------
--- 2) RPC — refresh snapshot
--- Pesos: NPS 20%, CSAT 20%, SLA 15%, Economia 20%, Retenção 15%, Renovações 10%
--- Duplas são identificadas pelo primeiro token de perfis.nome_completo, com
--- variantes por dupla (ex.: Felipe/Filipe, Guilherme/Gui, Jessica/Jéssica).
--- ---------------------------------------------------------------------------
+-- Ajusta mapeamento gestor→dupla (tokens) e ligação cliente_gestores→contratos
+-- (alinhado a useGestor: e-mails perfil + config, nome; ativo = não inativo).
 
 create or replace function public.dupla_scores_refresh_snapshot()
 returns integer
@@ -46,7 +10,6 @@ as $$
 declare
   n int := 0;
 begin
-  -- Apenas admin, admin_equipe ou cs podem acionar
   if not exists (
     select 1 from public.perfis p
     where p.usuario_id = auth.uid()
@@ -79,7 +42,6 @@ begin
       ('carla-wesley',     'carla'),
       ('carla-wesley',     'wesley')
   ),
-  -- Mapeia primeiro nome → usuario_id via perfis (inclui aliases por dupla)
   gestor_map as (
     select distinct
       dt.dupla_key,
@@ -90,7 +52,6 @@ begin
       on lower(split_part(trim(p.nome_completo), ' ', 1)) = dt.token
     where p.role in ('gestor', 'cs', 'admin_equipe')
   ),
-  -- Pega o score mais recente por gestor de gestor_scores
   latest_gs as (
     select distinct on (gs.gestor_id)
       gs.gestor_id,
@@ -101,7 +62,6 @@ begin
     from public.gestor_scores gs
     order by gs.gestor_id, gs.data_calculo desc
   ),
-  -- Agrega scores individuais por dupla (média dos gestores da dupla)
   dupla_gs as (
     select
       gm.dupla_key,
@@ -114,7 +74,6 @@ begin
     left join latest_gs lg on lg.gestor_id = gm.gestor_id
     group by gm.dupla_key, gm.equipe_id
   ),
-  -- Carteira por gestor: mesmo union que useGestor (cliente_gestores + gestor_clientes + equipe_clientes nac/intl)
   dupla_clientes as (
     select
       s.dupla_key,
@@ -139,9 +98,7 @@ begin
     ) s
     group by s.dupla_key, s.cliente_id
   ),
-  -- Status de gestão: último contrato por cliente, mesmo critério que useGestor
-  -- (e-mail + emails em configuracao_tema, ou cruzamento por nome).
-  -- Ativo = não inativo (inclui sem contrato, pendente e ativo).
+  -- Carteira: cliente_gestores + legado + equipe; gestão: último contrato (como useGestor).
   client_status as (
     select
       dc.dupla_key,
@@ -182,7 +139,6 @@ begin
     from client_status
     group by dupla_key
   ),
-  -- Retenção: tempo médio (anos) em carteira "não inativa" desde data_inicio
   retention as (
     select
       dc.dupla_key,
@@ -217,7 +173,6 @@ begin
     ) cc3 on true
     group by dc.dupla_key
   ),
-  -- Renovações confirmadas nos últimos 12 meses (match alinhado ao de cima)
   renovacoes as (
     select
       dc.dupla_key,
@@ -242,7 +197,6 @@ begin
      and cc4.created_at >= now() - interval '365 days'
     group by dc.dupla_key
   ),
-  -- Score de retenção: normaliza avg_anos (0–3+ anos → 0–100)
   scored as (
     select
       dg.dupla_key,
@@ -297,22 +251,3 @@ end;
 $$;
 
 grant execute on function public.dupla_scores_refresh_snapshot() to authenticated;
-
--- ---------------------------------------------------------------------------
--- 3) RLS
--- ---------------------------------------------------------------------------
-
-alter table public.dupla_scores enable row level security;
-
-drop policy if exists dupla_scores_select on public.dupla_scores;
-create policy dupla_scores_select on public.dupla_scores
-  for select
-  using (
-    public.is_legacy_platform_admin()
-    or public.rls_team_admin_matches_equipe(equipe_id)
-    or exists (
-      select 1 from public.perfis p
-      where p.usuario_id = auth.uid()
-        and p.role in ('admin', 'admin_equipe', 'cs')
-    )
-  );
