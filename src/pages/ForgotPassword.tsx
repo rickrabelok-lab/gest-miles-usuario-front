@@ -10,7 +10,7 @@ import { getApiUrl, hasApiUrl } from "@/services/api";
 function friendlyNetworkError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
   if (/failed to fetch|networkerror|load failed/i.test(msg)) {
-    return "Não foi possível contactar a API. Inicie o backend (ex.: na raiz do projeto: npm run dev:all, ou noutro terminal: cd backend && npm run dev na porta 3000) e tente de novo.";
+    return "Não foi possível contactar a API. Inicie o backend (ex.: na raiz do projeto: pnpm run dev:all, ou noutro terminal: cd backend && pnpm run dev na porta 3000) e tente de novo.";
   }
   return msg;
 }

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
@@ -39,16 +40,21 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [role, setRole] = useState<AppRole | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  const lastFetchedUserIdRef = useRef<string | null>(null);
 
   const fetchRole = useCallback(async (userId?: string | null) => {
     if (!userId) {
       setRole(null);
       setEquipeId(null);
       setRoleLoading(false);
+      lastFetchedUserIdRef.current = null;
       return;
     }
 
-    setRoleLoading(true);
+    if (lastFetchedUserIdRef.current !== userId) {
+      setRoleLoading(true);
+    }
+    lastFetchedUserIdRef.current = userId;
     let data: { role?: string; equipe_id?: string | null } | null = null;
 
     const full = await supabase

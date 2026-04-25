@@ -1,4 +1,5 @@
 import { Router } from "express";
+import Stripe from "stripe";
 import { getStripe } from "../lib/stripeClient.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -9,6 +10,41 @@ const router = Router();
 
 const publicUrl = () =>
   (process.env.PUBLIC_APP_URL || "http://localhost:3080").replace(/\/$/, "");
+
+router.post("/admin/connection-test", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { secretKey, webhookSecret, mode } = req.body || {};
+    const normalizedMode = mode === "live" ? "live" : "sandbox";
+    const expectedPrefix = normalizedMode === "live" ? "sk_live_" : "sk_test_";
+
+    if (typeof secretKey !== "string" || !secretKey.startsWith(expectedPrefix)) {
+      return res.status(400).json({
+        error: `A Stripe Secret Key deve começar com ${expectedPrefix}.`,
+      });
+    }
+    if (typeof webhookSecret !== "string" || !webhookSecret.startsWith("whsec_")) {
+      return res.status(400).json({
+        error: "O Webhook Secret deve começar com whsec_.",
+      });
+    }
+
+    const startedAt = Date.now();
+    const stripe = new Stripe(secretKey);
+    const account = await stripe.accounts.retrieve();
+    const latencyMs = Date.now() - startedAt;
+
+    return res.json({
+      ok: true,
+      mode: normalizedMode,
+      latencyMs,
+      accountId: account.id,
+      country: account.country ?? null,
+      chargesEnabled: account.charges_enabled ?? false,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || "Falha ao validar conexão Stripe." });
+  }
+});
 
 /** Planos ativos (público — para landing / pricing) */
 router.get("/plans", async (_req, res) => {
@@ -244,9 +280,11 @@ router.get("/admin/subscriptions", requireAuth, requireAdmin, async (req, res) =
 router.post("/admin/subscriptions/:subscriptionId/cancel", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { subscriptionId } = req.params;
-    const { cancelAtPeriodEnd = true } = req.body || {};
+    const { cancelAtPeriodEnd = true, undoCancelAtPeriodEnd = false } = req.body || {};
     const stripe = getStripe();
-    if (cancelAtPeriodEnd) {
+    if (undoCancelAtPeriodEnd) {
+      await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: false });
+    } else if (cancelAtPeriodEnd) {
       await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
     } else {
       await stripe.subscriptions.cancel(subscriptionId);
