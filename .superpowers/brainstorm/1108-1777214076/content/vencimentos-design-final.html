@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GestMiles — Vencimentos (Design Preview)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #e5e7eb;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px 64px;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Phone frame ── */
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: #f4f4f8;
+    border-radius: 44px;
+    box-shadow:
+      0 0 0 10px #1a1a1a,
+      0 0 0 12px #3a3a3a,
+      0 30px 80px rgba(0,0,0,.35);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* notch */
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px;
+    background: #1a1a1a;
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+  }
+
+  /* ── Status bar ── */
+  .status-bar {
+    height: 44px;
+    padding: 14px 28px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    flex-shrink: 0;
+  }
+  .status-bar .time { font-size: 13px; font-weight: 700; color: #111; }
+  .status-bar .icons { display: flex; gap: 5px; align-items: center; }
+  .status-bar .icons svg { width: 16px; height: 16px; }
+
+  /* ── Top nav bar ── */
+  .top-nav {
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .top-nav .back-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: #6b7280;
+    transition: background .15s;
+  }
+  .top-nav .back-btn:hover { background: #f3f4f6; }
+  .top-nav .page-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -.01em;
+  }
+  .top-nav .spacer { width: 36px; }
+
+  /* ── Scrollable content ── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .content::-webkit-scrollbar { display: none; }
+
+  /* ── Demanda banner ── */
+  .banner {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #92400e;
+  }
+  .banner .close-btn {
+    margin-left: auto;
+    color: #b45309;
+    background: none; border: none; cursor: pointer;
+    font-size: 14px; line-height: 1;
+  }
+
+  /* ── Search bar ── */
+  .search-wrap {
+    position: relative;
+  }
+  .search-wrap svg.search-icon {
+    position: absolute;
+    left: 12px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: #9ca3af;
+    pointer-events: none;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: #ffffff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px 12px 10px 36px;
+    font-size: 13px;
+    color: #111;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .search-wrap input::placeholder { color: #9ca3af; }
+  .search-wrap input:focus {
+    border-color: #8A05BE;
+    box-shadow: 0 0 0 3px rgba(138,5,190,.12);
+  }
+
+  /* ── Filter chips ── */
+  .chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 13px;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all .15s;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .chip.active-all   { background: #8A05BE; color: #fff; border-color: #8A05BE; }
+  .chip.filter-red   { background: #fff; border-color: #fca5a5; color: #dc2626; }
+  .chip.filter-amber { background: #fff; border-color: #fcd34d; color: #d97706; }
+  .chip.filter-green { background: #fff; border-color: #86efac; color: #16a34a; }
+  .chip:not(.active-all):hover { filter: brightness(.97); }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    padding: 0 2px;
+    margin-bottom: -4px;
+  }
+
+  /* ── Vencimento card ── */
+  .v-card {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    cursor: pointer;
+    transition: box-shadow .15s, transform .1s;
+    text-decoration: none;
+  }
+  .v-card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.09);
+    transform: translateY(-1px);
+  }
+  .v-card:active { transform: translateY(0); }
+
+  .v-card.urgent   { border-color: #fca5a5; }
+  .v-card.warning  { border-color: #fcd34d; }
+  .v-card.ok       { border-color: #e5e7eb; }
+
+  /* left accent bar */
+  .accent-bar {
+    width: 4px;
+    flex-shrink: 0;
+  }
+  .urgent  .accent-bar { background: #dc2626; }
+  .warning .accent-bar { background: #d97706; }
+  .ok      .accent-bar { background: #16a34a; }
+
+  .v-card-body {
+    padding: 11px 12px;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .v-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .client-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .days-badge {
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 9px;
+    flex-shrink: 0;
+    letter-spacing: -.01em;
+  }
+  .urgent  .days-badge { background: #fee2e2; color: #dc2626; }
+  .warning .days-badge { background: #fef3c7; color: #b45309; }
+  .ok      .days-badge { background: #f0fdf4; color: #16a34a; }
+
+  .v-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .program-name {
+    font-size: 11px;
+    color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pts-date {
+    font-size: 11px;
+    color: #9ca3af;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 40px 24px;
+    color: #9ca3af;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .empty svg { width: 36px; height: 36px; margin: 0 auto 12px; display: block; opacity: .4; }
+
+  /* ── Bottom nav ── */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 78px;
+    background: #8A05BE;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    padding: 12px 16px 0;
+    flex-shrink: 0;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255,255,255,.6);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color .15s;
+  }
+  .nav-item.active { color: #ffffff; }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  /* ── Annotations panel (outside phone) ── */
+  .annotations {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 60px;
+  }
+  .ann-card {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    border-left: 4px solid;
+  }
+  .ann-card.purple { border-color: #8A05BE; }
+  .ann-card.red    { border-color: #dc2626; }
+  .ann-card.amber  { border-color: #d97706; }
+  .ann-card.green  { border-color: #16a34a; }
+  .ann-card.gray   { border-color: #9ca3af; }
+  .ann-title { font-size: 12px; font-weight: 700; color: #111; margin-bottom: 4px; }
+  .ann-text  { font-size: 11px; color: #6b7280; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     PHONE MOCKUP
+══════════════════════════════════════════ -->
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <!-- Signal -->
+      <svg viewBox="0 0 24 24" fill="#111"><rect x="1" y="15" width="3" height="9" rx="1"/><rect x="6" y="11" width="3" height="13" rx="1"/><rect x="11" y="7" width="3" height="17" rx="1"/><rect x="16" y="3" width="3" height="21" rx="1" opacity=".3"/></svg>
+      <!-- WiFi -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#111"/></svg>
+      <!-- Battery -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="2" y="7" width="18" height="11" rx="2"/><path d="M22 11v3" stroke-linecap="round"/><rect x="3.5" y="8.5" width="13" height="8" rx="1" fill="#111" opacity=".8"/></svg>
+    </div>
+  </div>
+
+  <!-- Top nav -->
+  <div class="top-nav">
+    <button class="back-btn" type="button">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <span class="page-title">Vencendo</span>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="content">
+
+    <!-- Banner demanda aberta -->
+    <div class="banner">
+      <svg width="14" height="14" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span><strong>Demandas abertas:</strong> 1 (pendentes: 1 · andamento: 0)</span>
+      <button class="close-btn" type="button">×</button>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Buscar cliente..." readonly>
+    </div>
+
+    <!-- Filter chips -->
+    <div class="chips">
+      <span class="chip active-all">Todos (6)</span>
+      <span class="chip filter-red">🔴 Crítico (2)</span>
+      <span class="chip filter-amber">🟡 Atenção (1)</span>
+      <span class="chip filter-green">🟢 OK (3)</span>
+    </div>
+
+    <!-- Section: Críticos -->
+    <div class="section-label">Crítico — até 30 dias</div>
+
+    <a class="v-card urgent" href="#">
+      <div class="accent-bar"></div>
+      <div class="v-card-body">
+        <div class="v-card-row">
+          <span class="client-name">Gabriel Bernal Verdelli</span>
+          <span class="days-badge">18 dias</span>
+        </div>
+        <div class="v-card-meta">
+          <span class="program-name">Tudo Azul</span>
+          <span class="pts-date">628.000 pts · 14/05/2026</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="v-card urgent" href="#">
+      <div class="accent-bar"></div>
+      <div class="v-card-body">
+        <div class="v-card-row">
+          <span class="client-name">Baltazar Sanabria</span>
+          <span class="days-badge">27 dias</span>
+        </div>
+        <div class="v-card-meta">
+          <span class="program-name">Smiles</span>
+          <span class="pts-date">412.000 pts · 23/05/2026</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Section: Atenção -->
+    <div class="section-label">Atenção — 31 a 60 dias</div>
+
+    <a class="v-card warning" href="#">
+      <div class="accent-bar"></div>
+      <div class="v-card-body">
+        <div class="v-card-row">
+          <span class="client-name">João Vitor Taguti da Costa</span>
+          <span class="days-badge">57 dias</span>
+        </div>
+        <div class="v-card-meta">
+          <span class="program-name">Qatar Airways</span>
+          <span class="pts-date">800.000 pts · 22/06/2026</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Section: OK -->
+    <div class="section-label">Tranquilo — acima de 60 dias</div>
+
+    <a class="v-card ok" href="#">
+      <div class="accent-bar"></div>
+      <div class="v-card-body">
+        <div class="v-card-row">
+          <span class="client-name">André Luiz Russo</span>
+          <span class="days-badge">173 dias</span>
+        </div>
+        <div class="v-card-meta">
+          <span class="program-name">LATAM Pass</span>
+          <span class="pts-date">1.187.500 pts · 16/10/2026</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="v-card ok" href="#">
+      <div class="accent-bar"></div>
+      <div class="v-card-body">
+        <div class="v-card-row">
+          <span class="client-name">Fernanda Oliveira Castro</span>
+          <span class="days-badge">220 dias</span>
+        </div>
+        <div class="v-card-meta">
+          <span class="program-name">American Airlines</span>
+          <span class="pts-date">970.000 pts · 01/12/2026</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="v-card ok" href="#">
+      <div class="accent-bar"></div>
+      <div class="v-card-body">
+        <div class="v-card-row">
+          <span class="client-name">Ricardo Menezes Andrade</span>
+          <span class="days-badge">345 dias</span>
+        </div>
+        <div class="v-card-meta">
+          <span class="program-name">Avianca LifeMiles</span>
+          <span class="pts-date">2.100.000 pts · 06/04/2027</span>
+        </div>
+      </div>
+    </a>
+
+  </div><!-- /content -->
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <div class="nav-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3.5 5.5h17M3.5 12h17M3.5 18.5h17"/><circle cx="3.5" cy="5.5" r="1" fill="currentColor"/><circle cx="3.5" cy="12" r="1" fill="currentColor"/><circle cx="3.5" cy="18.5" r="1" fill="currentColor"/></svg>
+      Passagens
+    </div>
+    <div class="nav-item active">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Programas
+    </div>
+    <div class="nav-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Clientes
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+
+<!-- ═══════════════════════════════════════
+     ANNOTATIONS
+══════════════════════════════════════════ -->
+<div class="annotations">
+  <h2 style="font-size:15px;font-weight:800;color:#111;margin-bottom:4px;">Design — Próximos Vencimentos</h2>
+  <p style="font-size:12px;color:#6b7280;margin-bottom:8px;">Visão do gestor (manager view)</p>
+
+  <div class="ann-card purple">
+    <div class="ann-title">Busca por nome</div>
+    <div class="ann-text">Campo com foco em <code>#8A05BE</code>. Filtra a lista em tempo real conforme o gestor digita o nome do cliente.</div>
+  </div>
+
+  <div class="ann-card gray">
+    <div class="ann-title">Chips de filtro rápido</div>
+    <div class="ann-text">Contagem de clientes por urgência em cada chip. O ativo fica roxo. Clique para filtrar a lista instantaneamente.</div>
+  </div>
+
+  <div class="ann-card gray">
+    <div class="ann-title">Rótulos de seção</div>
+    <div class="ann-text">Separadores sutis entre grupos de urgência. Ajudam na leitura sem peso visual extra.</div>
+  </div>
+
+  <div class="ann-card red">
+    <div class="ann-title">Crítico — ≤ 30 dias</div>
+    <div class="ann-text">Barra vermelha + borda vermelha + badge vermelho. Chama atenção máxima para quem precisa de ação imediata.</div>
+  </div>
+
+  <div class="ann-card amber">
+    <div class="ann-title">Atenção — 31–60 dias</div>
+    <div class="ann-text">Barra âmbar + borda âmbar + badge laranja. Alerta moderado — o gestor ainda tem tempo, mas deve planejar.</div>
+  </div>
+
+  <div class="ann-card green">
+    <div class="ann-title">Tranquilo — &gt; 60 dias</div>
+    <div class="ann-text">Barra verde + borda neutra + badge verde. Visual discreto; não compete com os itens urgentes.</div>
+  </div>
+</div>
+
+</body>
+</html>

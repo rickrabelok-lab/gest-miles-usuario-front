@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Download,
   Plus,
+  Search,
   X,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -551,6 +552,8 @@ const Index = () => {
   const [demandaGestorId, setDemandaGestorId] = useState("");
   const [isClientesAtivosOpen, setIsClientesAtivosOpen] = useState(false);
   const [isClientesVencendoOpen, setIsClientesVencendoOpen] = useState(false);
+  const [vencendoSearch, setVencendoSearch] = useState("");
+  const [vencendoFilter, setVencendoFilter] = useState<"todos" | "critico" | "atencao" | "ok">("todos");
   const [vincularIdInput, setVincularIdInput] = useState("");
   const [actionPlanProgramKeys, setActionPlanProgramKeys] = useState<ActionPlanProgramKey[]>([]);
   const [actionPlanDemands, setActionPlanDemands] = useState<ActionPlanDemandItem[]>([]);
@@ -659,6 +662,27 @@ const Index = () => {
       Math.min(1000, Math.max(0, (economiaMediaGerada / 35000) * 1000)),
     );
   }, [managerMode, gestorKpis]);
+
+  const vencendoAllItems = useMemo(
+    () => (vencimentosTodosClientes ?? []).slice(0, 200),
+    [vencimentosTodosClientes],
+  );
+
+  const vencendoCounts = useMemo(() => ({
+    critico: vencendoAllItems.filter((i) => i.diasRestantes <= 30).length,
+    atencao: vencendoAllItems.filter((i) => i.diasRestantes > 30 && i.diasRestantes <= 60).length,
+    ok: vencendoAllItems.filter((i) => i.diasRestantes > 60).length,
+  }), [vencendoAllItems]);
+
+  const vencendoFiltered = useMemo(() => {
+    const q = vencendoSearch.trim().toLowerCase();
+    return vencendoAllItems.filter((item) => {
+      const matchSearch = !q || item.clienteNome.toLowerCase().includes(q);
+      const getUrg = (d: number) => d <= 30 ? "critico" : d <= 60 ? "atencao" : "ok";
+      const matchFilter = vencendoFilter === "todos" || getUrg(item.diasRestantes) === vencendoFilter;
+      return matchSearch && matchFilter;
+    });
+  }, [vencendoAllItems, vencendoSearch, vencendoFilter]);
 
   const clientesComVencendo90d = useMemo(
     () =>
@@ -2203,51 +2227,121 @@ const Index = () => {
       )}
 
       {activeTab === "vencendo" && (
-        <div ref={vencendoSectionRef} className="space-y-2.5 px-5 py-3">
+        <div ref={vencendoSectionRef} className="flex flex-col gap-3 px-4 py-3">
           {managerMode && !managerClientId ? (
             <>
-              <p className="section-label">
-                Próximos vencimentos (todos os clientes)
-              </p>
-              {(vencimentosTodosClientes ?? []).length === 0 ? (
-                <div className="rounded-[16px] bg-white p-8 text-center text-sm text-nubank-text-secondary shadow-nubank">
-                  Nenhum vencimento nos próximos dias na carteira.
+              {/* Search */}
+              <div className="relative">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" strokeWidth={2} />
+                <input
+                  type="text"
+                  value={vencendoSearch}
+                  onChange={(e) => setVencendoSearch(e.target.value)}
+                  placeholder="Buscar cliente..."
+                  className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-[13px] text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10"
+                />
+              </div>
+
+              {/* Filter chips */}
+              {vencendoAllItems.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {(["todos", "critico", "atencao", "ok"] as const).map((key) => {
+                    const isActive = vencendoFilter === key;
+                    const label =
+                      key === "todos" ? `Todos (${vencendoCounts.critico + vencendoCounts.atencao + vencendoCounts.ok})`
+                      : key === "critico" ? `🔴 Crítico (${vencendoCounts.critico})`
+                      : key === "atencao" ? `🟡 Atenção (${vencendoCounts.atencao})`
+                      : `🟢 OK (${vencendoCounts.ok})`;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setVencendoFilter(key)}
+                        className={
+                          isActive ? "rounded-full px-3 py-1 text-[11px] font-bold text-white"
+                          : key === "critico" ? "rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-bold text-red-600 transition-colors hover:bg-red-50"
+                          : key === "atencao" ? "rounded-full border border-amber-200 bg-white px-3 py-1 text-[11px] font-bold text-amber-600 transition-colors hover:bg-amber-50"
+                          : key === "ok" ? "rounded-full border border-green-200 bg-white px-3 py-1 text-[11px] font-bold text-green-700 transition-colors hover:bg-green-50"
+                          : "rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-bold text-slate-600 transition-colors hover:bg-slate-50"
+                        }
+                        style={isActive ? { background: "#8A05BE" } : undefined}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* List */}
+              {vencendoFiltered.length === 0 ? (
+                <div className="rounded-2xl bg-white p-8 text-center text-sm text-muted-foreground shadow-nubank">
+                  {vencendoSearch || vencendoFilter !== "todos"
+                    ? "Nenhum cliente encontrado para o filtro selecionado."
+                    : "Nenhum vencimento nos próximos dias na carteira."}
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {(vencimentosTodosClientes ?? []).slice(0, 200).map((item, idx) => (
-                    <button
-                      key={`${item.clienteId}-${item.programId}-${item.data}-${idx}`}
-                      type="button"
-                      onClick={() => {
-                        const q = new URLSearchParams(searchParams);
-                        q.set("clientId", item.clienteId);
-                        navigate(`/?${q.toString()}`);
-                      }}
-                      className="flex w-full flex-col gap-1.5 rounded-[16px] bg-white px-5 py-4 text-left shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover dark:bg-card dark:hover:bg-muted/50"
-                    >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-nubank-text">{item.clienteNome}</span>
-                        <span
-                          className={
-                            item.diasRestantes <= 30
-                              ? "font-semibold text-red-600 dark:text-red-400"
-                              : item.diasRestantes <= 60
-                                ? "font-semibold text-amber-600 dark:text-amber-400"
-                                : "text-muted-foreground"
-                          }
+                <div className="flex flex-col gap-1.5">
+                  {vencendoFiltered.map((item, idx) => {
+                    const urg = item.diasRestantes <= 30 ? "critico" : item.diasRestantes <= 60 ? "atencao" : "ok";
+                    const prevUrg = idx > 0
+                      ? (vencendoFiltered[idx - 1].diasRestantes <= 30 ? "critico" : vencendoFiltered[idx - 1].diasRestantes <= 60 ? "atencao" : "ok")
+                      : null;
+                    const showLabel = urg !== prevUrg && vencendoFilter === "todos";
+                    const cardBorder = urg === "critico"
+                      ? "border border-l-4 border-red-200 border-l-red-600"
+                      : urg === "atencao"
+                      ? "border border-l-4 border-amber-200 border-l-amber-500"
+                      : "border border-l-4 border-slate-200 border-l-green-600";
+                    const badge = urg === "critico"
+                      ? "bg-red-50 text-red-600"
+                      : urg === "atencao"
+                      ? "bg-amber-50 text-amber-600"
+                      : "bg-green-50 text-green-700";
+                    const sectionLabel = urg === "critico"
+                      ? "Crítico — até 30 dias"
+                      : urg === "atencao"
+                      ? "Atenção — 31 a 60 dias"
+                      : "Tranquilo — acima de 60 dias";
+                    const sectionColor = urg === "critico"
+                      ? "text-red-500"
+                      : urg === "atencao"
+                      ? "text-amber-500"
+                      : "text-green-600";
+                    return (
+                      <div key={`${item.clienteId}-${item.programId}-${item.data}-${idx}`}>
+                        {showLabel && (
+                          <p className={`px-0.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-widest ${sectionColor}`}>
+                            {sectionLabel}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const qs = new URLSearchParams(searchParams);
+                            qs.set("clientId", item.clienteId);
+                            navigate(`/?${qs.toString()}`);
+                          }}
+                          className={`flex w-full overflow-hidden rounded-xl bg-white text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(0,0,0,0.09)] active:translate-y-0 ${cardBorder}`}
                         >
-                          {item.diasRestantes} dias
-                        </span>
+                          <div className="flex-1 px-3 py-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate text-[13px] font-semibold text-gray-900">{item.clienteNome}</span>
+                              <span className={`flex-shrink-0 rounded-lg px-2.5 py-0.5 text-[11px] font-extrabold ${badge}`}>
+                                {item.diasRestantes} dias
+                              </span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between gap-2">
+                              <span className="truncate text-[11px] text-gray-500">{item.programName}</span>
+                              <span className="flex-shrink-0 text-[11px] text-gray-400">
+                                {item.quantidade.toLocaleString("pt-BR")} pts · {item.data}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
                       </div>
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>{item.programName}</span>
-                        <span>
-                          {item.quantidade.toLocaleString("pt-BR")} pts · {item.data}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
