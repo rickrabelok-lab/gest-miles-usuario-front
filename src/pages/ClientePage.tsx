@@ -245,16 +245,7 @@ const ClientePage = () => {
         </div>
       </main>
 
-      <BottomNav
-        activeItem="vender"
-        onItemChange={(item) => {
-          if (item === "passagens") navigate("/search-flights");
-          else if (item === "programas") navigate("/");
-          else if (item === "vender") return;
-        }}
-        showClientSelector={false}
-        clients={[]}
-      />
+      <BottomNav />
     </div>
   );
 };

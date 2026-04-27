@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { homePathForRole } from "@/lib/homeRoute";
 import { useSearchFlights } from "@/contexts/SearchFlightsContext";
 import BottomNav from "@/components/BottomNav";
 import {
@@ -47,7 +46,6 @@ const SearchFlightsScreen = () => {
   const [searchParams] = useSearchParams();
   const { role } = useAuth();
   const isGestor = role === "gestor" || role === "admin";
-  const isCs = role === "cs";
   const [airportPickerTarget, setAirportPickerTarget] = useState<
     "origin" | "destination" | null
   >(null);
@@ -460,18 +458,7 @@ const SearchFlightsScreen = () => {
             Ver datas
           </Button>
         </div>
-        <BottomNav
-          activeItem="passagens"
-          onItemChange={(item) => {
-            if (item === "programas") navigate(homePathForRole(role));
-            else if (item === "vender") {
-              if (isCs) navigate("/cs");
-              else navigate("/cliente");
-            }
-          }}
-          showClientSelector={isGestor}
-          clients={[]}
-        />
+        <BottomNav showClientSelector={isGestor} clients={[]} />
       </div>
 
       <Drawer
