@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direção de Design – Gest Miles</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0e0e14;
+    color: #fff;
+    min-height: 100vh;
+    padding: 32px 24px 48px;
+  }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 32px; }
+
+  .phones-row {
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .phone-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .phone-wrapper:hover { transform: translateY(-4px); }
+  .phone-wrapper.selected .phone-frame {
+    box-shadow: 0 0 0 3px #7c3aed, 0 20px 60px rgba(124,58,237,0.4);
+  }
+  .phone-wrapper.selected .phone-label { color: #a78bfa; }
+
+  .phone-frame {
+    width: 200px;
+    height: 390px;
+    background: #1a1a2e;
+    border-radius: 32px;
+    border: 6px solid #2a2a3e;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+    transition: box-shadow 0.2s;
+  }
+  /* notch */
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 60px; height: 10px;
+    background: #2a2a3e;
+    border-radius: 0 0 10px 10px;
+    z-index: 10;
+  }
+
+  .screen { width: 100%; height: 100%; overflow: hidden; position: relative; }
+
+  /* ======= OPÇÃO A: Premium Dark ======= */
+  .screen-a { background: #0d0d1a; }
+  .a-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 12px 10px;
+  }
+  .a-avatar { width: 26px; height: 26px; background: #7c3aed; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; color: white; font-weight: 700; }
+  .a-title { font-size: 12px; font-weight: 700; color: white; }
+  .a-menu { width: 18px; display: flex; flex-direction: column; gap: 3px; }
+  .a-menu span { height: 1.5px; background: #666; border-radius: 2px; }
+  .a-menu span:nth-child(3) { width: 70%; }
+
+  .a-hero {
+    margin: 0 10px 10px;
+    background: linear-gradient(135deg, #6d28d9, #9333ea, #db2777);
+    border-radius: 18px;
+    padding: 14px;
+  }
+  .a-hero-label { color: rgba(255,255,255,0.6); font-size: 7px; letter-spacing: 1px; margin-bottom: 2px; }
+  .a-hero-num { color: white; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .a-hero-sub { color: rgba(255,255,255,0.6); font-size: 8px; margin-top: 2px; }
+  .a-hero-btns { display: flex; gap: 6px; margin-top: 10px; }
+  .a-btn-ghost { background: rgba(255,255,255,0.15); border-radius: 8px; padding: 5px 9px; font-size: 8px; color: white; font-weight: 600; }
+  .a-btn-solid { background: white; border-radius: 8px; padding: 5px 9px; font-size: 8px; color: #7c3aed; font-weight: 700; }
+
+  .a-section-title { padding: 0 12px 6px; font-size: 9px; font-weight: 700; color: #888; letter-spacing: 0.5px; }
+  .a-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px; }
+  .a-card { background: #1a1a2e; border-radius: 12px; padding: 9px; }
+  .a-card-name { font-size: 7px; color: #666; margin-bottom: 3px; }
+  .a-card-bal { font-size: 12px; font-weight: 800; color: #a78bfa; }
+  .a-card-val { font-size: 7px; color: #555; margin-top: 1px; }
+
+  /* ======= OPÇÃO B: Financial Clean ======= */
+  .screen-b { background: #f4f4f7; }
+  .b-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 12px 10px;
+  }
+  .b-avatar { width: 26px; height: 26px; background: #7c3aed; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; color: white; font-weight: 700; }
+  .b-title { font-size: 12px; font-weight: 700; color: #111; }
+  .b-bell { position: relative; width: 28px; height: 28px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.1); font-size: 12px; }
+  .b-bell::after { content:''; position:absolute; top:4px; right:4px; width:6px; height:6px; background:#ef4444; border-radius:50%; border:1.5px solid #f4f4f7; }
+
+  .b-balance-card {
+    margin: 0 10px 8px;
+    background: white;
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .b-bal-label { color: #aaa; font-size: 7px; letter-spacing: 0.8px; margin-bottom: 3px; }
+  .b-bal-num { color: #111; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .b-divider { height: 1px; background: #f0f0f0; margin: 10px 0; }
+  .b-stats { display: flex; justify-content: space-between; }
+  .b-stat-label { color: #aaa; font-size: 7px; margin-bottom: 2px; }
+  .b-stat-val { font-size: 10px; font-weight: 700; }
+  .b-stat-val.purple { color: #7c3aed; }
+  .b-stat-val.red { color: #ef4444; }
+
+  .b-cta {
+    margin: 0 10px 8px;
+    background: #7c3aed;
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .b-prog-title { padding: 0 12px 5px; font-size: 9px; font-weight: 700; color: #888; letter-spacing: 0.5px; }
+  .b-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px; }
+  .b-card { background: white; border-radius: 12px; padding: 9px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .b-card-name { font-size: 7px; color: #aaa; margin-bottom: 3px; }
+  .b-card-bal { font-size: 12px; font-weight: 800; color: #22c55e; }
+  .b-card-val { font-size: 7px; color: #ccc; margin-top: 1px; }
+
+  /* ======= OPÇÃO C: Travel Blue ======= */
+  .screen-c { background: #eef2ff; }
+  .c-header {
+    background: linear-gradient(150deg, #1e3a8a, #4f46e5, #7c3aed);
+    padding: 18px 12px 18px;
+    border-radius: 0 0 22px 22px;
+    margin-bottom: 10px;
+  }
+  .c-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .c-greeting { font-size: 9px; color: rgba(255,255,255,0.75); }
+  .c-greeting strong { color: white; }
+  .c-bell { width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .c-bal-label { color: rgba(255,255,255,0.6); font-size: 7px; letter-spacing: 0.5px; }
+  .c-bal-num { color: white; font-size: 20px; font-weight: 800; }
+  .c-bal-sub { color: rgba(255,255,255,0.6); font-size: 8px; margin-top: 1px; }
+
+  .c-actions { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; padding: 0 10px 8px; }
+  .c-action { background: white; border-radius: 12px; padding: 9px 4px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .c-action-icon { font-size: 16px; margin-bottom: 3px; }
+  .c-action-label { font-size: 7px; color: #555; font-weight: 600; }
+
+  .c-prog-title { padding: 0 12px 5px; font-size: 9px; font-weight: 700; color: #666; letter-spacing: 0.5px; }
+  .c-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px; }
+  .c-card { background: white; border-radius: 12px; padding: 9px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .c-card-name { font-size: 7px; color: #aaa; margin-bottom: 3px; }
+  .c-card-bal { font-size: 12px; font-weight: 800; color: #4f46e5; }
+  .c-card-val { font-size: 7px; color: #ccc; margin-top: 1px; }
+
+  /* bottom nav */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: white;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-around;
+    padding: 5px 0 6px;
+  }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .nav-icon { font-size: 13px; }
+  .nav-label { font-size: 6px; color: #aaa; font-weight: 500; }
+  .nav-item.active .nav-icon { filter: drop-shadow(0 0 2px #7c3aed); }
+  .nav-item.active .nav-label { color: #7c3aed; font-weight: 700; }
+
+  .bottom-nav-dark {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #111827;
+    border-top: 1px solid #1f2937;
+    display: flex;
+    justify-content: space-around;
+    padding: 5px 0 6px;
+  }
+  .bottom-nav-dark .nav-label { color: #555; }
+  .bottom-nav-dark .nav-item.active .nav-label { color: #a78bfa; }
+
+  /* Labels e seleção */
+  .phone-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ccc;
+    text-align: center;
+    transition: color 0.2s;
+  }
+  .phone-desc {
+    font-size: 11px;
+    color: #666;
+    text-align: center;
+    max-width: 200px;
+    line-height: 1.4;
+  }
+
+  .selected-badge {
+    display: none;
+    background: #7c3aed;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .phone-wrapper.selected .selected-badge { display: block; }
+
+  .confirm-btn {
+    display: block;
+    margin: 32px auto 0;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 32px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .confirm-btn.visible { opacity: 1; pointer-events: all; }
+  .confirm-btn:hover { transform: translateY(-2px); }
+</style>
+</head>
+<body>
+
+<h1>Qual direção de design para a Home?</h1>
+<p class="sub">Clique em um dos celulares para selecionar — são mockups reais em proporção mobile</p>
+
+<div class="phones-row">
+
+  <!-- A: Premium Dark -->
+  <div class="phone-wrapper" onclick="select(this,'a')">
+    <div class="phone-frame">
+      <div class="screen screen-a">
+        <div class="a-header">
+          <div class="a-avatar">EM</div>
+          <div class="a-title">Gest Miles</div>
+          <div class="a-menu"><span></span><span></span><span></span></div>
+        </div>
+        <div class="a-hero">
+          <div class="a-hero-label">TOTAL DE MILHAS</div>
+          <div class="a-hero-num">1.002.000</div>
+          <div class="a-hero-sub">≈ R$ 92,27 · Hoje</div>
+          <div class="a-hero-btns">
+            <div class="a-btn-ghost">+ Adicionar</div>
+            <div class="a-btn-solid">Solicitar Cotação</div>
+          </div>
+        </div>
+        <div class="a-section-title">MEUS PROGRAMAS</div>
+        <div class="a-cards">
+          <div class="a-card"><div class="a-card-name">Latam Pass</div><div class="a-card-bal">502.000</div><div class="a-card-val">R$ 23,94</div></div>
+          <div class="a-card"><div class="a-card-name">Livelo</div><div class="a-card-bal">300.000</div><div class="a-card-val">R$ 43,33</div></div>
+          <div class="a-card"><div class="a-card-name">Esfera</div><div class="a-card-bal" style="color:#ef4444">200.000</div><div class="a-card-val">R$ 25,00</div></div>
+          <div class="a-card"><div class="a-card-name">Smiles</div><div class="a-card-bal" style="color:#555">0</div><div class="a-card-val">R$ 0</div></div>
+        </div>
+        <div class="bottom-nav-dark">
+          <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label" style="color:#a78bfa">Início</div></div>
+          <div class="nav-item"><div class="nav-icon" style="filter:grayscale(1)">📋</div><div class="nav-label">Programas</div></div>
+          <div class="nav-item"><div class="nav-icon" style="filter:grayscale(1)">🎫</div><div class="nav-label">Passagens</div></div>
+          <div class="nav-item"><div class="nav-icon" style="filter:grayscale(1)">🔔</div><div class="nav-label">Alertas</div></div>
+          <div class="nav-item"><div class="nav-icon" style="filter:grayscale(1)">👤</div><div class="nav-label">Perfil</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">A — Premium Dark</div>
+    <div class="phone-desc">Fundo escuro, hero card gradiente roxo‑pink, fintech premium</div>
+    <div class="selected-badge">✓ Selecionado</div>
+  </div>
+
+  <!-- B: Financial Clean -->
+  <div class="phone-wrapper" onclick="select(this,'b')">
+    <div class="phone-frame">
+      <div class="screen screen-b">
+        <div class="b-header">
+          <div class="b-avatar">EM</div>
+          <div class="b-title" style="color:#111">Gest Miles</div>
+          <div class="b-bell">🔔</div>
+        </div>
+        <div class="b-balance-card">
+          <div class="b-bal-label">TOTAL DE MILHAS</div>
+          <div class="b-bal-num">1.002.000</div>
+          <div class="b-divider"></div>
+          <div class="b-stats">
+            <div><div class="b-stat-label">Valor est.</div><div class="b-stat-val purple">R$ 92,27</div></div>
+            <div><div class="b-stat-label">Vencendo</div><div class="b-stat-val red">90 dias</div></div>
+          </div>
+        </div>
+        <div class="b-cta">✈️ Solicitar Cotação de Passagem</div>
+        <div class="b-prog-title">MEUS PROGRAMAS</div>
+        <div class="b-cards">
+          <div class="b-card"><div class="b-card-name">Latam Pass</div><div class="b-card-bal">↑ 502.000</div><div class="b-card-val">R$ 23,94</div></div>
+          <div class="b-card"><div class="b-card-name">Livelo</div><div class="b-card-bal">↑ 300.000</div><div class="b-card-val">R$ 43,33</div></div>
+          <div class="b-card"><div class="b-card-name">Esfera</div><div class="b-card-bal" style="color:#ef4444">↓ 200.000</div><div class="b-card-val">R$ 25,00</div></div>
+          <div class="b-card"><div class="b-card-name">Smiles</div><div class="b-card-bal" style="color:#aaa">— 0</div><div class="b-card-val">R$ 0</div></div>
+        </div>
+        <div class="bottom-nav">
+          <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label" style="color:#7c3aed">Início</div></div>
+          <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Programas</div></div>
+          <div class="nav-item"><div class="nav-icon">🎫</div><div class="nav-label">Passagens</div></div>
+          <div class="nav-item"><div class="nav-icon">🔔</div><div class="nav-label">Alertas</div></div>
+          <div class="nav-item"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">B — Financial Clean</div>
+    <div class="phone-desc">Fundo claro, cards brancos, CTA roxo em destaque, estilo Nubank</div>
+    <div class="selected-badge">✓ Selecionado</div>
+  </div>
+
+  <!-- C: Travel Blue -->
+  <div class="phone-wrapper" onclick="select(this,'c')">
+    <div class="phone-frame">
+      <div class="screen screen-c">
+        <div class="c-header">
+          <div class="c-top">
+            <div class="c-greeting">Olá, <strong>Eduardo ✈️</strong></div>
+            <div class="c-bell">🔔</div>
+          </div>
+          <div class="c-bal-label">SUAS MILHAS</div>
+          <div class="c-bal-num">1.002.000</div>
+          <div class="c-bal-sub">≈ R$ 92,27 em passagens</div>
+        </div>
+        <div class="c-actions">
+          <div class="c-action"><div class="c-action-icon">✈️</div><div class="c-action-label">Cotação</div></div>
+          <div class="c-action"><div class="c-action-icon">🔔</div><div class="c-action-label">Alertas</div></div>
+          <div class="c-action"><div class="c-action-icon">📊</div><div class="c-action-label">Extrato</div></div>
+        </div>
+        <div class="c-prog-title">MEUS PROGRAMAS</div>
+        <div class="c-cards">
+          <div class="c-card"><div class="c-card-name">Latam Pass</div><div class="c-card-bal">502.000</div><div class="c-card-val">R$ 23,94</div></div>
+          <div class="c-card"><div class="c-card-name">Livelo</div><div class="c-card-bal">300.000</div><div class="c-card-val">R$ 43,33</div></div>
+          <div class="c-card"><div class="c-card-name">Esfera</div><div class="c-card-bal" style="color:#ef4444">200.000</div><div class="c-card-val">R$ 25,00</div></div>
+          <div class="c-card"><div class="c-card-name">Smiles</div><div class="c-card-bal" style="color:#aaa">0</div><div class="c-card-val">R$ 0</div></div>
+        </div>
+        <div class="bottom-nav">
+          <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label" style="color:#4f46e5">Início</div></div>
+          <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Programas</div></div>
+          <div class="nav-item"><div class="nav-icon">🎫</div><div class="nav-label">Passagens</div></div>
+          <div class="nav-item"><div class="nav-icon">🔔</div><div class="nav-label">Alertas</div></div>
+          <div class="nav-item"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">C — Travel Blue</div>
+    <div class="phone-desc">Header gradiente azul‑roxo, saudação personalizada, ações rápidas em grid</div>
+    <div class="selected-badge">✓ Selecionado</div>
+  </div>
+
+</div>
+
+<button class="confirm-btn" id="confirmBtn" onclick="confirm()">Confirmar escolha →</button>
+
+<script>
+  let selected = null;
+  function select(el, choice) {
+    document.querySelectorAll('.phone-wrapper').forEach(w => w.classList.remove('selected'));
+    el.classList.add('selected');
+    selected = choice;
+    document.getElementById('confirmBtn').classList.add('visible');
+    if (window.__sp_record) window.__sp_record({ type: 'click', choice, text: el.querySelector('.phone-label').textContent });
+  }
+  function confirm() {
+    if (!selected) return;
+    if (window.__sp_record) window.__sp_record({ type: 'confirm', choice: selected });
+    document.getElementById('confirmBtn').textContent = '✓ Confirmado!';
+  }
+</script>
+</body>
+</html>

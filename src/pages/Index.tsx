@@ -527,8 +527,19 @@ const Index = () => {
     window.localStorage.setItem(storageKey, "1");
   }, [reunioesResumoDia.total, reunioesResumoDia.horarios, role]);
   const [activeTab, setActiveTab] = useState("saldo");
-  const [activeNav, setActiveNav] = useState("programas");
   const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("view") !== "programas") return;
+    setActiveTab("saldo");
+    const t = window.setTimeout(() => {
+      document.getElementById("meus-programas")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [searchParams]);
   const [programDefs, setProgramDefs] = useState<ProgramCardData[]>(basePrograms);
   const [programs, setPrograms] = useState<ProgramCardData[]>(basePrograms);
   const [economiaPeriodoMeses, setEconomiaPeriodoMeses] = useState<1 | 6 | 12>(12);
@@ -2183,7 +2194,7 @@ const Index = () => {
             </div>
           ) : (
             <>
-              <section className="px-5 pb-1">
+              <section id="meus-programas" className="px-5 pb-1">
                 <h2 className="section-label-lg text-lg">Meus programas</h2>
               </section>
               <div className="grid grid-cols-2 gap-1.5 px-5 pb-2">
@@ -3275,22 +3286,6 @@ const Index = () => {
       <NpsClientePrompt />
 
       <BottomNav
-        activeItem={activeNav}
-        onItemChange={(item) => {
-          if (item === "passagens") {
-            navigate("/search-flights");
-            return;
-          }
-          if (item === "vender") {
-            if (role === "cs") {
-              navigate("/cs");
-              return;
-            }
-            navigate(managerClientId ? `/cliente?clientId=${managerClientId}` : "/cliente");
-            return;
-          }
-          setActiveNav(item);
-        }}
         showClientSelector={managerMode}
         clients={clientsForBottomNav}
         selectedClientId={managerClientId}

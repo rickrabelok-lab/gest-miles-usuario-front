@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GestMiles – Redesign Proposto</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0a0a12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px 48px;
+  gap: 40px;
+  min-height: 100vh;
+}
+
+h1 { color: #fff; font-size: 18px; font-weight: 700; text-align: center; }
+.sub { color: #666; font-size: 12px; text-align: center; margin-top: 4px; }
+
+.comparison {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Phone frame */
+.phone-outer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.phone-label-top {
+  font-size: 11px;
+  color: #666;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.phone-frame {
+  width: 240px;
+  height: 500px;
+  background: #111;
+  border-radius: 38px;
+  border: 6px solid #222;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 70px; height: 11px;
+  background: #222;
+  border-radius: 0 0 12px 12px;
+  z-index: 100;
+}
+.screen { width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.screen::-webkit-scrollbar { display: none; }
+
+/* ═══ ANTES (OktoPlus style atual) ═══ */
+.before-screen { background: #fff; }
+
+.before-header {
+  background: #00BCD4;
+  padding: 18px 14px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.before-user {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px; padding: 4px 8px 4px 4px;
+}
+.before-avatar { width: 22px; height: 22px; background: rgba(255,255,255,0.3); border-radius: 50%; display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:700; }
+.before-user-name { font-size: 9px; color: white; font-weight: 600; }
+.before-logo { font-size: 11px; font-weight: 800; color: white; }
+.before-menu { display:flex;flex-direction:column;gap:2.5px; }
+.before-menu span { width: 16px; height: 1.5px; background: white; border-radius: 2px; }
+
+.before-banner {
+  margin: 8px 10px;
+  border: 1.5px solid #00BCD4;
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex; align-items: center; gap: 7px;
+  background: #fff;
+}
+.before-banner-icon { font-size: 14px; }
+.before-banner-text { font-size: 8px; color: #333; flex: 1; }
+.before-banner-text span { color: #00BCD4; font-weight: 700; }
+.before-banner-x { font-size: 9px; color: #aaa; }
+
+.before-tabs {
+  display: flex; gap: 6px; padding: 4px 10px 8px;
+}
+.before-tab {
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 8px;
+  font-weight: 600;
+  border: 1.5px solid #ddd;
+  color: #555;
+  background: white;
+  display: flex; align-items: center; gap: 4px;
+}
+.before-tab.active { background: #00BCD4; color: white; border-color: #00BCD4; }
+
+.before-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 10px 8px;
+}
+.before-card {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 8px;
+  background: white;
+  position: relative;
+}
+.before-card-logo { width: 22px; height: 22px; border-radius: 50%; background: #1a237e; display:flex;align-items:center;justify-content:center; margin-bottom: 4px; }
+.before-card-logo img { width: 14px; }
+.before-card-logo-text { font-size: 7px; color: white; font-weight: 700; }
+.before-card-miles { font-size: 13px; font-weight: 800; color: #00BCD4; }
+.before-card-brl { font-size: 7px; color: #999; }
+.before-card-date { font-size: 6px; color: #bbb; margin-top: 1px; }
+.before-card-gear { position: absolute; top: 5px; right: 5px; font-size: 8px; color: #ccc; }
+.before-card-error { font-size: 6px; color: #ef4444; margin-top: 2px; }
+.before-card-up { color: #22c55e; }
+.before-card-down { color: #ef4444; }
+
+.before-ver { display:flex;align-items:center;gap:4px;padding:0 10px 10px;color:#00BCD4;font-size:8px;font-weight:600; }
+
+.before-section-title { font-size: 13px; font-weight: 700; color: #111; text-align:center; padding: 6px 10px 4px; }
+.before-section-sub { font-size: 8px; color: #888; text-align:center; padding: 0 10px 8px; }
+.before-routes { display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 10px 10px; }
+.before-route { border:1px solid #eee;border-radius:10px;padding:8px; }
+.before-route-main { font-size: 9px; font-weight: 700; color: #111; }
+.before-route-sub { font-size: 7px; color: #888; margin-top: 1px; }
+
+.before-bnav {
+  position: sticky; bottom: 0;
+  background: white;
+  border-top: 1px solid #eee;
+  display: flex; justify-content: space-around;
+  padding: 6px 0 4px;
+}
+.before-bnav-item { display:flex;flex-direction:column;align-items:center;gap:2px; }
+.before-bnav-icon { font-size: 13px; color: #00BCD4; }
+.before-bnav-label { font-size: 6px; color: #00BCD4; font-weight: 600; }
+
+/* ═══ DEPOIS (GestMiles Premium) ═══ */
+.after-screen { background: #f5f5f8; }
+
+.after-header {
+  background: linear-gradient(145deg, #5b21b6 0%, #7c3aed 55%, #9333ea 100%);
+  padding: 20px 14px 22px;
+  border-radius: 0 0 28px 28px;
+  position: relative;
+  overflow: hidden;
+}
+.after-header::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 100px; height: 100px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+.after-header::after {
+  content: '';
+  position: absolute;
+  bottom: -20px; left: 20px;
+  width: 60px; height: 60px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+}
+
+.after-header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; position: relative; z-index: 1;
+}
+.after-user-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 20px; padding: 5px 10px 5px 5px;
+  backdrop-filter: blur(4px);
+}
+.after-avatar {
+  width: 24px; height: 24px; background: rgba(255,255,255,0.9);
+  border-radius: 50%; display:flex;align-items:center;justify-content:center;
+  font-size: 8px; color: #7c3aed; font-weight: 800;
+}
+.after-user-name { font-size: 9px; color: rgba(255,255,255,0.9); font-weight: 600; }
+.after-logo { font-size: 12px; font-weight: 800; color: white; letter-spacing: -0.2px; position: relative; z-index: 1; }
+.after-bell {
+  width: 30px; height: 30px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size: 13px;
+  position: relative; z-index: 1;
+}
+.after-bell-dot {
+  position: absolute; top: 4px; right: 4px;
+  width: 7px; height: 7px; background: #fbbf24;
+  border-radius: 50%; border: 1.5px solid #7c3aed;
+}
+
+.after-balance { position: relative; z-index: 1; }
+.after-bal-label { font-size: 8px; color: rgba(255,255,255,0.6); letter-spacing: 1px; margin-bottom: 3px; }
+.after-bal-num { font-size: 26px; font-weight: 800; color: white; letter-spacing: -0.5px; line-height: 1; }
+.after-bal-sub { font-size: 9px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+
+.after-banner {
+  margin: 12px 12px 0;
+  background: rgba(255,255,255,0.95);
+  border-radius: 12px;
+  padding: 9px 11px;
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.12);
+}
+.after-banner-icon { font-size: 14px; flex-shrink: 0; }
+.after-banner-text { font-size: 8px; color: #444; flex: 1; line-height: 1.4; }
+.after-banner-text strong { color: #7c3aed; font-weight: 700; }
+.after-banner-x { font-size: 9px; color: #bbb; }
+
+.after-tabs {
+  display: flex; gap: 5px; padding: 10px 12px 6px; overflow-x: auto; scrollbar-width: none;
+}
+.after-tabs::-webkit-scrollbar { display: none; }
+.after-tab {
+  border-radius: 20px; padding: 5px 11px;
+  font-size: 8px; font-weight: 600;
+  border: 1.5px solid #e0e0e8; color: #888; background: white;
+  white-space: nowrap; display: flex; align-items: center; gap: 4px;
+  flex-shrink: 0;
+}
+.after-tab.active {
+  background: #7c3aed; color: white; border-color: #7c3aed;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.3);
+}
+
+.after-cta {
+  margin: 0 12px 8px;
+  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  border-radius: 14px;
+  padding: 11px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+}
+.after-cta-left { display: flex; align-items: center; gap: 7px; }
+.after-cta-icon { font-size: 16px; }
+.after-cta-text { color: white; }
+.after-cta-title { font-size: 9px; font-weight: 700; }
+.after-cta-sub { font-size: 7px; color: rgba(255,255,255,0.65); margin-top: 1px; }
+.after-cta-arrow { font-size: 14px; color: rgba(255,255,255,0.7); }
+
+.after-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 12px 6px;
+}
+.after-section-title { font-size: 10px; font-weight: 700; color: #1a1a2e; letter-spacing: 0.2px; }
+.after-section-link { font-size: 8px; color: #7c3aed; font-weight: 600; }
+
+.after-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 0 12px 8px;
+}
+.after-card {
+  background: white;
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  position: relative;
+  overflow: hidden;
+}
+.after-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2.5px;
+  border-radius: 14px 14px 0 0;
+}
+.after-card.latam::before { background: linear-gradient(90deg, #1565C0, #42A5F5); }
+.after-card.livelo::before { background: linear-gradient(90deg, #d4006e, #ff4fa3); }
+.after-card.esfera::before { background: linear-gradient(90deg, #e53935, #ff7043); }
+.after-card.smiles::before { background: linear-gradient(90deg, #f97316, #fb923c); }
+
+.after-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.after-card-logo {
+  width: 24px; height: 24px; border-radius: 8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size: 7px; font-weight: 700; color: white;
+  flex-shrink: 0;
+}
+.after-card-logo.latam { background: #1565C0; }
+.after-card-logo.livelo { background: #d4006e; }
+.after-card-logo.esfera { background: #e53935; }
+.after-card-logo.smiles { background: #f97316; }
+.after-card-gear { font-size: 8px; color: #ddd; }
+
+.after-card-name { font-size: 7.5px; font-weight: 600; color: #888; margin-bottom: 2px; }
+.after-card-miles { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; }
+.after-card-miles.up { color: #16a34a; }
+.after-card-miles.down { color: #dc2626; }
+.after-card-miles.neutral { color: #1a1a2e; }
+.after-card-miles-indicator { font-size: 8px; margin-right: 1px; }
+.after-card-brl { font-size: 7.5px; color: #aaa; font-weight: 500; margin-top: 1px; }
+.after-card-date { font-size: 6.5px; color: #ccc; margin-top: 3px; }
+
+.after-ver {
+  display: flex; align-items: center; gap: 5px;
+  padding: 0 12px 10px; color: #7c3aed; font-size: 8.5px; font-weight: 600;
+}
+
+.after-routes-section { padding: 0 12px 8px; }
+.after-route-title { font-size: 10px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+.after-routes { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; }
+.after-routes::-webkit-scrollbar { display: none; }
+.after-route {
+  min-width: 130px; background: white; border-radius: 12px;
+  padding: 9px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.after-route-main { font-size: 9.5px; font-weight: 700; color: #1a1a2e; }
+.after-route-sub { font-size: 7px; color: #aaa; margin-top: 2px; }
+
+.after-bnav {
+  position: sticky; bottom: 0;
+  background: white;
+  border-top: 1px solid #f0f0f4;
+  display: flex; justify-content: space-around;
+  padding: 6px 0 5px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+}
+.after-bnav-item { display:flex;flex-direction:column;align-items:center;gap:2px; }
+.after-bnav-icon-wrap {
+  width: 28px; height: 22px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius: 8px;
+}
+.after-bnav-icon-wrap.active { background: #7c3aed; }
+.after-bnav-icon { font-size: 12px; color: #ccc; }
+.after-bnav-icon-wrap.active .after-bnav-icon { color: white; filter: none; }
+.after-bnav-label { font-size: 6px; color: #bbb; font-weight: 500; }
+.after-bnav-item.active .after-bnav-label { color: #7c3aed; font-weight: 700; }
+
+/* Legend */
+.legend {
+  display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;
+}
+.legend-item {
+  display: flex; flex-direction: column; gap: 6px; max-width: 240px;
+}
+.legend-title { font-size: 12px; font-weight: 700; color: #ccc; }
+.legend-points { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+.legend-points li { font-size: 11px; color: #666; padding-left: 12px; position: relative; }
+.legend-points li::before { content: '✓'; position: absolute; left: 0; color: #7c3aed; font-size: 9px; top: 1px; }
+
+.section-label {
+  width: 100%; text-align: center; font-size: 11px; font-weight: 700;
+  color: #555; letter-spacing: 1px; text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<div>
+  <h1>Redesign da Home — GestMiles</h1>
+  <p class="sub">Antes (estilo OktoPlus atual) vs Depois (proposta premium para GestMiles)</p>
+</div>
+
+<div class="comparison">
+
+  <!-- ANTES -->
+  <div class="phone-outer">
+    <div class="phone-label-top" style="color:#555">— Antes (referência OktoPlus) —</div>
+    <div class="phone-frame">
+      <div class="screen before-screen">
+        <div class="before-header">
+          <div class="before-user">
+            <div class="before-avatar">RR</div>
+            <div class="before-user-name">RR ∨</div>
+          </div>
+          <div class="before-logo">🔵 oktoplus</div>
+          <div class="before-menu"><span></span><span></span><span></span></div>
+        </div>
+
+        <div class="before-banner">
+          <div class="before-banner-icon">⚙️</div>
+          <div class="before-banner-text">Bônus de <span>até 120%</span> na transferência. Confira</div>
+          <div class="before-banner-x">✕</div>
+        </div>
+
+        <div class="before-tabs">
+          <div class="before-tab active">📊 Saldo</div>
+          <div class="before-tab">✔ Vencendo</div>
+          <div class="before-tab">↗ Extrato</div>
+        </div>
+
+        <div class="before-grid">
+          <div class="before-card">
+            <div class="before-card-gear">⚙</div>
+            <div class="before-card-logo"><span class="before-card-logo-text">✈</span></div>
+            <div class="before-card-miles" style="color:#00BCD4">183.747</div>
+            <div class="before-card-brl">R$ 2.939</div>
+            <div class="before-card-date">↺ 27/04</div>
+          </div>
+          <div class="before-card">
+            <div class="before-card-gear">⚙</div>
+            <div class="before-card-logo" style="background:#555"><span class="before-card-logo-text">E_</span></div>
+            <div class="before-card-miles" style="color:#00BCD4">10.248</div>
+            <div class="before-card-brl">R$ 276</div>
+            <div class="before-card-date">↺ 27/04</div>
+          </div>
+          <div class="before-card">
+            <div class="before-card-gear">⚙</div>
+            <div class="before-card-logo" style="background:#003087"><span class="before-card-logo-text">LP</span></div>
+            <div class="before-card-miles before-card-down">↓8.965</div>
+            <div class="before-card-brl">R$ 254</div>
+            <div class="before-card-error">Latampass solicita código</div>
+          </div>
+          <div class="before-card">
+            <div class="before-card-gear">⚙</div>
+            <div class="before-card-logo" style="background:#f97316"><span class="before-card-logo-text">SM</span></div>
+            <div class="before-card-miles before-card-up">↑13.408</div>
+            <div class="before-card-brl">R$ 241</div>
+            <div class="before-card-error">Código de validação</div>
+          </div>
+        </div>
+
+        <div class="before-ver">👁 Ver todos →</div>
+
+        <div class="before-section-title">Passagens recentes</div>
+        <div class="before-routes" style="padding:0 10px 8px;">
+          <div class="before-route"><div class="before-route-main">RIO ✈ PAR</div><div class="before-route-sub">21 mar · 1 adulto</div></div>
+          <div class="before-route"><div class="before-route-main">VIX ✈ RIO</div><div class="before-route-sub">01 jun · 1 adulto</div></div>
+        </div>
+
+        <div class="before-bnav">
+          <div class="before-bnav-item"><div class="before-bnav-icon">✈</div><div class="before-bnav-label">Passagens</div></div>
+          <div class="before-bnav-item"><div class="before-bnav-icon">📋</div><div class="before-bnav-label">Programas</div></div>
+          <div class="before-bnav-item"><div class="before-bnav-icon">💰</div><div class="before-bnav-label">Vender</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPOIS -->
+  <div class="phone-outer">
+    <div class="phone-label-top" style="color:#a78bfa">✦ Proposta GestMiles Premium ✦</div>
+    <div class="phone-frame" style="border-color:#3d1a7a;box-shadow:0 0 0 1px #4c1d95,0 20px 60px rgba(124,58,237,0.4)">
+      <div class="screen after-screen">
+
+        <!-- Header gradiente roxo -->
+        <div class="after-header">
+          <div class="after-header-top">
+            <div class="after-user-pill">
+              <div class="after-avatar">EM</div>
+              <div class="after-user-name">Eduardo ∨</div>
+            </div>
+            <div class="after-logo">Gest Miles</div>
+            <div class="after-bell" style="position:relative">
+              🔔
+              <div class="after-bell-dot"></div>
+            </div>
+          </div>
+          <div class="after-balance">
+            <div class="after-bal-label">TOTAL DE MILHAS</div>
+            <div class="after-bal-num">1.002.000</div>
+            <div class="after-bal-sub">≈ R$ 92,27 em passagens · Hoje</div>
+          </div>
+        </div>
+
+        <!-- Banner bônus -->
+        <div class="after-banner">
+          <div class="after-banner-icon">⚡</div>
+          <div class="after-banner-text">Bônus de <strong>até 133%</strong> na transferência. Confira agora</div>
+          <div class="after-banner-x">✕</div>
+        </div>
+
+        <!-- Tabs pill -->
+        <div class="after-tabs">
+          <div class="after-tab active">📊 Saldo</div>
+          <div class="after-tab">⏰ Vencendo</div>
+          <div class="after-tab">↗ Extrato</div>
+          <div class="after-tab">R$ →</div>
+        </div>
+
+        <!-- CTA Solicitar Cotação -->
+        <div class="after-cta">
+          <div class="after-cta-left">
+            <div class="after-cta-icon">✈️</div>
+            <div class="after-cta-text">
+              <div class="after-cta-title">Solicitar Cotação</div>
+              <div class="after-cta-sub">Busque passagens com seus pontos</div>
+            </div>
+          </div>
+          <div class="after-cta-arrow">→</div>
+        </div>
+
+        <!-- Meus Programas -->
+        <div class="after-section-header">
+          <div class="after-section-title">Meus Programas</div>
+          <div class="after-section-link">Ver todos →</div>
+        </div>
+
+        <div class="after-grid">
+          <div class="after-card latam">
+            <div class="after-card-top">
+              <div class="after-card-logo latam">LP</div>
+              <div class="after-card-gear">⚙</div>
+            </div>
+            <div class="after-card-name">Latam Pass</div>
+            <div class="after-card-miles up"><span class="after-card-miles-indicator">↑</span>502.000</div>
+            <div class="after-card-brl">R$ 23,94</div>
+            <div class="after-card-date">Hoje</div>
+          </div>
+          <div class="after-card livelo">
+            <div class="after-card-top">
+              <div class="after-card-logo livelo">LV</div>
+              <div class="after-card-gear">⚙</div>
+            </div>
+            <div class="after-card-name">Livelo</div>
+            <div class="after-card-miles up"><span class="after-card-miles-indicator">↑</span>300.000</div>
+            <div class="after-card-brl">R$ 43,33</div>
+            <div class="after-card-date">Hoje</div>
+          </div>
+          <div class="after-card esfera">
+            <div class="after-card-top">
+              <div class="after-card-logo esfera">ES</div>
+              <div class="after-card-gear">⚙</div>
+            </div>
+            <div class="after-card-name">Esfera</div>
+            <div class="after-card-miles down"><span class="after-card-miles-indicator">↓</span>200.000</div>
+            <div class="after-card-brl">R$ 25,00</div>
+            <div class="after-card-date">Hoje</div>
+          </div>
+          <div class="after-card smiles">
+            <div class="after-card-top">
+              <div class="after-card-logo smiles">SM</div>
+              <div class="after-card-gear">⚙</div>
+            </div>
+            <div class="after-card-name">Smiles</div>
+            <div class="after-card-miles neutral"><span class="after-card-miles-indicator"></span>0</div>
+            <div class="after-card-brl">R$ 0</div>
+            <div class="after-card-date">—</div>
+          </div>
+        </div>
+
+        <!-- Passagens recentes -->
+        <div class="after-routes-section">
+          <div class="after-section-header" style="padding:0 0 6px">
+            <div class="after-section-title">Passagens Recentes</div>
+            <div class="after-section-link">Ver →</div>
+          </div>
+          <div class="after-routes">
+            <div class="after-route">
+              <div class="after-route-main">GRU ✈️ CDG</div>
+              <div class="after-route-sub">01 jun · 1 adulto · Econômica</div>
+            </div>
+            <div class="after-route">
+              <div class="after-route-main">BHZ ✈️ GRU</div>
+              <div class="after-route-sub">15 mai · 1 adulto · Premium</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Nav -->
+        <div class="after-bnav">
+          <div class="after-bnav-item active">
+            <div class="after-bnav-icon-wrap active"><div class="after-bnav-icon">🏠</div></div>
+            <div class="after-bnav-label">Início</div>
+          </div>
+          <div class="after-bnav-item">
+            <div class="after-bnav-icon-wrap"><div class="after-bnav-icon">📋</div></div>
+            <div class="after-bnav-label">Programas</div>
+          </div>
+          <div class="after-bnav-item">
+            <div class="after-bnav-icon-wrap"><div class="after-bnav-icon">🎫</div></div>
+            <div class="after-bnav-label">Passagens</div>
+          </div>
+          <div class="after-bnav-item">
+            <div class="after-bnav-icon-wrap"><div class="after-bnav-icon">🔔</div></div>
+            <div class="after-bnav-label">Alertas</div>
+          </div>
+          <div class="after-bnav-item">
+            <div class="after-bnav-icon-wrap"><div class="after-bnav-icon">👤</div></div>
+            <div class="after-bnav-label">Perfil</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- O que mudou -->
+<div style="max-width:520px;width:100%">
+  <div style="font-size:12px;font-weight:700;color:#666;letter-spacing:1px;text-transform:uppercase;text-align:center;margin-bottom:16px">O que muda no redesign</div>
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-title" style="color:#a78bfa">Visual</div>
+      <ul class="legend-points">
+        <li>Header roxo gradiente premium em vez de cor sólida</li>
+        <li>Total de milhas exibido no header (hero)</li>
+        <li>Cards com barra de cor por programa no topo</li>
+        <li>Ícones de programa com bordas arredondadas (não círculo)</li>
+        <li>Bottom nav com 5 itens e indicador ativo preenchido</li>
+      </ul>
+    </div>
+    <div class="legend-item">
+      <div class="legend-title" style="color:#a78bfa">UX / Hierarquia</div>
+      <ul class="legend-points">
+        <li>CTA "Solicitar Cotação" em card destacado logo após as tabs</li>
+        <li>Seção "Passagens Recentes" com scroll horizontal</li>
+        <li>"Ver todos" como link no cabeçalho da seção</li>
+        <li>Banner de bônus mais elegante com ícone de raio ⚡</li>
+        <li>Saudação com nome do usuário no header</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

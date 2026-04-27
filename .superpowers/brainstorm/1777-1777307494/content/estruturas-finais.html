@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Final — 3 Estruturas Gest Miles</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #ede8f5;
+  min-height: 100vh;
+  padding: 40px 20px 100px;
+  color: #1a1a1a;
+}
+
+/* ─── PAGE HEADER ─── */
+.page-header { text-align: center; margin-bottom: 56px; }
+.page-header h1 { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+.page-header p { font-size: 14px; color: #666; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+.page-header strong { color: #8A05BE; }
+
+/* ─── SECTION ─── */
+.section { max-width: 1100px; margin: 0 auto 80px; }
+.section-header { margin-bottom: 32px; padding-left: 16px; border-left: 4px solid #8A05BE; }
+.section-header h2 { font-size: 20px; font-weight: 900; color: #1a1a1a; }
+.section-header p { font-size: 13px; color: #666; margin-top: 4px; line-height: 1.5; max-width: 600px; }
+
+/* ─── PHONE GRID ─── */
+.phone-grid {
+  display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; justify-content: center;
+}
+.phone-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.phone-col-label {
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px;
+  padding: 4px 14px; border-radius: 20px; background: #e9d8fa; color: #8A05BE;
+}
+.phone-col-label.red { background: #fde8e8; color: #b91c1c; }
+.phone-col-label.green { background: #d7f3e0; color: #1a7340; }
+
+/* ─── PHONE SHELL ─── */
+.phone {
+  width: 220px; border-radius: 36px;
+  box-shadow: 0 28px 72px rgba(0,0,0,.24), 0 0 0 7px #111, 0 0 0 9px #2a2a2a;
+  overflow: hidden; background: #fff; flex-shrink: 0;
+  position: relative;
+}
+.notch { width: 72px; height: 14px; background: #111; border-radius: 0 0 10px 10px; margin: 0 auto; }
+
+/* ─── HEADER ─── */
+.h-bar {
+  background: linear-gradient(150deg, #8A05BE 0%, #6804a0 55%, #4e0079 100%);
+  padding: 10px 15px 13px;
+}
+.h-bar.alt { background: linear-gradient(150deg, #6804a0 0%, #4e0079 100%); }
+.h-topbar { display: flex; justify-content: space-between; align-items: center; }
+.h-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(255,255,255,.2); border: 1.5px solid rgba(255,255,255,.32);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: white;
+}
+.h-title { font-size: 16px; font-weight: 800; color: white; letter-spacing: -.3px; }
+.h-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center; position: relative;
+}
+.h-btn-dot {
+  width: 7px; height: 7px; background: #f43f5e; border-radius: 50%;
+  position: absolute; top: 1px; right: 1px; border: 1.5px solid #4e0079;
+}
+.h-back { background: rgba(255,255,255,.12); }
+
+/* ─── BODY ─── */
+.body { overflow: hidden; }
+.body-pad { padding: 12px 13px; }
+
+/* ─── BOTTOM NAV ─── */
+.bnav {
+  display: flex; border-top: 1px solid #efefef; background: #fff;
+  padding: 6px 0 12px;
+}
+.bnav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.bnav-icon {
+  width: 26px; height: 26px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.bnav-icon.on { background: #8A05BE; }
+.bnav-label { font-size: 9px; font-weight: 600; color: #bbb; line-height: 1; }
+.bnav-item.on .bnav-label { color: #8A05BE; font-weight: 800; }
+.bnav-badge {
+  width: 7px; height: 7px; background: #f43f5e; border-radius: 50%;
+  position: absolute; top: -1px; right: -1px; border: 1.5px solid #fff;
+}
+
+/* ─── TABS ROW ─── */
+.tabs-row { display: flex; gap: 5px; padding: 8px 13px; overflow-x: auto; border-bottom: 1px solid #f5f0fa; }
+.tab {
+  flex-shrink: 0; border-radius: 20px; padding: 4px 11px;
+  font-size: 10px; font-weight: 700; background: #f3f3f3; color: #999;
+}
+.tab.on { background: #8A05BE; color: #fff; }
+
+/* ─── CARDS ─── */
+.card {
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 1px 8px rgba(0,0,0,.07); padding: 10px 12px; margin-bottom: 8px;
+}
+.card-light { background: #f9f5fd; border-radius: 12px; padding: 9px 11px; margin-bottom: 7px; }
+
+/* ─── PILLS ─── */
+.pill { display: inline-flex; align-items: center; gap: 3px; border-radius: 20px; padding: 2px 8px; font-size: 10px; font-weight: 700; }
+.pill-p { background: #f0e6fa; color: #7b00b0; }
+.pill-g { background: #e1f5e4; color: #1a7340; }
+.pill-r { background: #fee2e2; color: #b91c1c; }
+.pill-a { background: #fff3cd; color: #92600a; }
+.pill-b { background: #dbeafe; color: #1d4ed8; }
+.pill-gr { background: #f3f4f6; color: #6b7280; }
+
+/* ─── PROGRAM CHIP ─── */
+.prog-chip {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 800; color: white; flex-shrink: 0;
+}
+
+/* ─── INFO BOX ─── */
+.info-box {
+  background: #fff; border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08); padding: 20px 22px;
+  max-width: 300px;
+}
+.info-box h3 { font-size: 15px; font-weight: 800; color: #1a1a1a; margin-bottom: 10px; }
+.info-box ul { padding-left: 17px; }
+.info-box li { font-size: 13px; color: #444; line-height: 1.65; margin-bottom: 5px; }
+.info-box li b { color: #1a1a1a; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+.tag { background: #8A05BE; color: #fff; font-size: 10px; font-weight: 700; border-radius: 6px; padding: 2px 8px; }
+.tag.green { background: #1a7340; }
+.tag.orange { background: #c05600; }
+.divider { height: 1px; background: #f0f0f0; margin: 10px 0; }
+
+/* ─── NOTIF SPECIFIC ─── */
+.notif-item { display: flex; gap: 9px; padding: 8px 13px; border-bottom: 1px solid #fafafa; position: relative; }
+.notif-item.unread { background: #fdf7ff; }
+.notif-icon { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.notif-body { flex: 1; min-width: 0; }
+.notif-title2 { font-size: 11px; font-weight: 700; color: #1a1a1a; line-height: 1.3; }
+.notif-text { font-size: 10px; color: #555; line-height: 1.4; margin-top: 2px; }
+.notif-time { font-size: 9px; color: #bbb; margin-top: 3px; }
+.notif-dot { width: 7px; height: 7px; background: #8A05BE; border-radius: 50%; position: absolute; top: 12px; right: 12px; }
+
+/* ─── HIST SPECIFIC ─── */
+.h-stat-row { display: flex; gap: 5px; padding: 10px 13px 8px; border-bottom: 1px solid #f5f0fa; }
+.h-stat { flex: 1; background: #f8f3fd; border-radius: 11px; padding: 7px 6px; text-align: center; }
+.h-stat-v { font-size: 13px; font-weight: 900; color: #8A05BE; }
+.h-stat-l { font-size: 9px; color: #888; font-weight: 600; margin-top: 1px; }
+.month-lbl { font-size: 9px; font-weight: 800; color: #bbb; text-transform: uppercase; letter-spacing: .6px; padding: 8px 13px 3px; }
+.em-item { display: flex; gap: 8px; padding: 8px 13px; border-bottom: 1px solid #fafafa; align-items: center; }
+.em-info { flex: 1; min-width: 0; }
+.em-route { font-size: 11px; font-weight: 700; color: #1a1a1a; }
+.em-sub { font-size: 10px; color: #888; margin-top: 1px; }
+.em-right { text-align: right; flex-shrink: 0; }
+.em-pts { font-size: 12px; font-weight: 800; color: #1a1a1a; }
+.em-date { font-size: 9px; color: #bbb; margin-top: 1px; }
+
+/* ─── DETAIL VIEW ─── */
+.det-hero {
+  background: linear-gradient(150deg, #8A05BE 0%, #4e0079 100%);
+  padding: 14px 15px 16px;
+}
+.det-route { font-size: 20px; font-weight: 900; color: #fff; letter-spacing: -.5px; text-align: center; margin: 8px 0 4px; }
+.det-sub { font-size: 11px; color: rgba(255,255,255,.7); text-align: center; }
+.det-chips { display: flex; justify-content: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.det-chip { background: rgba(255,255,255,.18); color: white; border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 600; }
+.det-body { padding: 12px 14px; }
+.det-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
+.det-key { font-size: 11px; color: #888; }
+.det-val { font-size: 11px; font-weight: 700; color: #1a1a1a; }
+
+/* ─── SCROLL AREA ─── */
+.scroll-area { overflow-y: auto; max-height: 240px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Design Final — Novas Estruturas</h1>
+  <p>3 telas projetadas em detalhe: <strong>Bottom Navigation</strong>, <strong>Central de Notificações</strong> e <strong>Histórico de Emissões</strong>.<br>Avalie e confirme para iniciar a implementação.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+  ESTRUTURA 1 — BOTTOM NAVIGATION
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>1 — Bottom Navigation renovado</h2>
+    <p>5 destinos fixos no rodapé: Início, Programas, Passagens, Alertas, Perfil. As abas de conteúdo existentes (Extrato, Vencendo…) sobem para o topo da Home como filtros compactos.</p>
+  </div>
+
+  <div class="phone-grid">
+
+    <!-- ANTES -->
+    <div class="phone-col">
+      <span class="phone-col-label red">Antes</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="h-bar">
+          <div class="h-topbar">
+            <div class="h-avatar">RR</div>
+            <span class="h-title">Gest Miles</span>
+            <div class="h-btn">
+              <svg width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="4.5"/><line x1="7" y1="3" x2="7" y2="4.5"/></svg>
+            </div>
+          </div>
+        </div>
+        <!-- old tabs as primary nav -->
+        <div style="display:flex;gap:5px;padding:10px 13px;flex-wrap:wrap;border-bottom:1px solid #f0ebfa;">
+          <span class="tab on">Início</span>
+          <span class="tab">Vencendo</span>
+          <span class="tab">Extrato</span>
+          <span class="tab">R$</span>
+          <span class="tab">Insights</span>
+        </div>
+        <div class="body-pad" style="height:230px;display:flex;align-items:center;justify-content:center;color:#ddd;font-size:11px;flex-direction:column;gap:6px;">
+          <svg width="32" height="32" fill="none" stroke="#ddd" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="4" width="24" height="24" rx="6"/><line x1="9" y1="12" x2="23" y2="12"/><line x1="9" y1="17" x2="17" y2="17"/></svg>
+          <span>sem navegação principal</span>
+        </div>
+        <div style="border-top:1px solid #f0f0f0;padding:14px;text-align:center;color:#e0e0e0;font-size:10px;display:flex;align-items:center;justify-content:center;gap:5px;">
+          <svg width="16" height="16" fill="none" stroke="#e0e0e0" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8.5"/><circle cx="8" cy="11" r=".5" fill="#e0e0e0"/></svg>
+          rodapé sem ação
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPOIS — TELA INÍCIO -->
+    <div class="phone-col">
+      <span class="phone-col-label">Início ativo</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="h-bar">
+          <div class="h-topbar">
+            <div class="h-avatar">RR</div>
+            <span class="h-title">Gest Miles</span>
+            <div class="h-btn">
+              <svg width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2a4 4 0 014 4v2l1 2H3l1-2V6a4 4 0 014-4z"/><path d="M5 10a1 1 0 002 0"/></svg>
+              <div class="h-btn-dot"></div>
+            </div>
+          </div>
+        </div>
+        <!-- compact content tabs -->
+        <div class="tabs-row">
+          <span class="tab on">Resumo</span>
+          <span class="tab">Vencendo</span>
+          <span class="tab">Extrato</span>
+          <span class="tab">R$ Economia</span>
+        </div>
+        <div class="body-pad">
+          <!-- balance summary -->
+          <div style="background:linear-gradient(135deg,#f8f3fd,#f0e8fc);border-radius:14px;padding:10px 12px;margin-bottom:8px;">
+            <div style="font-size:10px;color:#888;font-weight:600;margin-bottom:3px;">Patrimônio total</div>
+            <div style="font-size:20px;font-weight:900;color:#1a1a1a;letter-spacing:-.5px;">R$ 4.280</div>
+            <div style="font-size:10px;color:#666;margin-top:2px;">312.500 milhas · 4 programas</div>
+          </div>
+          <!-- 2-col program grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div class="card-light">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                <div class="prog-chip" style="background:#f59e42;">Sm</div>
+                <span style="font-size:10px;color:#777;font-weight:600;">Smiles</span>
+              </div>
+              <div style="font-size:14px;font-weight:900;color:#1a1a1a;">87.400</div>
+              <div style="font-size:10px;color:#555;">R$ 1.748</div>
+            </div>
+            <div class="card-light">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                <div class="prog-chip" style="background:#1a3a6b;">LP</div>
+                <span style="font-size:10px;color:#777;font-weight:600;">LATAM</span>
+              </div>
+              <div style="font-size:14px;font-weight:900;color:#1a1a1a;">74.200</div>
+              <div style="font-size:10px;color:#555;">R$ 1.484</div>
+            </div>
+            <div class="card-light">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                <div class="prog-chip" style="background:#e91e63;">Lv</div>
+                <span style="font-size:10px;color:#777;font-weight:600;">Livelo</span>
+              </div>
+              <div style="font-size:14px;font-weight:900;color:#1a1a1a;">61.200</div>
+              <div style="font-size:10px;color:#555;display:flex;align-items:center;gap:3px;">R$ 612 <span class="pill pill-r" style="font-size:8px;padding:1px 5px;">−30d</span></div>
+            </div>
+            <div class="card-light">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                <div class="prog-chip" style="background:#1a3a6b;">Az</div>
+                <span style="font-size:10px;color:#777;font-weight:600;">Azul</span>
+              </div>
+              <div style="font-size:14px;font-weight:900;color:#1a1a1a;">89.700</div>
+              <div style="font-size:10px;color:#555;">R$ 436</div>
+            </div>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="bnav-item on"><div class="bnav-icon on"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5L7 2l5 5.5"/><path d="M4 7.5V13h3v-3.5h2V13h3V7.5"/></svg></div><span class="bnav-label">Início</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="10" height="8" rx="2"/><path d="M5 4V3a2 2 0 014 0v1"/></svg></div><span class="bnav-label">Programas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10l2.5-2.5L7 10l2.5-3.5L12 9"/><circle cx="12" cy="5" r="1.5" fill="#ccc" stroke="none"/></svg></div><span class="bnav-label">Passagens</span></div>
+          <div class="bnav-item"><div class="bnav-icon" style="position:relative;"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2a4 4 0 014 4v2l1 2H3l1-2V6a4 4 0 014-4z"/><path d="M5 10a1 1 0 002 0"/></svg><div class="bnav-badge"></div></div><span class="bnav-label">Alertas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="5" r="2.5"/><path d="M2 13c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5"/></svg></div><span class="bnav-label">Perfil</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA PROGRAMAS -->
+    <div class="phone-col">
+      <span class="phone-col-label">Programas</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="h-bar">
+          <div class="h-topbar">
+            <div class="h-avatar">RR</div>
+            <span class="h-title">Programas</span>
+            <div class="h-btn"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><line x1="10" y1="10" x2="13" y2="13"/></svg></div>
+          </div>
+        </div>
+        <div class="tabs-row">
+          <span class="tab on">Todos</span>
+          <span class="tab">Aéreos</span>
+          <span class="tab">Bancos</span>
+          <span class="tab">Hotéis</span>
+        </div>
+        <div class="body-pad" style="padding-top:8px;">
+          <!-- full-width program rows -->
+          <div class="card" style="padding:9px 11px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:9px;">
+              <div class="prog-chip" style="background:#f59e42;width:32px;height:32px;font-size:9px;">Sm</div>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:700;">Smiles</div>
+                <div style="font-size:10px;color:#888;">87.400 pts</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12px;font-weight:800;color:#1a1a1a;">R$ 1.748</div>
+                <div style="font-size:9px;color:#2e7d32;display:flex;align-items:center;justify-content:flex-end;gap:2px;">↑ 3% este mês</div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="padding:9px 11px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:9px;">
+              <div class="prog-chip" style="background:#1a3a6b;width:32px;height:32px;font-size:9px;">Az</div>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:700;">Tudo Azul</div>
+                <div style="font-size:10px;color:#888;">89.700 pts</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12px;font-weight:800;color:#1a1a1a;">R$ 436</div>
+                <div style="font-size:9px;color:#888;">estável</div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="padding:9px 11px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:9px;">
+              <div class="prog-chip" style="background:#e91e63;width:32px;height:32px;font-size:9px;">Lv</div>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:700;">Livelo</div>
+                <div style="font-size:10px;color:#888;">61.200 pts</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12px;font-weight:800;color:#1a1a1a;">R$ 612</div>
+                <span class="pill pill-r" style="font-size:8px;padding:1px 5px;">−30d</span>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="padding:9px 11px;">
+            <div style="display:flex;align-items:center;gap:9px;">
+              <div class="prog-chip" style="background:#1a3a6b;width:32px;height:32px;font-size:9px;">LP</div>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:700;">LATAM Pass</div>
+                <div style="font-size:10px;color:#888;">74.200 pts</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12px;font-weight:800;color:#1a1a1a;">R$ 1.484</div>
+                <div style="font-size:9px;color:#c62828;display:flex;align-items:center;justify-content:flex-end;gap:2px;">↓ 1%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5L7 2l5 5.5"/><path d="M4 7.5V13h3v-3.5h2V13h3V7.5"/></svg></div><span class="bnav-label">Início</span></div>
+          <div class="bnav-item on"><div class="bnav-icon on"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="10" height="8" rx="2"/><path d="M5 4V3a2 2 0 014 0v1"/></svg></div><span class="bnav-label">Programas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10l2.5-2.5L7 10l2.5-3.5L12 9"/><circle cx="12" cy="5" r="1.5" fill="#ccc" stroke="none"/></svg></div><span class="bnav-label">Passagens</span></div>
+          <div class="bnav-item"><div class="bnav-icon" style="position:relative;"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2a4 4 0 014 4v2l1 2H3l1-2V6a4 4 0 014-4z"/><path d="M5 10a1 1 0 002 0"/></svg><div class="bnav-badge"></div></div><span class="bnav-label">Alertas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="5" r="2.5"/><path d="M2 13c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5"/></svg></div><span class="bnav-label">Perfil</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="info-box" style="align-self:center;">
+      <h3>Bottom Navigation</h3>
+      <ul>
+        <li><b>5 abas fixas</b> — Início · Programas · Passagens · Alertas · Perfil</li>
+        <li><b>Badge vermelho</b> em Alertas quando houver notificações não lidas</li>
+        <li><b>Abas de conteúdo</b> sobem para o topo da tela (Resumo / Vencendo / Extrato / R$)</li>
+        <li><b>Aba "Programas"</b> vira uma tela full-width com lista de programas — melhor que o grid comprimido de hoje</li>
+        <li><b>Aba "Perfil"</b> substitui o menu lateral; configurações e conta ficam acessíveis diretamente</li>
+        <li><b>Aba "Passagens"</b> abre o Histórico de Emissões</li>
+      </ul>
+      <div class="tag-row">
+        <span class="tag">5 tabs</span>
+        <span class="tag">Badge</span>
+        <span class="tag">Persistent nav</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+  ESTRUTURA 2 — CENTRAL DE NOTIFICAÇÕES
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>2 — Central de Notificações</h2>
+    <p>Tela acessada pela aba "Alertas" do Bottom Nav. Centraliza todos os avisos: pontos vencendo, atualizações de saldo, promoções de bônus e sugestões de emissão.</p>
+  </div>
+
+  <div class="phone-grid">
+
+    <!-- TELA LISTA -->
+    <div class="phone-col">
+      <span class="phone-col-label">Lista</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="h-bar">
+          <div class="h-topbar">
+            <div class="h-btn h-back">
+              <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L5 7l4 4"/></svg>
+            </div>
+            <span class="h-title">Notificações</span>
+            <div class="h-btn">
+              <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l3 3L12 3"/></svg>
+            </div>
+          </div>
+        </div>
+        <!-- filter tabs -->
+        <div style="display:flex;gap:5px;padding:8px 13px;overflow-x:auto;border-bottom:1px solid #f5f0fa;">
+          <span class="tab on" style="font-size:9px;padding:3px 9px;">Todas <span style="background:rgba(255,255,255,.3);border-radius:10px;padding:0 4px;margin-left:2px;">5</span></span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">⚠️ Vencendo</span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">💰 Saldo</span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">🎯 Promos</span>
+        </div>
+        <!-- list -->
+        <div class="scroll-area" style="max-height:260px;">
+          <div class="notif-item unread">
+            <div class="notif-icon" style="background:#fee2e2;">⏰</div>
+            <div class="notif-body">
+              <div class="notif-title2">Pontos vencendo — Livelo</div>
+              <div class="notif-text">8.200 pts vencem em <b>12 dias</b>. Resgate agora para não perder.</div>
+              <div class="notif-time">Hoje · 09:14</div>
+            </div>
+            <div class="notif-dot"></div>
+          </div>
+          <div class="notif-item unread">
+            <div class="notif-icon" style="background:#e1f5e4;">✅</div>
+            <div class="notif-body">
+              <div class="notif-title2">Saldo atualizado — Livelo</div>
+              <div class="notif-text">+3.500 pts creditados. Novo total: <b>61.200 pts</b>.</div>
+              <div class="notif-time">Hoje · 07:30</div>
+            </div>
+            <div class="notif-dot"></div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-icon" style="background:#fff3cd;">✈️</div>
+            <div class="notif-body">
+              <div class="notif-title2">Promoção — LATAM Pass</div>
+              <div class="notif-text">Bônus de 80% na transferência Bradesco até 30/mai.</div>
+              <div class="notif-time">Ontem · 18:45</div>
+            </div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-icon" style="background:#dbeafe;">💡</div>
+            <div class="notif-body">
+              <div class="notif-title2">Sugestão — Avios</div>
+              <div class="notif-text">GRU → LIS disponível por <b>42k pts</b>. Boa janela de disponibilidade.</div>
+              <div class="notif-time">24 abr · 14:22</div>
+            </div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-icon" style="background:#f3f4f6;">🔔</div>
+            <div class="notif-body">
+              <div class="notif-title2">Novo recurso disponível</div>
+              <div class="notif-text">Histórico de Emissões já está disponível na aba Passagens.</div>
+              <div class="notif-time">22 abr</div>
+            </div>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5L7 2l5 5.5"/><path d="M4 7.5V13h3v-3.5h2V13h3V7.5"/></svg></div><span class="bnav-label">Início</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="10" height="8" rx="2"/><path d="M5 4V3a2 2 0 014 0v1"/></svg></div><span class="bnav-label">Programas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10l2.5-2.5L7 10l2.5-3.5L12 9"/><circle cx="12" cy="5" r="1.5" fill="#ccc" stroke="none"/></svg></div><span class="bnav-label">Passagens</span></div>
+          <div class="bnav-item on"><div class="bnav-icon on"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2a4 4 0 014 4v2l1 2H3l1-2V6a4 4 0 014-4z"/><path d="M5 10a1 1 0 002 0"/></svg></div><span class="bnav-label">Alertas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="5" r="2.5"/><path d="M2 13c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5"/></svg></div><span class="bnav-label">Perfil</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA VAZIA (zero não-lidas) -->
+    <div class="phone-col">
+      <span class="phone-col-label green">Tudo lido</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="h-bar">
+          <div class="h-topbar">
+            <div class="h-btn h-back"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L5 7l4 4"/></svg></div>
+            <span class="h-title">Notificações</span>
+            <div class="h-btn"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l3 3L12 3"/></svg></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:5px;padding:8px 13px;overflow-x:auto;border-bottom:1px solid #f5f0fa;">
+          <span class="tab on" style="font-size:9px;padding:3px 9px;">Todas</span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">⚠️ Vencendo</span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">💰 Saldo</span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">🎯 Promos</span>
+        </div>
+        <!-- older, all read -->
+        <div class="scroll-area" style="max-height:260px;">
+          <div class="notif-item">
+            <div class="notif-icon" style="background:#fff3cd;">✈️</div>
+            <div class="notif-body"><div class="notif-title2">Promoção — LATAM Pass</div><div class="notif-text">Bônus de 80% na transferência Bradesco até 30/mai.</div><div class="notif-time">Ontem</div></div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-icon" style="background:#dbeafe;">💡</div>
+            <div class="notif-body"><div class="notif-title2">Sugestão — Avios</div><div class="notif-text">GRU → LIS disponível por 42k pts.</div><div class="notif-time">24 abr</div></div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-icon" style="background:#f3f4f6;">🔔</div>
+            <div class="notif-body"><div class="notif-title2">Novo recurso</div><div class="notif-text">Histórico de Emissões disponível na aba Passagens.</div><div class="notif-time">22 abr</div></div>
+          </div>
+          <div style="padding:28px 16px;text-align:center;color:#ccc;">
+            <svg width="28" height="28" fill="none" stroke="#ddd" stroke-width="1.5" stroke-linecap="round" style="margin:0 auto 6px;display:block;"><path d="M6 2a4 4 0 014 4v2l1 2H3l1-2V6a4 4 0 014-4z"/><path d="M5 10a1 1 0 002 0"/></svg>
+            <span style="font-size:10px;">Nenhuma notificação nova</span>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5L7 2l5 5.5"/><path d="M4 7.5V13h3v-3.5h2V13h3V7.5"/></svg></div><span class="bnav-label">Início</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="10" height="8" rx="2"/><path d="M5 4V3a2 2 0 014 0v1"/></svg></div><span class="bnav-label">Programas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10l2.5-2.5L7 10l2.5-3.5L12 9"/><circle cx="12" cy="5" r="1.5" fill="#ccc" stroke="none"/></svg></div><span class="bnav-label">Passagens</span></div>
+          <div class="bnav-item on"><div class="bnav-icon on"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2a4 4 0 014 4v2l1 2H3l1-2V6a4 4 0 014-4z"/><path d="M5 10a1 1 0 002 0"/></svg></div><span class="bnav-label">Alertas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="5" r="2.5"/><path d="M2 13c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5"/></svg></div><span class="bnav-label">Perfil</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="info-box" style="align-self:center;">
+      <h3>Central de Notificações</h3>
+      <ul>
+        <li><b>4 filtros</b> — Todas · Vencendo · Saldo · Promos</li>
+        <li><b>Ponto roxo</b> (•) por item não lido; badge vermelho no Bottom Nav enquanto houver pelo menos um</li>
+        <li><b>Marcar tudo lido</b> — ✓ no header zera todos os dots e remove o badge</li>
+        <li><b>3 prioridades de cor</b> — Vermelho (urgente) · Amarelo (promo) · Cinza (info)</li>
+        <li><b>Tap numa notificação</b> abre a tela relacionada (ex: vencendo → tela do programa)</li>
+        <li><b>Estado vazio</b> limpo quando não há novas notificações</li>
+      </ul>
+      <div class="divider"></div>
+      <p style="font-size:12px;color:#888;"><b>Dados necessários:</b> tabela <code>notifications</code> no Supabase com campos: tipo, programa_id, corpo, lida, criado_em</p>
+      <div class="tag-row">
+        <span class="tag">In-app</span>
+        <span class="tag">Badge</span>
+        <span class="tag orange">Nova tabela</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+  ESTRUTURA 3 — HISTÓRICO DE EMISSÕES
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>3 — Histórico de Emissões</h2>
+    <p>Aba "Passagens" no Bottom Nav. Registra cada passagem emitida com milhas: rota, programa, classe, milhas gastas e status. Inclui tela de detalhe completa.</p>
+  </div>
+
+  <div class="phone-grid">
+
+    <!-- LISTA -->
+    <div class="phone-col">
+      <span class="phone-col-label">Lista</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="h-bar">
+          <div class="h-topbar">
+            <div class="h-avatar">RR</div>
+            <span class="h-title">Passagens</span>
+            <div class="h-btn">
+              <svg width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><line x1="2" y1="4" x2="12" y2="4"/><line x1="4" y1="8" x2="10" y2="8"/><line x1="6" y1="12" x2="8" y2="12"/></svg>
+            </div>
+          </div>
+        </div>
+        <!-- stats -->
+        <div class="h-stat-row">
+          <div class="h-stat"><div class="h-stat-v">7</div><div class="h-stat-l">Emissões</div></div>
+          <div class="h-stat"><div class="h-stat-v">184k</div><div class="h-stat-l">Milhas usadas</div></div>
+          <div class="h-stat"><div class="h-stat-v">R$ 3,7k</div><div class="h-stat-l">Valor gerado</div></div>
+        </div>
+        <!-- filters -->
+        <div style="display:flex;gap:5px;padding:7px 13px;overflow-x:auto;">
+          <span class="tab on" style="font-size:9px;padding:3px 9px;">Todas</span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">2026</span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">2025</span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">LATAM</span>
+          <span class="tab" style="font-size:9px;padding:3px 9px;">Smiles</span>
+        </div>
+        <!-- timeline -->
+        <div class="scroll-area">
+          <div class="month-lbl">Abril 2026</div>
+          <div class="em-item">
+            <div class="prog-chip" style="background:#1a3a6b;width:30px;height:30px;font-size:8px;">LP</div>
+            <div class="em-info">
+              <div class="em-route">GRU → LIS</div>
+              <div class="em-sub">LATAM Pass · Executiva</div>
+            </div>
+            <div class="em-right">
+              <div class="em-pts">62.000 pts</div>
+              <div class="em-date">18 abr</div>
+              <span class="pill pill-g" style="font-size:8px;padding:1px 5px;">Confirmado</span>
+            </div>
+          </div>
+          <div class="em-item">
+            <div class="prog-chip" style="background:#f59e42;width:30px;height:30px;font-size:8px;">Sm</div>
+            <div class="em-info">
+              <div class="em-route">GRU → MIA</div>
+              <div class="em-sub">Smiles · Econômica</div>
+            </div>
+            <div class="em-right">
+              <div class="em-pts">48.000 pts</div>
+              <div class="em-date">03 abr</div>
+              <span class="pill pill-a" style="font-size:8px;padding:1px 5px;">Pendente</span>
+            </div>
+          </div>
+          <div class="month-lbl">Março 2026</div>
+          <div class="em-item">
+            <div class="prog-chip" style="background:#e91e63;width:30px;height:30px;font-size:8px;">Lv</div>
+            <div class="em-info">
+              <div class="em-route">GRU → CDG</div>
+              <div class="em-sub">Livelo / TAP · Econômica</div>
+            </div>
+            <div class="em-right">
+              <div class="em-pts">38.500 pts</div>
+              <div class="em-date">12 mar</div>
+              <span class="pill pill-g" style="font-size:8px;padding:1px 5px;">Confirmado</span>
+            </div>
+          </div>
+          <div class="em-item">
+            <div class="prog-chip" style="background:#1565c0;width:30px;height:30px;font-size:8px;">Av</div>
+            <div class="em-info">
+              <div class="em-route">GRU → MAD</div>
+              <div class="em-sub">Avios · Executiva</div>
+            </div>
+            <div class="em-right">
+              <div class="em-pts">35.000 pts</div>
+              <div class="em-date">01 mar</div>
+              <span class="pill pill-gr" style="font-size:8px;padding:1px 5px;">Realizado</span>
+            </div>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5L7 2l5 5.5"/><path d="M4 7.5V13h3v-3.5h2V13h3V7.5"/></svg></div><span class="bnav-label">Início</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="10" height="8" rx="2"/><path d="M5 4V3a2 2 0 014 0v1"/></svg></div><span class="bnav-label">Programas</span></div>
+          <div class="bnav-item on"><div class="bnav-icon on"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10l2.5-2.5L7 10l2.5-3.5L12 9"/><circle cx="12" cy="5" r="1.5" fill="white" stroke="none"/></svg></div><span class="bnav-label">Passagens</span></div>
+          <div class="bnav-item"><div class="bnav-icon" style="position:relative;"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2a4 4 0 014 4v2l1 2H3l1-2V6a4 4 0 014-4z"/><path d="M5 10a1 1 0 002 0"/></svg><div class="bnav-badge"></div></div><span class="bnav-label">Alertas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="5" r="2.5"/><path d="M2 13c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5"/></svg></div><span class="bnav-label">Perfil</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETALHE DA EMISSÃO -->
+    <div class="phone-col">
+      <span class="phone-col-label">Detalhe da emissão</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <!-- hero com gradiente -->
+        <div class="det-hero">
+          <div class="h-topbar">
+            <div class="h-btn h-back"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L5 7l4 4"/></svg></div>
+            <span class="h-title" style="font-size:13px;">Detalhe da emissão</span>
+            <div style="width:30px;"></div>
+          </div>
+          <div class="det-route">GRU → LIS</div>
+          <div class="det-sub">Lisboa, Portugal · 18 abr 2026</div>
+          <div class="det-chips">
+            <span class="det-chip">LATAM Pass</span>
+            <span class="det-chip">Executiva</span>
+            <span class="det-chip" style="background:rgba(74,222,128,.25);">✓ Confirmado</span>
+          </div>
+        </div>
+        <!-- detalhe body -->
+        <div class="det-body">
+          <div class="det-row">
+            <span class="det-key">Milhas usadas</span>
+            <span class="det-val">62.000 pts</span>
+          </div>
+          <div class="det-row">
+            <span class="det-key">Valor estimado</span>
+            <span class="det-val">R$ 1.240</span>
+          </div>
+          <div class="det-row">
+            <span class="det-key">Taxa paga</span>
+            <span class="det-val">R$ 380,00</span>
+          </div>
+          <div class="det-row">
+            <span class="det-key">Localizador</span>
+            <span class="det-val" style="font-family:monospace;letter-spacing:.5px;color:#8A05BE;">LT4KR2</span>
+          </div>
+          <div class="det-row">
+            <span class="det-key">Data do voo</span>
+            <span class="det-val">18 abr 2026 · 22h10</span>
+          </div>
+          <div class="det-row">
+            <span class="det-key">Nº passageiros</span>
+            <span class="det-val">1 adulto</span>
+          </div>
+          <div class="det-row" style="border-bottom:none;">
+            <span class="det-key">Assento</span>
+            <span class="det-val">12A (janela)</span>
+          </div>
+          <!-- CTA -->
+          <div style="margin-top:10px;background:linear-gradient(135deg,#8A05BE,#6804a0);border-radius:12px;padding:10px;text-align:center;color:white;font-size:11px;font-weight:700;">
+            Ver no site LATAM ↗
+          </div>
+        </div>
+        <!-- no bottom nav in detail view — back button suffices -->
+      </div>
+    </div>
+
+    <!-- ESTADO VAZIO -->
+    <div class="phone-col">
+      <span class="phone-col-label green">Sem emissões</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="h-bar">
+          <div class="h-topbar">
+            <div class="h-avatar">RR</div>
+            <span class="h-title">Passagens</span>
+            <div class="h-btn"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><line x1="2" y1="4" x2="12" y2="4"/><line x1="4" y1="8" x2="10" y2="8"/><line x1="6" y1="12" x2="8" y2="12"/></svg></div>
+          </div>
+        </div>
+        <div style="padding:48px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <svg width="48" height="48" fill="none" stroke="#ddd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 30l6-6 5 5 8-10 7 7"/>
+            <circle cx="36" cy="14" r="4" fill="#f0e6fa" stroke="#8A05BE" stroke-width="1.5"/>
+            <path d="M36 12v4" stroke="#8A05BE"/>
+          </svg>
+          <div style="font-size:13px;font-weight:700;color:#1a1a1a;">Nenhuma emissão ainda</div>
+          <div style="font-size:11px;color:#999;line-height:1.5;">Quando você emitir uma passagem com milhas, ela vai aparecer aqui.</div>
+          <div style="margin-top:8px;background:#8A05BE;border-radius:12px;padding:9px 20px;color:white;font-size:11px;font-weight:700;cursor:pointer;">
+            Registrar emissão
+          </div>
+        </div>
+        <div class="bnav" style="margin-top:120px;">
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5L7 2l5 5.5"/><path d="M4 7.5V13h3v-3.5h2V13h3V7.5"/></svg></div><span class="bnav-label">Início</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="10" height="8" rx="2"/><path d="M5 4V3a2 2 0 014 0v1"/></svg></div><span class="bnav-label">Programas</span></div>
+          <div class="bnav-item on"><div class="bnav-icon on"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10l2.5-2.5L7 10l2.5-3.5L12 9"/><circle cx="12" cy="5" r="1.5" fill="white" stroke="none"/></svg></div><span class="bnav-label">Passagens</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2a4 4 0 014 4v2l1 2H3l1-2V6a4 4 0 014-4z"/><path d="M5 10a1 1 0 002 0"/></svg></div><span class="bnav-label">Alertas</span></div>
+          <div class="bnav-item"><div class="bnav-icon"><svg width="14" height="14" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="5" r="2.5"/><path d="M2 13c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5"/></svg></div><span class="bnav-label">Perfil</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="info-box" style="align-self:center;">
+      <h3>Histórico de Emissões</h3>
+      <ul>
+        <li><b>3 stats no topo</b> — total de emissões, milhas usadas, valor estimado gerado</li>
+        <li><b>Timeline por mês</b> — rota + programa + classe + milhas + status</li>
+        <li><b>4 status visuais</b> — Confirmado (verde) · Pendente (âmbar) · Realizado (cinza) · Cancelado (vermelho)</li>
+        <li><b>Tela de detalhe</b> — localizador, data/hora do voo, taxa paga, valor gerado, assento</li>
+        <li><b>Filtro por ano / programa</b> — para localizar emissões antigas</li>
+        <li><b>Estado vazio</b> com CTA "Registrar emissão" quando não há histórico</li>
+      </ul>
+      <div class="divider"></div>
+      <p style="font-size:12px;color:#888;"><b>Dados necessários:</b> tabela <code>emissoes</code> — origem, destino, programa_id, milhas, taxa, status, localizador, data_voo</p>
+      <div class="tag-row">
+        <span class="tag">Timeline</span>
+        <span class="tag">Detalhe</span>
+        <span class="tag orange">Nova tabela</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<div style="max-width:700px;margin:0 auto;text-align:center;padding:24px 20px;background:white;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.06);">
+  <p style="font-size:16px;font-weight:900;color:#1a1a1a;margin-bottom:8px;">Pronto para implementar?</p>
+  <p style="font-size:13px;color:#666;line-height:1.65;margin-bottom:16px;">
+    Revise as 3 telas acima e confirme o que quer manter, ajustar ou simplificar.<br>
+    Após aprovação escrevemos o spec técnico e iniciamos implementação por partes.
+  </p>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+    <div style="background:#f0e6fa;border-radius:12px;padding:8px 16px;font-size:12px;font-weight:700;color:#8A05BE;">1 — Bottom Nav</div>
+    <div style="background:#f0e6fa;border-radius:12px;padding:8px 16px;font-size:12px;font-weight:700;color:#8A05BE;">2 — Notificações</div>
+    <div style="background:#f0e6fa;border-radius:12px;padding:8px 16px;font-size:12px;font-weight:700;color:#8A05BE;">3 — Histórico de Emissões</div>
+  </div>
+</div>
+
+</body>
+</html>
