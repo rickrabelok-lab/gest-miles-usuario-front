@@ -7,488 +7,566 @@ import {
   Minus,
   Plus,
   Search,
-} from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+  X,
+} from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
-import { useAuth } from "@/contexts/AuthContext";
-import { useSearchFlights } from "@/contexts/SearchFlightsContext";
-import BottomNav from "@/components/BottomNav";
+} from "@/components/ui/drawer"
+import { Input } from "@/components/ui/input"
+import { useAuth } from "@/contexts/AuthContext"
+import { useSearchFlights } from "@/contexts/SearchFlightsContext"
+import BottomNav from "@/components/BottomNav"
+import DestinationCarousel from "@/components/DestinationCarousel"
 import {
   AIRPORTS,
   findAirportByCode,
   formatAirportLabel,
   type AirportOption,
-} from "@/lib/airports";
-import AirlineLogo from "@/components/AirlineLogo";
-import type { DemoFlight } from "@/lib/api-contracts";
-import { fetchDemoFlights } from "@/services/demoFlightsService";
+} from "@/lib/airports"
+
+const AIRLINES = [
+  { id: "GOL",      label: "GOL",      color: "#e87722" },
+  { id: "LATAM",    label: "LATAM",    color: "#d42054" },
+  { id: "Azul",     label: "Azul",     color: "#0050b3" },
+  { id: "TAP",      label: "TAP",      color: "#7c3aed" },
+  { id: "American", label: "American", color: "#c0392b" },
+]
 
 const MONTH_OPTIONS = [
-  "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez", "Jan", "Fev",
-];
+  "Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez","Jan","Fev",
+]
 
 const BRAZIL_NATIONAL_HOLIDAYS = [
-  "Confraternização", "Tiradentes", "Trabalho", "Independência",
-  "Aparecida", "Finados", "República", "Consciência Negra", "Natal",
-];
+  "Confraternização","Tiradentes","Trabalho","Independência",
+  "Aparecida","Finados","República","Consciência Negra","Natal",
+]
 
 const SearchFlightsScreen = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { role } = useAuth();
-  const isGestor = role === "gestor" || role === "admin";
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { role } = useAuth()
+  const isGestor = role === "gestor" || role === "admin"
+
+  const {
+    origin, destination, passengers, cabinClass,
+    setOrigin, setDestination, swapOriginDestination,
+    setPassengerCount, setCabinClass,
+  } = useSearchFlights()
+
+  // New state
+  const [tripType, setTripType]       = useState<"roundtrip" | "oneway">("roundtrip")
+  const [departureDate, setDepartureDate] = useState<Date | null>(null)
+  const [returnDate, setReturnDate]   = useState<Date | null>(null)
+  const [paymentMode, setPaymentMode] = useState<"both" | "points" | "money">("both")
+  const [selectedAirlines, setSelectedAirlines] = useState<string[]>(
+    AIRLINES.map((a) => a.id),
+  )
+
+  // Drawer state
   const [airportPickerTarget, setAirportPickerTarget] = useState<
     "origin" | "destination" | null
-  >(null);
-  const [airportQuery, setAirportQuery] = useState("");
-  const [isPassengersDrawerOpen, setIsPassengersDrawerOpen] = useState(false);
-  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
-  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
-  const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
-  const monthsScrollRef = useRef<HTMLDivElement | null>(null);
-  const holidaysScrollRef = useRef<HTMLDivElement | null>(null);
-  const dragMetaRef = useRef<{
-    row: "months" | "holidays" | null;
-    isDown: boolean;
-    startX: number;
-    startScrollLeft: number;
-  }>({
-    row: null,
-    isDown: false,
-    startX: 0,
-    startScrollLeft: 0,
-  });
-  const ignoreTapRef = useRef(false);
-  const {
-    origin,
-    destination,
-    mode,
-    passengers,
-    cabinClass,
-    setOrigin,
-    setDestination,
-    swapOriginDestination,
-    setMode,
-    setPassengerCount,
-    setCabinClass,
-  } = useSearchFlights();
+  >(null)
+  const [airportQuery, setAirportQuery]         = useState("")
+  const [isPassengersDrawerOpen, setIsPassengersDrawerOpen] = useState(false)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [datePickerTarget, setDatePickerTarget] = useState<"departure" | "return">("departure")
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false)
+  const [selectedMonths,   setSelectedMonths]   = useState<string[]>([])
+  const [selectedHolidays, setSelectedHolidays] = useState<string[]>([])
+
+  // Drag-scroll refs (meses)
+  const monthsScrollRef = useRef<HTMLDivElement | null>(null)
+  const ignoreTapRef    = useRef(false)
+  const dragMetaRef     = useRef({ isDown: false, startX: 0, startScrollLeft: 0 })
 
   useEffect(() => {
-    const destinationCode = searchParams.get("destination");
-    const fromCardDestination = findAirportByCode(destinationCode);
-    if (fromCardDestination) {
-      setDestination(fromCardDestination);
-    }
-  }, [searchParams, setDestination]);
-
-  const passengerSummary = useMemo(() => {
-    const parts: string[] = [];
-    if (passengers.adult > 0) parts.push(`${passengers.adult} adulto${passengers.adult > 1 ? "s" : ""}`);
-    if (passengers.child > 0) parts.push(`${passengers.child} criança${passengers.child > 1 ? "s" : ""}`);
-    if (passengers.baby > 0) parts.push(`${passengers.baby} bebê${passengers.baby > 1 ? "s" : ""}`);
-    return parts.length > 0 ? parts.join(", ") : "Passageiros";
-  }, [passengers]);
+    const code    = searchParams.get("destination")
+    const airport = findAirportByCode(code)
+    if (airport) setDestination(airport)
+  }, [searchParams, setDestination])
 
   const filteredAirports = useMemo(() => {
-    const query = airportQuery.trim().toLowerCase();
-    if (!query) return [];
-    return AIRPORTS.filter((airport) => {
-      const haystack = `${airport.city} ${airport.code} ${airport.name} ${airport.country}`.toLowerCase();
-      return haystack.includes(query);
-    }).slice(0, 30);
-  }, [airportQuery]);
+    const q = airportQuery.trim().toLowerCase()
+    if (!q) return []
+    return AIRPORTS.filter((a) =>
+      `${a.city} ${a.code} ${a.name} ${a.country}`.toLowerCase().includes(q),
+    ).slice(0, 30)
+  }, [airportQuery])
+
+  const passengerSummary = useMemo(() => {
+    const parts: string[] = []
+    if (passengers.adult > 0) parts.push(`${passengers.adult} adulto${passengers.adult > 1 ? "s" : ""}`)
+    if (passengers.child > 0) parts.push(`${passengers.child} criança${passengers.child > 1 ? "s" : ""}`)
+    if (passengers.baby  > 0) parts.push(`${passengers.baby} bebê${passengers.baby > 1 ? "s" : ""}`)
+    return parts.length > 0 ? parts.join(", ") : "Passageiros"
+  }, [passengers])
 
   const selectAirport = (airport: AirportOption) => {
-    if (airportPickerTarget === "origin") {
-      setOrigin(airport);
-    } else if (airportPickerTarget === "destination") {
-      setDestination(airport);
-    }
-    setAirportPickerTarget(null);
-    setAirportQuery("");
-  };
+    if (airportPickerTarget === "origin")      setOrigin(airport)
+    else if (airportPickerTarget === "destination") setDestination(airport)
+    setAirportPickerTarget(null)
+    setAirportQuery("")
+  }
 
-  const canAdvance = !!origin && !!destination;
-
-  const destinationCode = destination?.code ?? null;
-  const [demoFlights, setDemoFlights] = useState<DemoFlight[]>([]);
-  const [flightsLoading, setFlightsLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setFlightsLoading(true);
-    void fetchDemoFlights(destinationCode).then((list) => {
-      if (!cancelled) {
-        setDemoFlights(list);
-        setFlightsLoading(false);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [destinationCode]);
-
-  const formatMoney = (value: number) =>
-    value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-  const handleOpenCalendarFromDemoFlight = (flight: DemoFlight) => {
-    const nextOrigin = findAirportByCode(flight.originCode);
-    const nextDestination = findAirportByCode(flight.destinationCode);
-    if (nextOrigin) setOrigin(nextOrigin);
-    if (nextDestination) setDestination(nextDestination);
-    navigate(`/price-calendar?airline=${encodeURIComponent(flight.airline)}`);
-  };
+  const toggleAirline = (id: string) =>
+    setSelectedAirlines((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id],
+    )
 
   const toggleArrayItem = (
     value: string,
     items: string[],
-    setter: (next: string[]) => void,
-  ) => {
-    if (items.includes(value)) {
-      setter(items.filter((item) => item !== value));
-      return;
+    setter: (n: string[]) => void,
+  ) => setter(items.includes(value) ? items.filter((i) => i !== value) : [...items, value])
+
+  const openDatePicker = (target: "departure" | "return") => {
+    setDatePickerTarget(target)
+    setIsDatePickerOpen(true)
+  }
+
+  const handleDateSelect = (day: Date | undefined) => {
+    if (!day) return
+    if (datePickerTarget === "departure") {
+      setDepartureDate(day)
+      if (returnDate && returnDate < day) setReturnDate(null)
+    } else {
+      setReturnDate(day)
     }
-    setter([...items, value]);
-  };
+    setIsDatePickerOpen(false)
+  }
 
-  const getScrollRowElement = (row: "months" | "holidays") =>
-    row === "months" ? monthsScrollRef.current : holidaysScrollRef.current;
+  const handleSearch = () => {
+    if (!origin || !destination) return
+    const params = new URLSearchParams({
+      from:     origin.code,
+      to:       destination.code,
+      fromName: formatAirportLabel(origin),
+      toName:   formatAirportLabel(destination),
+      mode:     paymentMode,
+      airlines: selectedAirlines.join(","),
+    })
+    if (departureDate) params.set("dep", format(departureDate, "yyyy-MM-dd"))
+    if (returnDate && tripType === "roundtrip")
+      params.set("ret", format(returnDate, "yyyy-MM-dd"))
+    navigate(`/flight-results?${params.toString()}`)
+  }
 
-  const handleRowPointerDown = (
-    row: "months" | "holidays",
-    event: React.PointerEvent<HTMLDivElement>,
-  ) => {
-    const element = getScrollRowElement(row);
-    if (!element) return;
-    dragMetaRef.current = {
-      row,
-      isDown: true,
-      startX: event.clientX,
-      startScrollLeft: element.scrollLeft,
-    };
-    ignoreTapRef.current = false;
-  };
+  const handleDestinationCardClick = ({ code, name }: { code: string; name: string }) => {
+    const airport = findAirportByCode(code) ?? ({
+      code, city: name, name, country: "Brasil", lat: 0, lng: 0,
+    } as AirportOption)
+    setDestination(airport)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
-  const handleRowPointerMove = (
-    row: "months" | "holidays",
-    event: React.PointerEvent<HTMLDivElement>,
-  ) => {
-    const meta = dragMetaRef.current;
-    if (!meta.isDown || meta.row !== row) return;
-    const element = getScrollRowElement(row);
-    if (!element) return;
-    const deltaX = event.clientX - meta.startX;
-    if (Math.abs(deltaX) > 6) ignoreTapRef.current = true;
-    element.scrollLeft = meta.startScrollLeft - deltaX;
-  };
+  const canSearch = !!origin && !!destination
 
-  const handleRowPointerUp = () => {
-    dragMetaRef.current.isDown = false;
-    dragMetaRef.current.row = null;
-    if (ignoreTapRef.current) {
-      setTimeout(() => { ignoreTapRef.current = false; }, 120);
-    }
-  };
+  const fmt = (date: Date | null) =>
+    date ? format(date, "dd MMM yyyy", { locale: ptBR }) : null
+  const fmtDay = (date: Date | null) =>
+    date ? format(date, "EEEE", { locale: ptBR }) : null
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-white/90 backdrop-blur-sm">
+    <div className="min-h-screen bg-nubank-bg">
+      <header className="sticky top-0 z-40 border-b border-nubank-border bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-stone-600 transition-colors hover:bg-stone-100"
+            className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-nubank-text-secondary hover:bg-nubank-bg"
           >
             <ArrowLeft size={20} strokeWidth={1.5} />
           </button>
-          <h1 className="text-base font-medium tracking-tight text-stone-900">
+          <h1 className="text-base font-semibold tracking-tight text-nubank-text">
             Passagens
           </h1>
           <div className="w-9" />
         </div>
       </header>
 
-      <main className="mx-auto max-w-md px-4 pb-44 pt-6">
-        <div className="space-y-5">
-          <section>
-            <div className="flex items-stretch gap-2">
-              <button
-                type="button"
-                onClick={() => setAirportPickerTarget("origin")}
-                className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-left transition-colors hover:border-stone-300"
-              >
-                <p className="text-[11px] font-medium uppercase tracking-wider text-stone-400">
-                  Origem
-                </p>
-                <p className="mt-0.5 text-[15px] font-medium text-stone-900">
-                  {origin ? formatAirportLabel(origin) : "Onde?"}
-                </p>
-              </button>
+      <main className="mx-auto max-w-md px-4 pb-44 pt-5">
+        <div className="space-y-3">
 
+          {/* Trip type */}
+          <div className="flex rounded-[14px] bg-white p-1 shadow-nubank">
+            {(["roundtrip", "oneway"] as const).map((type) => (
               <button
+                key={type}
                 type="button"
-                onClick={swapOriginDestination}
-                className="flex shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-500 transition-colors hover:border-stone-300 hover:bg-stone-50"
-                aria-label="Trocar origem e destino"
+                onClick={() => { setTripType(type); if (type === "oneway") setReturnDate(null) }}
+                className={`flex-1 rounded-[10px] py-2.5 text-sm font-medium transition-all ${
+                  tripType === type
+                    ? "bg-nubank-primary text-white shadow-sm"
+                    : "text-nubank-text-secondary hover:text-nubank-text"
+                }`}
               >
-                <ArrowLeftRight size={18} strokeWidth={1.5} />
+                {type === "roundtrip" ? "✈ Ida e volta" : "→ Somente ida"}
               </button>
+            ))}
+          </div>
 
-              <button
-                type="button"
-                onClick={() => setAirportPickerTarget("destination")}
-                className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-left transition-colors hover:border-stone-300"
-              >
-                <p className="text-[11px] font-medium uppercase tracking-wider text-stone-400">
-                  Destino
+          {/* Route */}
+          <div className="relative rounded-[18px] bg-white px-4 shadow-nubank">
+            <button
+              type="button"
+              onClick={() => setAirportPickerTarget("origin")}
+              className="flex w-full items-center gap-3 py-3.5"
+            >
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-purple-50 text-nubank-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">Origem</p>
+                <p className={`mt-0.5 text-[15px] font-semibold ${origin ? "text-nubank-text" : "text-nubank-border"}`}>
+                  {origin ? formatAirportLabel(origin) : "De onde você sai?"}
                 </p>
-                <p className="mt-0.5 text-[15px] font-medium text-stone-900">
+              </div>
+            </button>
+
+            <div className="h-px bg-nubank-border" />
+
+            <button
+              type="button"
+              onClick={() => setAirportPickerTarget("destination")}
+              className="flex w-full items-center gap-3 py-3.5"
+            >
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-green-50 text-green-600">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">Destino</p>
+                <p className={`mt-0.5 text-[15px] font-semibold ${destination ? "text-nubank-text" : "text-nubank-border"}`}>
                   {destination ? formatAirportLabel(destination) : "Para onde?"}
                 </p>
-              </button>
-            </div>
-          </section>
-
-          <section>
-            <div className="flex rounded-xl border border-stone-200 bg-white p-1">
-              <button
-                type="button"
-                onClick={() => setMode("points")}
-                className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
-                  mode === "points"
-                    ? "bg-stone-900 text-white"
-                    : "text-stone-500 hover:text-stone-700"
-                }`}
-              >
-                Pontos
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("money")}
-                className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
-                  mode === "money"
-                    ? "bg-stone-900 text-white"
-                    : "text-stone-500 hover:text-stone-700"
-                }`}
-              >
-                Dinheiro
-              </button>
-            </div>
-          </section>
-
-          <section>
-            <button
-              type="button"
-              onClick={() => setIsPassengersDrawerOpen(true)}
-              className="flex w-full items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-left transition-colors hover:border-stone-300"
-            >
-              <span className="text-[15px] font-medium text-stone-900">
-                {passengerSummary}
-              </span>
-              <ChevronRight size={18} className="text-stone-400" strokeWidth={1.5} />
+              </div>
             </button>
-          </section>
 
-          <section>
             <button
               type="button"
-              onClick={() => setIsAdvancedFiltersOpen((prev) => !prev)}
-              className="flex w-full items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3 text-left transition-colors hover:border-stone-300"
+              onClick={swapOriginDestination}
+              aria-label="Trocar origem e destino"
+              className="absolute right-4 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-nubank-border bg-white text-nubank-primary shadow-sm hover:bg-purple-50"
             >
-              <span className="text-sm font-medium text-stone-700">
-                Filtros
-              </span>
-              {isAdvancedFiltersOpen ? (
-                <ChevronUp size={18} className="text-stone-400" strokeWidth={1.5} />
+              <ArrowLeftRight size={15} strokeWidth={2} />
+            </button>
+          </div>
+
+          {/* Dates */}
+          <div className="flex gap-2.5">
+            <button
+              type="button"
+              onClick={() => openDatePicker("departure")}
+              className="flex-1 rounded-[14px] bg-white px-4 py-3 text-left shadow-nubank"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">✈ Ida</p>
+              {departureDate ? (
+                <>
+                  <p className="mt-1 text-[14px] font-semibold text-nubank-text">{fmt(departureDate)}</p>
+                  <p className="mt-0.5 text-[11px] capitalize text-nubank-text-secondary">{fmtDay(departureDate)}</p>
+                </>
               ) : (
-                <ChevronDown size={18} className="text-stone-400" strokeWidth={1.5} />
+                <p className="mt-1 text-[13px] font-medium text-nubank-border">Selecionar data</p>
               )}
             </button>
 
+            {tripType === "roundtrip" && (
+              <button
+                type="button"
+                onClick={() => openDatePicker("return")}
+                className={`flex-1 rounded-[14px] bg-white px-4 py-3 text-left shadow-nubank ${
+                  returnDate ? "border border-nubank-primary" : ""
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className={`text-[10px] font-semibold uppercase tracking-wider ${
+                    returnDate ? "text-nubank-primary" : "text-nubank-text-secondary"
+                  }`}>↩ Volta</p>
+                  {returnDate && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setReturnDate(null) }}
+                      className="text-nubank-text-secondary hover:text-nubank-text"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+                {returnDate ? (
+                  <>
+                    <p className="mt-1 text-[14px] font-semibold text-nubank-text">{fmt(returnDate)}</p>
+                    <p className="mt-0.5 text-[11px] capitalize text-nubank-primary">{fmtDay(returnDate)}</p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-[13px] font-medium text-nubank-border">Selecionar data</p>
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Passengers */}
+          <button
+            type="button"
+            onClick={() => setIsPassengersDrawerOpen(true)}
+            className="flex w-full items-center justify-between rounded-[14px] bg-white px-4 py-3.5 shadow-nubank hover:bg-nubank-bg"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">👤</span>
+              <div className="text-left">
+                <p className="text-[14px] font-semibold text-nubank-text">{passengerSummary}</p>
+                <p className="text-[11px] capitalize text-nubank-text-secondary">
+                  {cabinClass === "executiva" ? "Executiva" : "Econômica"}
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-nubank-border" strokeWidth={1.5} />
+          </button>
+
+          {/* Payment mode */}
+          <div>
+            <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">
+              Forma de pagamento
+            </p>
+            <div className="flex rounded-[14px] bg-white p-1 shadow-nubank">
+              {([
+                { id: "both",   label: "Pts + R$" },
+                { id: "points", label: "Pontos"   },
+                { id: "money",  label: "Dinheiro"  },
+              ] as const).map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setPaymentMode(m.id)}
+                  className={`flex-1 rounded-[10px] py-2.5 text-[12px] font-medium transition-all ${
+                    paymentMode === m.id
+                      ? "bg-nubank-primary text-white font-semibold shadow-sm"
+                      : "text-nubank-text-secondary"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Airlines */}
+          <div>
+            <div className="mb-1.5 flex items-center justify-between px-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">
+                Companhias Aéreas
+              </p>
+              <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-nubank-primary">
+                {selectedAirlines.length} selecionada{selectedAirlines.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {AIRLINES.map((airline) => {
+                const active = selectedAirlines.includes(airline.id)
+                return (
+                  <button
+                    key={airline.id}
+                    type="button"
+                    onClick={() => toggleAirline(airline.id)}
+                    className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-2 text-[12px] font-medium transition-all ${
+                      active
+                        ? "border-nubank-primary bg-purple-50 text-nubank-primary"
+                        : "border-nubank-border bg-white text-nubank-text-secondary"
+                    }`}
+                  >
+                    <span
+                      className="inline-block h-2 w-2 rounded-full"
+                      style={{ background: active ? airline.color : "#d1c4e0" }}
+                    />
+                    {airline.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Advanced filters */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setIsAdvancedFiltersOpen((p) => !p)}
+              className="flex w-full items-center justify-between rounded-[14px] bg-white px-4 py-3 shadow-nubank hover:bg-nubank-bg"
+            >
+              <span className="text-sm font-medium text-nubank-text-secondary">Filtros avançados</span>
+              {isAdvancedFiltersOpen
+                ? <ChevronUp size={17} className="text-nubank-border" strokeWidth={1.5} />
+                : <ChevronDown size={17} className="text-nubank-border" strokeWidth={1.5} />
+              }
+            </button>
+
             {isAdvancedFiltersOpen && (
-              <div className="mt-3 space-y-4 rounded-xl border border-stone-200 bg-white p-4">
+              <div className="mt-2 space-y-4 rounded-[14px] bg-white p-4 shadow-nubank">
                 <div>
-                  <p className="mb-2 text-xs font-medium text-stone-500">Classe</p>
+                  <p className="mb-2 text-xs font-medium text-nubank-text-secondary">Classe</p>
                   <div className="flex gap-2">
                     {[
                       { id: "economica", label: "Econômica" },
                       { id: "executiva", label: "Executiva" },
-                    ].map((option) => (
+                    ].map((opt) => (
                       <button
-                        key={option.id}
+                        key={opt.id}
                         type="button"
-                        onClick={() => setCabinClass(option.id as typeof cabinClass)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                          cabinClass === option.id
-                            ? "bg-stone-900 text-white"
-                            : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                        onClick={() => setCabinClass(opt.id as typeof cabinClass)}
+                        className={`rounded-[10px] px-3 py-1.5 text-xs font-medium transition-colors ${
+                          cabinClass === opt.id
+                            ? "bg-nubank-primary text-white"
+                            : "bg-nubank-bg text-nubank-text-secondary"
                         }`}
                       >
-                        {option.label}
+                        {opt.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <p className="mb-2 text-xs font-medium text-stone-500">Período</p>
+                  <p className="mb-2 text-xs font-medium text-nubank-text-secondary">Período</p>
                   <div
                     ref={monthsScrollRef}
                     className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide"
-                    onPointerDown={(e) => handleRowPointerDown("months", e)}
-                    onPointerMove={(e) => handleRowPointerMove("months", e)}
-                    onPointerUp={handleRowPointerUp}
-                    onPointerCancel={handleRowPointerUp}
-                    onPointerLeave={handleRowPointerUp}
+                    onPointerDown={(e) => {
+                      if (!monthsScrollRef.current) return
+                      dragMetaRef.current = {
+                        isDown: true,
+                        startX: e.clientX,
+                        startScrollLeft: monthsScrollRef.current.scrollLeft,
+                      }
+                      ignoreTapRef.current = false
+                    }}
+                    onPointerMove={(e) => {
+                      if (!dragMetaRef.current.isDown || !monthsScrollRef.current) return
+                      const dx = e.clientX - dragMetaRef.current.startX
+                      if (Math.abs(dx) > 6) ignoreTapRef.current = true
+                      monthsScrollRef.current.scrollLeft =
+                        dragMetaRef.current.startScrollLeft - dx
+                    }}
+                    onPointerUp={() => {
+                      dragMetaRef.current.isDown = false
+                      if (ignoreTapRef.current)
+                        setTimeout(() => { ignoreTapRef.current = false }, 120)
+                    }}
+                    onPointerCancel={() => { dragMetaRef.current.isDown = false }}
                   >
-                    {MONTH_OPTIONS.map((month) => {
-                      const active = selectedMonths.includes(month);
-                      return (
-                        <button
-                          key={month}
-                          type="button"
-                          onClick={() => {
-                            if (ignoreTapRef.current) return;
-                            toggleArrayItem(month, selectedMonths, setSelectedMonths);
-                          }}
-                          className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
-                            active ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-600"
-                          }`}
-                        >
-                          {month}
-                        </button>
-                      );
-                    })}
+                    {MONTH_OPTIONS.map((month) => (
+                      <button
+                        key={month}
+                        type="button"
+                        onClick={() => {
+                          if (ignoreTapRef.current) return
+                          toggleArrayItem(month, selectedMonths, setSelectedMonths)
+                        }}
+                        className={`shrink-0 rounded-[10px] px-2.5 py-1.5 text-xs font-medium ${
+                          selectedMonths.includes(month)
+                            ? "bg-nubank-primary text-white"
+                            : "bg-nubank-bg text-nubank-text-secondary"
+                        }`}
+                      >
+                        {month}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
                 <div>
-                  <p className="mb-2 text-xs font-medium text-stone-500">Feriados</p>
-                  <div
-                    ref={holidaysScrollRef}
-                    className="flex flex-wrap gap-1.5"
-                  >
-                    {BRAZIL_NATIONAL_HOLIDAYS.map((holiday) => {
-                      const active = selectedHolidays.includes(holiday);
-                      return (
-                        <button
-                          key={holiday}
-                          type="button"
-                          onClick={() => toggleArrayItem(holiday, selectedHolidays, setSelectedHolidays)}
-                          className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium ${
-                            active ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-600"
-                          }`}
-                        >
-                          {holiday}
-                        </button>
-                      );
-                    })}
+                  <p className="mb-2 text-xs font-medium text-nubank-text-secondary">Feriados</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {BRAZIL_NATIONAL_HOLIDAYS.map((holiday) => (
+                      <button
+                        key={holiday}
+                        type="button"
+                        onClick={() => toggleArrayItem(holiday, selectedHolidays, setSelectedHolidays)}
+                        className={`rounded-[10px] px-2.5 py-1.5 text-[11px] font-medium ${
+                          selectedHolidays.includes(holiday)
+                            ? "bg-nubank-primary text-white"
+                            : "bg-nubank-bg text-nubank-text-secondary"
+                        }`}
+                      >
+                        {holiday}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
             )}
-          </section>
+          </div>
 
-          <section>
-            <p className="mb-2 text-xs font-medium text-stone-500">Sugestões</p>
-            <div className="space-y-2">
-              {flightsLoading && demoFlights.length === 0 && (
-                <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-500">
-                  Carregando sugestões…
-                </p>
-              )}
-              {!flightsLoading && demoFlights.length === 0 && (
-                <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-500">
-                  Nenhuma sugestão disponível. Configure o Supabase (tabela demo_flights) ou o BFF.
-                </p>
-              )}
-              {demoFlights.map((flight) => (
-                <button
-                  key={flight.id}
-                  type="button"
-                  onClick={() => handleOpenCalendarFromDemoFlight(flight)}
-                  className="flex w-full items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3 text-left transition-colors hover:border-stone-300 hover:bg-stone-50/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <AirlineLogo airline={flight.airline} size={20} />
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">
-                        {flight.origin} → {flight.destination}
-                      </p>
-                      <p className="text-xs text-stone-500">
-                        {flight.originCode} – {flight.destinationCode}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    {mode === "points" ? (
-                      <p className="text-sm font-semibold text-stone-900">
-                        {flight.points.toLocaleString("pt-BR")} pts
-                      </p>
-                    ) : (
-                      <p className="text-sm font-semibold text-stone-900">
-                        {formatMoney(flight.money)}
-                      </p>
-                    )}
-                  </div>
-                </button>
-              ))}
+          {/* Destinos */}
+          <div className="pt-2">
+            <div className="mb-3 flex items-center">
+              <div className="h-px flex-1 bg-nubank-border" />
+              <span className="mx-3 text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">
+                Explorar destinos
+              </span>
+              <div className="h-px flex-1 bg-nubank-border" />
             </div>
-          </section>
+            <DestinationCarousel
+              origins={origin ? [origin.code] : []}
+              onDestinationClick={handleDestinationCardClick}
+            />
+          </div>
+
         </div>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-stone-200 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto w-full max-w-md px-4 pt-4 pb-2">
+      {/* Fixed CTA */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-nubank-border bg-white/95 backdrop-blur-sm">
+        <div className="mx-auto w-full max-w-md px-4 pt-3 pb-2">
           <Button
-            className="h-12 w-full rounded-xl bg-stone-900 text-base font-medium text-white hover:bg-stone-800"
-            disabled={!canAdvance}
-            onClick={() => canAdvance && navigate("/price-calendar")}
+            disabled={!canSearch}
+            onClick={handleSearch}
+            className="h-13 w-full rounded-[16px] text-[15px] font-semibold text-white shadow-lg disabled:opacity-40"
+            style={{ background: canSearch ? "linear-gradient(135deg,#8A05BE,#9E2FD4)" : "#d1c4e0" }}
           >
-            <Search size={18} className="mr-2" strokeWidth={2} />
-            Ver datas
+            <Search size={17} className="mr-2" strokeWidth={2.5} />
+            Pesquisar passagens
           </Button>
         </div>
         <BottomNav showClientSelector={isGestor} clients={[]} />
       </div>
 
+      {/* Airport Drawer */}
       <Drawer
         open={airportPickerTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setAirportPickerTarget(null);
-            setAirportQuery("");
-          }
-        }}
+        onOpenChange={(open) => { if (!open) { setAirportPickerTarget(null); setAirportQuery("") } }}
       >
         <DrawerContent className="mx-auto max-h-[85vh] w-full max-w-md rounded-t-2xl border-0 bg-white">
           <DrawerHeader className="text-left">
-            <DrawerTitle className="text-base font-medium">
+            <DrawerTitle className="text-base font-semibold text-nubank-text">
               {airportPickerTarget === "origin" ? "Origem" : "Destino"}
             </DrawerTitle>
-            <DrawerDescription className="text-sm text-stone-500">
-              Busque por cidade ou código do aeroporto
+            <DrawerDescription className="text-sm text-nubank-text-secondary">
+              Busque por cidade, aeroporto ou código IATA
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-6">
             <Input
               value={airportQuery}
-              placeholder="Ex.: São Paulo, GRU, Lisboa"
+              placeholder="Ex: São Paulo, GRU, Lisboa..."
               onChange={(e) => setAirportQuery(e.target.value)}
-              className="rounded-xl border-stone-200"
+              className="rounded-[12px] border-nubank-border"
+              autoFocus
             />
             <div className="mt-3 max-h-[45vh] space-y-1 overflow-y-auto">
               {filteredAirports.length === 0 && airportQuery.trim() && (
-                <p className="py-4 text-center text-sm text-stone-500">
+                <p className="py-4 text-center text-sm text-nubank-text-secondary">
                   Nenhum aeroporto encontrado
                 </p>
               )}
@@ -497,15 +575,13 @@ const SearchFlightsScreen = () => {
                   key={airport.code}
                   type="button"
                   onClick={() => selectAirport(airport)}
-                  className="flex w-full items-center justify-between rounded-xl border border-stone-100 bg-stone-50/50 px-3 py-2.5 text-left transition-colors hover:bg-stone-100"
+                  className="flex w-full items-center justify-between rounded-[12px] border border-nubank-border bg-nubank-bg/50 px-3 py-2.5 text-left hover:bg-nubank-bg"
                 >
                   <div>
-                    <p className="text-sm font-medium text-stone-900">
+                    <p className="text-sm font-semibold text-nubank-text">
                       {airport.city} – {airport.code}
                     </p>
-                    <p className="text-xs text-stone-500">
-                      {airport.name}
-                    </p>
+                    <p className="text-xs text-nubank-text-secondary">{airport.name}</p>
                   </div>
                 </button>
               ))}
@@ -514,53 +590,113 @@ const SearchFlightsScreen = () => {
         </DrawerContent>
       </Drawer>
 
+      {/* Passengers Drawer */}
       <Drawer open={isPassengersDrawerOpen} onOpenChange={setIsPassengersDrawerOpen}>
-        <DrawerContent className="mx-auto max-h-[70vh] w-full max-w-md rounded-t-2xl border-0 bg-white">
+        <DrawerContent className="mx-auto max-h-[75vh] w-full max-w-md rounded-t-2xl border-0 bg-white">
           <DrawerHeader className="text-left">
-            <DrawerTitle className="text-base font-medium">Passageiros</DrawerTitle>
-            <DrawerDescription className="text-sm text-stone-500">
-              Quantidade por tipo
+            <DrawerTitle className="text-base font-semibold text-nubank-text">
+              Passageiros e Classe
+            </DrawerTitle>
+            <DrawerDescription className="text-sm text-nubank-text-secondary">
+              Quantidade e tipo de cabine
             </DrawerDescription>
           </DrawerHeader>
-          <div className="space-y-2 px-4 pb-6">
-            {[
-              { key: "adult" as const, label: "Adultos", min: 1 },
-              { key: "child" as const, label: "Crianças", min: 0 },
-              { key: "baby" as const, label: "Bebês", min: 0 },
-            ].map((item) => (
+          <div className="space-y-3 px-4 pb-6">
+            {([
+              { key: "adult" as const, label: "Adultos",  sub: "+18 anos",         min: 1 },
+              { key: "child" as const, label: "Crianças", sub: "2 a 11 anos",       min: 0 },
+              { key: "baby"  as const, label: "Bebês",    sub: "Menos de 2 anos",   min: 0 },
+            ]).map((item) => (
               <div
                 key={item.key}
-                className="flex items-center justify-between rounded-xl border border-stone-200 bg-stone-50/30 px-4 py-3"
+                className="flex items-center justify-between rounded-[14px] border border-nubank-border bg-nubank-bg/30 px-4 py-3"
               >
-                <span className="text-sm font-medium text-stone-700">{item.label}</span>
+                <div>
+                  <p className="text-sm font-semibold text-nubank-text">{item.label}</p>
+                  <p className="text-xs text-nubank-text-secondary">{item.sub}</p>
+                </div>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 transition-colors hover:bg-stone-50"
                     onClick={() =>
                       setPassengerCount(item.key, Math.max(item.min, passengers[item.key] - 1))
                     }
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-nubank-border bg-white text-nubank-text-secondary hover:bg-nubank-bg"
                   >
                     <Minus size={14} strokeWidth={2} />
                   </button>
-                  <span className="w-6 text-center text-sm font-semibold text-stone-900">
+                  <span className="w-6 text-center text-sm font-bold text-nubank-text">
                     {passengers[item.key]}
                   </span>
                   <button
                     type="button"
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 transition-colors hover:bg-stone-50"
                     onClick={() => setPassengerCount(item.key, passengers[item.key] + 1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-nubank-border bg-white text-nubank-text-secondary hover:bg-nubank-bg"
                   >
                     <Plus size={14} strokeWidth={2} />
                   </button>
                 </div>
               </div>
             ))}
+            <div className="rounded-[14px] border border-nubank-border bg-nubank-bg/30 px-4 py-3">
+              <p className="mb-2 text-sm font-semibold text-nubank-text">Classe</p>
+              <div className="flex gap-2">
+                {[
+                  { id: "economica", label: "Econômica" },
+                  { id: "executiva", label: "Executiva" },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setCabinClass(opt.id as typeof cabinClass)}
+                    className={`flex-1 rounded-[10px] py-2 text-sm font-medium transition-colors ${
+                      cabinClass === opt.id
+                        ? "bg-nubank-primary text-white"
+                        : "border border-nubank-border bg-white text-nubank-text-secondary"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Date Picker Drawer */}
+      <Drawer open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+        <DrawerContent className="mx-auto max-h-[85vh] w-full max-w-md rounded-t-2xl border-0 bg-white">
+          <DrawerHeader className="text-left">
+            <DrawerTitle className="text-base font-semibold text-nubank-text">
+              {datePickerTarget === "departure" ? "Data de ida" : "Data de volta"}
+            </DrawerTitle>
+            <DrawerDescription className="text-sm text-nubank-text-secondary">
+              Selecione a data da viagem
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="flex justify-center px-4 pb-6">
+            <Calendar
+              mode="single"
+              selected={
+                datePickerTarget === "departure"
+                  ? (departureDate ?? undefined)
+                  : (returnDate ?? undefined)
+              }
+              onSelect={handleDateSelect}
+              disabled={
+                datePickerTarget === "return" && departureDate
+                  ? { before: departureDate }
+                  : { before: new Date() }
+              }
+              locale={ptBR}
+              className="rounded-[14px]"
+            />
           </div>
         </DrawerContent>
       </Drawer>
     </div>
-  );
-};
+  )
+}
 
-export default SearchFlightsScreen;
+export default SearchFlightsScreen
