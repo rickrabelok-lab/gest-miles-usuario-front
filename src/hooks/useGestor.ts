@@ -16,7 +16,7 @@ export type GestorResponsavelRef = {
 export type GestorClienteResumo = {
   clienteId: string;
   nome: string;
-  /** Todos os gestores com vínculo ativo a este cliente (cliente_gestores + gestor_clientes legado). */
+  /** Todos os gestores com vínculo ativo a este cliente (via cliente_gestores). */
   gestoresResponsaveis: GestorResponsavelRef[];
   milhas: number;
   valorEstimado: number;
@@ -126,17 +126,6 @@ export const useGestor = (
           });
         }
 
-        const { data: gcData, error: gcError } = await supabase
-          .from("gestor_clientes")
-          .select("cliente_id")
-          .in("gestor_id", supervisedGestorIds);
-        if (!gcError && gcData) {
-          gcData.forEach((row) => {
-            const id = row.cliente_id as string;
-            if (id) ids.add(id);
-          });
-        }
-
         return Array.from(ids);
       }
 
@@ -149,17 +138,6 @@ export const useGestor = (
         .eq("gestor_id", user.id);
       if (!cgErrorSelf && cgDataSelf) {
         cgDataSelf.forEach((row) => {
-          const id = row.cliente_id as string;
-          if (id) ids.add(id);
-        });
-      }
-
-      const { data: gcDataSelf, error: gcErrorSelf } = await supabase
-        .from("gestor_clientes")
-        .select("cliente_id")
-        .eq("gestor_id", user.id);
-      if (!gcErrorSelf && gcDataSelf) {
-        gcDataSelf.forEach((row) => {
           const id = row.cliente_id as string;
           if (id) ids.add(id);
         });
@@ -207,12 +185,6 @@ export const useGestor = (
         return {};
       }
 
-      const { data: gcRowsRaw, error: gcErr } = await supabase
-        .from("gestor_clientes")
-        .select("cliente_id, gestor_id")
-        .in("cliente_id", allClientIds);
-      const gcRows = gcErr ? [] : (gcRowsRaw ?? []);
-
       const pairKeys = new Set<string>();
       const pairs: Array<{ clienteId: string; gestorId: string }> = [];
       const pushPair = (clienteId: string, gestorId: string) => {
@@ -224,9 +196,6 @@ export const useGestor = (
       };
 
       (cgRows ?? []).forEach((r) =>
-        pushPair(r.cliente_id as string, r.gestor_id as string),
-      );
-      gcRows.forEach((r) =>
         pushPair(r.cliente_id as string, r.gestor_id as string),
       );
 

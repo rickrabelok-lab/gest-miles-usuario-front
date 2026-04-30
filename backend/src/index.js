@@ -5,7 +5,6 @@ import cors from "cors";
 import { handleStripeWebhook } from "./routes/stripeWebhook.js";
 import authRoutes from "./routes/auth.js";
 import programasClienteRoutes from "./routes/programasCliente.js";
-import gestorRoutes from "./routes/gestor.js";
 import perfisRoutes from "./routes/perfis.js";
 import demandasRoutes from "./routes/demandas.js";
 import bonusOffersRoutes from "./routes/bonusOffers.js";
@@ -36,7 +35,6 @@ const routes = express.Router();
 
 routes.use("/api/auth", authRoutes);
 routes.use("/api/programas-cliente", programasClienteRoutes);
-routes.use("/api/gestor", gestorRoutes);
 routes.use("/api/perfis", perfisRoutes);
 routes.use("/api/demandas", demandasRoutes);
 routes.use("/api/bonus-offers", bonusOffersRoutes);

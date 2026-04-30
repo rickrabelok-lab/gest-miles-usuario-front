@@ -76,13 +76,6 @@ as $$
       where cg.gestor_id = auth.uid()
         and cg.cliente_id = target_cliente_id
     )
-    -- legado (se a tabela ainda existir)
-    or exists (
-      select 1
-      from public.gestor_clientes gc
-      where gc.gestor_id = auth.uid()
-        and gc.cliente_id = target_cliente_id
-    )
     -- CS que consegue visualizar o cliente também pode atualizar o perfil
     -- (necessário para salvar/remover Plano de Ação).
     or public.can_cs_view_client(target_cliente_id)

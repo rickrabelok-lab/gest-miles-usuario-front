@@ -81,58 +81,6 @@ Upsert programa do cliente. Requer Bearer token.
 
 ---
 
-## Gestor
-
-### GET /api/gestor/clientes
-Lista IDs dos clientes vinculados ao gestor. Requer Bearer token.
-
-**Resposta:** `string[]`
-
----
-
-### POST /api/gestor/vincular
-Vincula cliente ao gestor. Requer Bearer token.
-
-**Body:** `{ "clienteId": "uuid" }`
-
-**Resposta:** `{ ok: true }`
-
----
-
-### DELETE /api/gestor/desvincular/:clienteId
-Desvincula cliente. Requer Bearer token.
-
-**Resposta:** `{ deleted: boolean }`
-
----
-
-### GET /api/gestor/perfis?ids=id1,id2
-Perfis dos clientes. Requer Bearer token.
-
-**Parâmetros:** `ids` (vírgula separada)
-
-**Resposta:** Array de perfis
-
----
-
-### GET /api/gestor/programas?ids=id1,id2
-Programas dos clientes. Requer Bearer token.
-
-**Parâmetros:** `ids` (vírgula separada)
-
-**Resposta:** Array de programas
-
----
-
-### GET /api/gestor/demandas?ids=id1,id2
-Demandas dos clientes. Requer Bearer token.
-
-**Parâmetros:** `ids` (vírgula separada)
-
-**Resposta:** Array de demandas
-
----
-
 ## Perfis
 
 ### GET /api/perfis/me
