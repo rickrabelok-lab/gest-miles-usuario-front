@@ -75,7 +75,12 @@ export function ProgramSelectionSheet({
         id2 = requestAnimationFrame(() => setVisible(true));
       });
       const t = setTimeout(() => searchRef.current?.focus(), 400);
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") onClose();
+      };
+      document.addEventListener("keydown", handleKeyDown);
       return () => {
+        document.removeEventListener("keydown", handleKeyDown);
         cancelAnimationFrame(id1);
         cancelAnimationFrame(id2);
         clearTimeout(t);
@@ -206,8 +211,8 @@ export function ProgramSelectionSheet({
                   logoImageUrl={logoImages?.[prog.programId]}
                   name={prog.name}
                   sub={
-                    Number(prog.balance) > 0
-                      ? `${Number(prog.balance).toLocaleString("pt-BR")} milhas`
+                    prog.balance !== "0" && prog.balance !== ""
+                      ? `${prog.balance} milhas`
                       : undefined
                   }
                   query={q}
