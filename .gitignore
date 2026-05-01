@@ -32,3 +32,6 @@ dist-ssr
 
 # MCP local (pode conter chaves; não versionar)
 .cursor/mcp.json
+
+# Git worktrees
+.worktrees/
