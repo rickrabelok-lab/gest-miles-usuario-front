@@ -497,9 +497,9 @@ const DashboardHeader = () => {
                     : "/gestor?tab=demandas&status=pendente",
                 )
               }
-              className="flex-1 text-left text-sm text-nubank-text hover:opacity-90"
+              className="flex-1 text-left text-sm text-amber-900 hover:opacity-90"
             >
-              <span className="font-semibold text-warning">Demandas abertas:</span>{" "}
+              <span className="font-semibold text-amber-600">Demandas abertas:</span>{" "}
               {demandSummary.openCount}{" "}
               {demandSummary.openCount === 1 ? "demanda" : "demandas"}{" "}
               {demandSummary.openCount > 0
