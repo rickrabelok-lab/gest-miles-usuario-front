@@ -1,4 +1,4 @@
-import { ArrowUp, ArrowDown, AlertCircle, ImagePlus } from "lucide-react";
+import { AlertCircle, ImagePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
 
@@ -100,7 +100,7 @@ const ProgramCard = (props: ProgramCardProps) => {
 
   return (
     <div
-      className="relative cursor-pointer rounded-[14px] gradient-card-subtle p-2 text-nubank-text shadow-nubank outline-none transition-all duration-300 ease-out hover:shadow-nubank-hover hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-primary/20 active:scale-[0.99]"
+      className="relative cursor-pointer rounded-xl border border-[#EBEBEB] bg-white p-3 text-nubank-text outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/20 active:scale-[0.99]"
       role="button"
       tabIndex={0}
       onClick={handleOpenDetails}
@@ -111,13 +111,12 @@ const ProgramCard = (props: ProgramCardProps) => {
         <div className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-white shadow-sm" />
       )}
 
-      <div className="flex items-start justify-between gap-1">
-        {/* Logo */}
+      {/* Top row: avatar + variation badge */}
+      <div className="mb-1.5 flex items-start justify-between">
         <button
           type="button"
           onClick={handleOpenLogoPicker}
-          className="group relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[8px] font-bold transition-all duration-300 ease-out hover:brightness-95"
-          style={{ backgroundColor: logoColor + "20", color: logoColor }}
+          className="group relative flex h-[22px] w-[22px] shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-100 text-[7px] font-bold text-gray-500 transition-all hover:brightness-95"
           title="Alterar imagem do programa"
           aria-label={`Alterar imagem do programa ${name}`}
         >
@@ -143,27 +142,25 @@ const ProgramCard = (props: ProgramCardProps) => {
           />
         </button>
 
-        {/* Variation arrow + balance */}
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">
-          {variation === "up" && <ArrowUp size={11} className="shrink-0 text-success" strokeWidth={2.5} />}
-          {variation === "down" && <ArrowDown size={11} className="shrink-0 text-destructive" strokeWidth={2.5} />}
-          <span
-            className={`truncate font-display text-sm font-bold tabular-nums ${
-              variation === "up"
-                ? "text-success"
-                : variation === "down"
-                ? "text-destructive"
-                : "text-foreground"
-            }`}
-          >
-            {balance}
-          </span>
-        </div>
+        {variation === "up" && (
+          <span className="rounded bg-green-50 px-1.5 py-0.5 text-[8px] font-bold text-green-700">↑</span>
+        )}
+        {variation === "down" && (
+          <span className="rounded bg-red-50 px-1.5 py-0.5 text-[8px] font-bold text-red-600">↓</span>
+        )}
+        {variation === "none" && (
+          <span className="rounded bg-gray-50 px-1.5 py-0.5 text-[8px] font-bold text-gray-300">—</span>
+        )}
       </div>
 
-      <div className="mt-1 flex items-baseline justify-between gap-1">
-        <p className="text-[10px] font-medium text-nubank-text-secondary leading-tight">{lastUpdate}</p>
-        <p className="text-xs font-semibold tabular-nums text-nubank-text leading-tight">R$ {valueInBRL}</p>
+      {/* Balance number */}
+      <div className="mb-1 font-extrabold tabular-nums leading-tight tracking-tight text-gray-900" style={{ fontSize: "15px" }}>
+        {balance}
+      </div>
+
+      {/* Value + last update */}
+      <div className="leading-tight text-gray-400" style={{ fontSize: "9px" }}>
+        R$ {valueInBRL} · {lastUpdate}
       </div>
 
       {error && (
