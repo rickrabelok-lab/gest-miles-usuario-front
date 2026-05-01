@@ -48,6 +48,7 @@ export interface ProgramSelectionSheetProps {
   activePrograms: ActiveProgram[];
   onToggle: (option: ProgramOption) => void;
   availableOptions: readonly ProgramOption[];
+  logoImages?: Record<string, string>;
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
@@ -58,6 +59,7 @@ export function ProgramSelectionSheet({
   activePrograms,
   onToggle,
   availableOptions,
+  logoImages,
 }: ProgramSelectionSheetProps) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -201,6 +203,7 @@ export function ProgramSelectionSheet({
                   key={prog.programId}
                   logo={prog.logo}
                   logoColor={prog.logoColor}
+                  logoImageUrl={logoImages?.[prog.programId]}
                   name={prog.name}
                   sub={
                     Number(prog.balance) > 0
@@ -228,6 +231,7 @@ export function ProgramSelectionSheet({
                   key={opt.programId}
                   logo={opt.logo}
                   logoColor={opt.logoColor}
+                  logoImageUrl={logoImages?.[opt.programId]}
                   name={opt.name}
                   query={q}
                   isActive={false}
@@ -296,6 +300,7 @@ function SectionLabel({
 function ProgramRow({
   logo,
   logoColor,
+  logoImageUrl,
   name,
   sub,
   query,
@@ -304,6 +309,7 @@ function ProgramRow({
 }: {
   logo: string;
   logoColor: string;
+  logoImageUrl?: string;
   name: string;
   sub?: string;
   query: string;
@@ -329,10 +335,14 @@ function ProgramRow({
 
       {/* Logo */}
       <div
-        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[9px] text-[11px] font-extrabold text-white"
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-[9px] text-[11px] font-extrabold text-white"
         style={{ background: logoColor }}
       >
-        {logo}
+        {logoImageUrl ? (
+          <img src={logoImageUrl} alt={name} className="h-full w-full object-cover" />
+        ) : (
+          logo
+        )}
       </div>
 
       {/* Info */}
