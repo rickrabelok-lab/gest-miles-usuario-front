@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opção A — Bottom Sheet Full</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0b0b14;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  h2 { font-size: 1.3rem; font-weight: 700; color: #f8fafc; text-align: center; }
+  .sub { color: #64748b; font-size: 0.85rem; text-align: center; }
+
+  /* ── Layout principal: 2 phones lado a lado ── */
+  .phones-row {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .phone-label {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── Phone shell ── */
+  .phone {
+    width: 240px;
+    background: #0f0f1a;
+    border-radius: 32px;
+    overflow: hidden;
+    border: 2px solid #2d2d44;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+    position: relative;
+  }
+  .phone-notch {
+    height: 26px;
+    background: #0f0f1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .notch-pill {
+    width: 70px; height: 13px;
+    background: #1a1a2e;
+    border-radius: 10px;
+  }
+
+  /* ── Tela 1: Home (atrás do sheet) ── */
+  .home-screen {
+    background: #111120;
+    height: 580px;
+    padding: 0.8rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .home-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.8rem;
+  }
+  .home-greeting { font-size: 0.7rem; color: #94a3b8; }
+  .home-greeting strong { color: #f1f5f9; display: block; font-size: 0.85rem; }
+  .new-btn {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: white;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .total-card {
+    background: linear-gradient(135deg, #1a0533, #16162a);
+    border-radius: 14px;
+    padding: 0.75rem 0.9rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid rgba(124,58,237,0.2);
+  }
+  .total-label { font-size: 0.55rem; color: #64748b; margin-bottom: 0.2rem; }
+  .total-value { font-size: 1.3rem; font-weight: 800; color: #f1f5f9; }
+  .total-brl { font-size: 0.58rem; color: #34d399; margin-top: 0.15rem; }
+  .prog-section-title {
+    font-size: 0.6rem; font-weight: 700; color: #64748b;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    margin-bottom: 0.45rem;
+  }
+  .prog-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+  .prog-mini-card {
+    background: #1e1e38;
+    border-radius: 10px;
+    padding: 0.5rem 0.55rem;
+    border: 1px solid #2d2d44;
+  }
+  .mini-logo-row { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.3rem; }
+  .mini-logo {
+    width: 22px; height: 22px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5rem; font-weight: 800; color: white;
+  }
+  .mini-name { font-size: 0.55rem; color: #94a3b8; }
+  .mini-balance { font-size: 0.8rem; font-weight: 700; color: #f1f5f9; }
+  .mini-brl { font-size: 0.5rem; color: #64748b; }
+
+  /* dim overlay */
+  .dim-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(3px);
+  }
+
+  /* ── Bottom Sheet Full ── */
+  .full-sheet {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 0;
+    top: 48px; /* quase topo — deixa ver a status bar */
+    background: #16162a;
+    border-radius: 22px 22px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-top: 1px solid #2d2d44;
+  }
+
+  .sheet-top {
+    flex-shrink: 0;
+    padding: 0.5rem 0.9rem 0.75rem;
+    border-bottom: 1px solid #1e1e38;
+  }
+  .grab-row { display: flex; justify-content: center; padding-bottom: 0.55rem; }
+  .grab-pill {
+    width: 40px; height: 4px;
+    background: #3d3d5c;
+    border-radius: 2px;
+  }
+  .sheet-title-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.6rem;
+  }
+  .sheet-title { font-size: 0.9rem; font-weight: 700; color: #f1f5f9; }
+  .sheet-close {
+    width: 24px; height: 24px;
+    background: #1e1e38;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; color: #64748b;
+  }
+  .search-input {
+    background: #0f0f1a;
+    border: 1.5px solid #2d2d44;
+    border-radius: 10px;
+    padding: 0.45rem 0.65rem;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .search-icon { font-size: 0.65rem; color: #475569; }
+  .search-placeholder { font-size: 0.65rem; color: #475569; flex: 1; }
+  .search-input.focused { border-color: #7c3aed; }
+  .search-cursor {
+    width: 1px; height: 12px;
+    background: #7c3aed;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+
+  .sheet-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 0 1rem;
+  }
+  .sheet-scroll::-webkit-scrollbar { display: none; }
+
+  /* Seção label */
+  .section-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.65rem 0.9rem 0.35rem;
+    position: sticky; top: 0;
+    background: #16162a;
+    z-index: 1;
+  }
+  .section-label {
+    font-size: 0.58rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: #475569;
+    white-space: nowrap;
+  }
+  .section-line { flex: 1; height: 1px; background: #1e1e38; }
+  .section-count {
+    font-size: 0.58rem; font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .count-active { background: rgba(124,58,237,0.2); color: #a78bfa; }
+  .count-inactive { background: rgba(255,255,255,0.04); color: #475569; }
+
+  /* Card de programa */
+  .prog-card {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.5rem 0.9rem;
+    border-bottom: 1px solid #111120;
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .prog-card:hover { background: rgba(255,255,255,0.02); }
+  .prog-logo {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 800; color: white;
+    flex-shrink: 0;
+  }
+  .prog-info { flex: 1; }
+  .prog-name { font-size: 0.7rem; font-weight: 600; color: #e2e8f0; }
+  .prog-sub { font-size: 0.58rem; color: #475569; margin-top: 0.08rem; }
+  .prog-action {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .action-remove {
+    background: rgba(239,68,68,0.12);
+    border: 1.5px solid rgba(239,68,68,0.25);
+    color: #f87171;
+  }
+  .action-add {
+    background: rgba(124,58,237,0.12);
+    border: 1.5px solid rgba(124,58,237,0.25);
+    color: #a78bfa;
+  }
+  .active-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #34d399;
+    flex-shrink: 0;
+    margin-right: -0.2rem;
+  }
+
+  /* Tela 2: com busca ativa */
+  .search-result-highlight { background: rgba(124,58,237,0.06); }
+
+  /* ── Confirm bar ── */
+  .confirm-bar {
+    flex-shrink: 0;
+    padding: 0.65rem 0.9rem;
+    background: #16162a;
+    border-top: 1px solid #1e1e38;
+  }
+  .confirm-btn {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: white;
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.02em;
+    box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+  }
+
+  /* ── Annotations ── */
+  .annotations {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-width: 240px;
+  }
+  .ann {
+    display: flex; align-items: flex-start; gap: 0.6rem;
+    background: #13131f;
+    border: 1px solid #1e1e30;
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+  }
+  .ann-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .ann-text { font-size: 0.65rem; color: #94a3b8; line-height: 1.4; }
+  .ann-text strong { color: #f1f5f9; display: block; margin-bottom: 0.1rem; font-size: 0.68rem; }
+</style>
+</head>
+<body>
+
+<h2>Opção A refinada — Bottom Sheet Full</h2>
+<p class="sub">Duas views: repouso e com busca ativa</p>
+
+<div class="phones-row">
+
+  <!-- ═══ PHONE 1: Sheet aberto, sem busca ═══ -->
+  <div class="phone-wrap">
+    <div class="phone-label">estado padrão</div>
+    <div class="phone">
+      <div class="phone-notch"><div class="notch-pill"></div></div>
+      <div class="home-screen">
+
+        <!-- Home atrás -->
+        <div class="home-header">
+          <div class="home-greeting">Bom dia<strong>Rick</strong></div>
+          <div class="new-btn">+ Novo</div>
+        </div>
+        <div class="total-card">
+          <div class="total-label">Total em milhas</div>
+          <div class="total-value">34.250</div>
+          <div class="total-brl">≈ R$ 1.198 em valor</div>
+        </div>
+        <div class="prog-section-title">Meus programas</div>
+        <div class="prog-mini-grid">
+          <div class="prog-mini-card">
+            <div class="mini-logo-row">
+              <div class="mini-logo" style="background:#1a3a6b">LP</div>
+              <span class="mini-name">Latam</span>
+            </div>
+            <div class="mini-balance">10.500</div>
+            <div class="mini-brl">R$ 367</div>
+          </div>
+          <div class="prog-mini-card">
+            <div class="mini-logo-row">
+              <div class="mini-logo" style="background:#c2185b">Lv</div>
+              <span class="mini-name">Livelo</span>
+            </div>
+            <div class="mini-balance">8.200</div>
+            <div class="mini-brl">R$ 287</div>
+          </div>
+        </div>
+
+        <!-- Dim -->
+        <div class="dim-overlay"></div>
+
+        <!-- Sheet full -->
+        <div class="full-sheet">
+          <div class="sheet-top">
+            <div class="grab-row"><div class="grab-pill"></div></div>
+            <div class="sheet-title-row">
+              <span class="sheet-title">Meus Programas</span>
+              <div class="sheet-close">✕</div>
+            </div>
+            <div class="search-input">
+              <span class="search-icon">🔍</span>
+              <span class="search-placeholder">Buscar programa...</span>
+            </div>
+          </div>
+
+          <div class="sheet-scroll">
+            <!-- Ativos -->
+            <div class="section-header">
+              <span class="section-label">Ativos</span>
+              <div class="section-line"></div>
+              <span class="section-count count-active">4</span>
+            </div>
+
+            <div class="prog-card">
+              <div class="active-dot"></div>
+              <div class="prog-logo" style="background:#1a3a6b">LP</div>
+              <div class="prog-info">
+                <div class="prog-name">Latam Pass</div>
+                <div class="prog-sub">10.500 milhas</div>
+              </div>
+              <div class="prog-action action-remove">−</div>
+            </div>
+            <div class="prog-card">
+              <div class="active-dot"></div>
+              <div class="prog-logo" style="background:#c2185b">Lv</div>
+              <div class="prog-info">
+                <div class="prog-name">Livelo</div>
+                <div class="prog-sub">8.200 pontos</div>
+              </div>
+              <div class="prog-action action-remove">−</div>
+            </div>
+            <div class="prog-card">
+              <div class="active-dot"></div>
+              <div class="prog-logo" style="background:#e67e22">Sm</div>
+              <div class="prog-info">
+                <div class="prog-name">Smiles</div>
+                <div class="prog-sub">5.000 milhas</div>
+              </div>
+              <div class="prog-action action-remove">−</div>
+            </div>
+            <div class="prog-card">
+              <div class="active-dot"></div>
+              <div class="prog-logo" style="background:#1d4ed8">TA</div>
+              <div class="prog-info">
+                <div class="prog-name">Tudo Azul</div>
+                <div class="prog-sub">2.750 milhas</div>
+              </div>
+              <div class="prog-action action-remove">−</div>
+            </div>
+
+            <!-- Disponíveis -->
+            <div class="section-header" style="margin-top:0.25rem">
+              <span class="section-label">Disponíveis</span>
+              <div class="section-line"></div>
+              <span class="section-count count-inactive">6</span>
+            </div>
+
+            <div class="prog-card" style="opacity:0.7">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent;flex-shrink:0"></div>
+              <div class="prog-logo" style="background:#333">Es</div>
+              <div class="prog-info">
+                <div class="prog-name">Esfera</div>
+                <div class="prog-sub">Santander</div>
+              </div>
+              <div class="prog-action action-add">+</div>
+            </div>
+            <div class="prog-card" style="opacity:0.7">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent;flex-shrink:0"></div>
+              <div class="prog-logo" style="background:#b91c1c">IB</div>
+              <div class="prog-info">
+                <div class="prog-name">Ibéria Plus</div>
+                <div class="prog-sub">Iberia Airlines</div>
+              </div>
+              <div class="prog-action action-add">+</div>
+            </div>
+            <div class="prog-card" style="opacity:0.7">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent;flex-shrink:0"></div>
+              <div class="prog-logo" style="background:#5a1f3d">QA</div>
+              <div class="prog-info">
+                <div class="prog-name">Qatar Airways</div>
+                <div class="prog-sub">Privilege Club</div>
+              </div>
+              <div class="prog-action action-add">+</div>
+            </div>
+            <div class="prog-card" style="opacity:0.7">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent;flex-shrink:0"></div>
+              <div class="prog-logo" style="background:#2563eb">Fn</div>
+              <div class="prog-info">
+                <div class="prog-name">Finnair</div>
+                <div class="prog-sub">Finnair Plus</div>
+              </div>
+              <div class="prog-action action-add">+</div>
+            </div>
+          </div>
+
+          <div class="confirm-bar">
+            <div class="confirm-btn">Confirmar seleção</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PHONE 2: Com busca ativa "lat" ═══ -->
+  <div class="phone-wrap">
+    <div class="phone-label">busca ativa "lat"</div>
+    <div class="phone">
+      <div class="phone-notch"><div class="notch-pill"></div></div>
+      <div class="home-screen">
+
+        <div class="home-header">
+          <div class="home-greeting">Bom dia<strong>Rick</strong></div>
+          <div class="new-btn">+ Novo</div>
+        </div>
+        <div class="total-card">
+          <div class="total-label">Total em milhas</div>
+          <div class="total-value">34.250</div>
+          <div class="total-brl">≈ R$ 1.198 em valor</div>
+        </div>
+        <div class="prog-section-title">Meus programas</div>
+        <div class="prog-mini-grid">
+          <div class="prog-mini-card">
+            <div class="mini-logo-row">
+              <div class="mini-logo" style="background:#1a3a6b">LP</div>
+              <span class="mini-name">Latam</span>
+            </div>
+            <div class="mini-balance">10.500</div>
+          </div>
+          <div class="prog-mini-card">
+            <div class="mini-logo-row">
+              <div class="mini-logo" style="background:#c2185b">Lv</div>
+              <span class="mini-name">Livelo</span>
+            </div>
+            <div class="mini-balance">8.200</div>
+          </div>
+        </div>
+
+        <div class="dim-overlay"></div>
+
+        <div class="full-sheet">
+          <div class="sheet-top">
+            <div class="grab-row"><div class="grab-pill"></div></div>
+            <div class="sheet-title-row">
+              <span class="sheet-title">Meus Programas</span>
+              <div class="sheet-close">✕</div>
+            </div>
+            <!-- Search focused -->
+            <div class="search-input focused">
+              <span class="search-icon" style="color:#7c3aed">🔍</span>
+              <span class="search-placeholder" style="color:#f1f5f9">lat</span>
+              <div class="search-cursor"></div>
+              <span style="font-size:0.55rem;color:#475569;margin-left:auto">limpar</span>
+            </div>
+          </div>
+
+          <div class="sheet-scroll">
+            <!-- Resultado da busca: só mostra o que bate -->
+            <div class="section-header">
+              <span class="section-label">1 resultado</span>
+              <div class="section-line"></div>
+            </div>
+
+            <div class="prog-card search-result-highlight">
+              <div class="active-dot"></div>
+              <div class="prog-logo" style="background:#1a3a6b">LP</div>
+              <div class="prog-info">
+                <div class="prog-name">
+                  <span style="background:rgba(124,58,237,0.3);border-radius:3px;padding:0 2px">Lat</span>am Pass
+                </div>
+                <div class="prog-sub">10.500 milhas · ativo</div>
+              </div>
+              <div class="prog-action action-remove">−</div>
+            </div>
+
+            <!-- Empty state para inativos -->
+            <div class="section-header" style="margin-top:0.25rem">
+              <span class="section-label">Disponíveis</span>
+              <div class="section-line"></div>
+            </div>
+            <div style="padding:1.2rem 0.9rem;text-align:center;color:#2d2d44;font-size:0.62rem">
+              Nenhum programa disponível com "lat"
+            </div>
+          </div>
+
+          <div class="confirm-bar">
+            <div class="confirm-btn">Confirmar seleção</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Annotations ═══ -->
+  <div class="annotations">
+    <div class="ann">
+      <div class="ann-icon" style="background:rgba(124,58,237,0.15)">↕</div>
+      <div class="ann-text">
+        <strong>Sheet vai até o topo</strong>
+        Cobre quase toda a tela, foco total na tarefa. Drag pill visível para fechar.
+      </div>
+    </div>
+    <div class="ann">
+      <div class="ann-icon" style="background:rgba(52,211,153,0.15)">●</div>
+      <div class="ann-text">
+        <strong>Ativos vs Disponíveis</strong>
+        Dot verde nos ativos. Botão − para remover, + para adicionar. Saldo visível nos ativos.
+      </div>
+    </div>
+    <div class="ann">
+      <div class="ann-icon" style="background:rgba(251,146,60,0.15)">🔍</div>
+      <div class="ann-text">
+        <strong>Busca em tempo real</strong>
+        Filtra nome de ambas as seções. Match highlight em roxo. Estado vazio amigável.
+      </div>
+    </div>
+    <div class="ann">
+      <div class="ann-icon" style="background:rgba(124,58,237,0.15)">✓</div>
+      <div class="ann-text">
+        <strong>Botão Confirmar fixo</strong>
+        Sempre visível no rodapé do sheet, independente do scroll.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

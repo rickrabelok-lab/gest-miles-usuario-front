@@ -1,0 +1,361 @@
+<style>
+  body { background: #0f0f13; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  h2 { color: #f8fafc; font-size: 1.4rem; margin-bottom: 0.25rem; }
+  .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 2rem; }
+
+  .options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+
+  .option {
+    background: #1a1a2e;
+    border: 2px solid #2d2d44;
+    border-radius: 16px;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: hidden;
+  }
+  .option:hover { border-color: #7c3aed; transform: translateY(-2px); }
+  .option.selected { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.2); }
+
+  .option-header {
+    padding: 1rem 1.25rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid #2d2d44;
+  }
+  .option-letter {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.9rem; color: white; flex-shrink: 0;
+  }
+  .option-title { font-weight: 600; font-size: 1rem; color: #f1f5f9; }
+  .option-tag {
+    margin-left: auto;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .tag-rec { background: rgba(124,58,237,0.2); color: #a78bfa; }
+  .tag-bold { background: rgba(239,68,68,0.15); color: #f87171; }
+  .tag-simple { background: rgba(16,185,129,0.15); color: #34d399; }
+
+  .mockup-preview {
+    padding: 1rem 1.25rem;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* ABORDAGEM A — Modal com Cards */
+  .modal-sim {
+    background: #16213e;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #2d2d44;
+  }
+  .modal-top {
+    background: #7c3aed;
+    padding: 0.6rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: white;
+  }
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  .prog-card {
+    background: #1e2a45;
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1.5px solid transparent;
+    position: relative;
+    font-size: 0.72rem;
+  }
+  .prog-card.active { border-color: #7c3aed; }
+  .prog-logo {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .prog-name { color: #cbd5e1; font-weight: 500; }
+  .check-badge {
+    position: absolute; top: -4px; right: -4px;
+    width: 14px; height: 14px;
+    background: #7c3aed;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: white;
+  }
+
+  /* ABORDAGEM B — Drawer lateral */
+  .drawer-sim {
+    background: #16213e;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #2d2d44;
+    font-size: 0.72rem;
+  }
+  .drawer-header {
+    padding: 0.5rem 0.75rem;
+    background: #1a1a2e;
+    border-bottom: 1px solid #2d2d44;
+    font-weight: 600;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .drawer-search {
+    margin: 0.5rem 0.6rem;
+    background: #0f0f1a;
+    border: 1px solid #2d2d44;
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+    color: #64748b;
+    font-size: 0.68rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .drawer-list { padding: 0.25rem 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }
+  .drawer-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    background: #1e2a45;
+    border: 1px solid transparent;
+  }
+  .drawer-item.on { border-color: #7c3aed; background: rgba(124,58,237,0.1); }
+  .toggle {
+    width: 24px; height: 13px;
+    border-radius: 20px;
+    background: #2d2d44;
+    position: relative;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: #7c3aed; }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: white;
+    top: 2px; left: 2px;
+    transition: left 0.15s;
+  }
+  .toggle.on::after { left: 13px; }
+  .drag-handle { color: #3d3d5c; font-size: 0.65rem; }
+
+  /* ABORDAGEM C — Bottom sheet com chips */
+  .bottom-sheet {
+    background: #16213e;
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+    border: 1px solid #2d2d44;
+    font-size: 0.72rem;
+    margin-top: auto;
+  }
+  .sheet-handle {
+    display: flex; justify-content: center;
+    padding: 0.5rem;
+  }
+  .handle-bar {
+    width: 32px; height: 3px;
+    background: #3d3d5c;
+    border-radius: 2px;
+  }
+  .sheet-title {
+    padding: 0 0.75rem 0.5rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    font-size: 0.82rem;
+  }
+  .chips-wrap {
+    padding: 0.25rem 0.6rem 0.75rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+  }
+  .chip {
+    display: flex; align-items: center; gap: 0.35rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 20px;
+    border: 1.5px solid #2d2d44;
+    background: #1e2a45;
+    color: #94a3b8;
+    font-size: 0.68rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .chip.on {
+    background: rgba(124,58,237,0.15);
+    border-color: #7c3aed;
+    color: #c4b5fd;
+  }
+  .chip-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+
+  .option-desc {
+    padding: 0 1.25rem 1.25rem;
+    font-size: 0.78rem;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  .pros { color: #34d399; }
+  .cons { color: #f87171; }
+  .bullet { margin: 0.2rem 0; }
+</style>
+
+<h2>Como deve funcionar a seleção de programas?</h2>
+<p class="subtitle">3 abordagens diferentes — selecione a que mais faz sentido para o produto</p>
+
+<div class="options">
+
+  <!-- OPÇÃO A -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="option-letter">A</div>
+      <div class="option-title">Modal com Cards</div>
+      <span class="option-tag tag-rec">RECOMENDADO</span>
+    </div>
+    <div class="mockup-preview">
+      <div class="modal-sim">
+        <div class="modal-top">SELECIONE OS PROGRAMAS</div>
+        <div class="modal-grid">
+          <div class="prog-card active">
+            <div class="prog-logo" style="background:#1a3a6b">LP</div>
+            <span class="prog-name">Latam Pass</span>
+            <div class="check-badge">✓</div>
+          </div>
+          <div class="prog-card active">
+            <div class="prog-logo" style="background:#e91e63">Lv</div>
+            <span class="prog-name">Livelo</span>
+            <div class="check-badge">✓</div>
+          </div>
+          <div class="prog-card active">
+            <div class="prog-logo" style="background:#f59e42">Sm</div>
+            <span class="prog-name">Smiles</span>
+            <div class="check-badge">✓</div>
+          </div>
+          <div class="prog-card">
+            <div class="prog-logo" style="background:#5a1f3d">QA</div>
+            <span class="prog-name">Qatar Airways</span>
+          </div>
+          <div class="prog-card">
+            <div class="prog-logo" style="background:#2563eb">Fn</div>
+            <span class="prog-name">Finnair</span>
+          </div>
+          <div class="prog-card active">
+            <div class="prog-logo" style="background:#1d4ed8">TA</div>
+            <span class="prog-name">Tudo Azul</span>
+            <div class="check-badge">✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="option-desc">
+      <div class="bullet pros">✓ Visual rico com logo colorido de cada programa</div>
+      <div class="bullet pros">✓ Estado ativo/inativo claro de relance</div>
+      <div class="bullet pros">✓ Overlay centralizado, foco total na tarefa</div>
+      <div class="bullet cons">✗ Requer abertura de modal (1 clique extra)</div>
+    </div>
+  </div>
+
+  <!-- OPÇÃO B -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="option-letter">B</div>
+      <div class="option-title">Drawer + Reorder</div>
+      <span class="option-tag tag-bold">PODEROSO</span>
+    </div>
+    <div class="mockup-preview">
+      <div class="drawer-sim">
+        <div class="drawer-header">
+          <span>⠿</span> Gerenciar Programas
+        </div>
+        <div class="drawer-search">🔍 <span>Buscar programa...</span></div>
+        <div class="drawer-list">
+          <div class="drawer-item on">
+            <div class="prog-logo" style="background:#1a3a6b;width:22px;height:22px;border-radius:5px;font-size:0.55rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:700">LP</div>
+            <span style="color:#e2e8f0">Latam Pass</span>
+            <div class="toggle on" style="margin-left:auto"></div>
+          </div>
+          <div class="drawer-item on">
+            <div class="prog-logo" style="background:#e91e63;width:22px;height:22px;border-radius:5px;font-size:0.55rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:700">Lv</div>
+            <span style="color:#e2e8f0">Livelo</span>
+            <div class="toggle on" style="margin-left:auto"></div>
+          </div>
+          <div class="drawer-item">
+            <div class="prog-logo" style="background:#5a1f3d;width:22px;height:22px;border-radius:5px;font-size:0.55rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:700">QA</div>
+            <span style="color:#64748b">Qatar Airways</span>
+            <div class="toggle" style="margin-left:auto"></div>
+          </div>
+          <div class="drawer-item">
+            <div class="prog-logo" style="background:#2563eb;width:22px;height:22px;border-radius:5px;font-size:0.55rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:700">Fn</div>
+            <span style="color:#64748b">Finnair</span>
+            <div class="toggle" style="margin-left:auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="option-desc">
+      <div class="bullet pros">✓ Toggle switches elegantes</div>
+      <div class="bullet pros">✓ Campo de busca para muitos programas</div>
+      <div class="bullet pros">✓ Permite reordenar por drag-and-drop</div>
+      <div class="bullet cons">✗ Mais complexo de implementar</div>
+      <div class="bullet cons">✗ Drawer pode parecer pesado para a tarefa</div>
+    </div>
+  </div>
+
+  <!-- OPÇÃO C -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="option-letter">C</div>
+      <div class="option-title">Bottom Sheet + Chips</div>
+      <span class="option-tag tag-simple">LEVE</span>
+    </div>
+    <div class="mockup-preview" style="flex-direction:column;justify-content:flex-end">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;color:#2d2d44;font-size:0.7rem">
+        — home content —
+      </div>
+      <div class="bottom-sheet">
+        <div class="sheet-handle"><div class="handle-bar"></div></div>
+        <div class="sheet-title">Programas visíveis</div>
+        <div class="chips-wrap">
+          <div class="chip on"><div class="chip-dot" style="background:#1a3a6b"></div>Latam Pass</div>
+          <div class="chip on"><div class="chip-dot" style="background:#e91e63"></div>Livelo</div>
+          <div class="chip on"><div class="chip-dot" style="background:#f59e42"></div>Smiles</div>
+          <div class="chip"><div class="chip-dot" style="background:#5a1f3d"></div>Qatar</div>
+          <div class="chip"><div class="chip-dot" style="background:#2563eb"></div>Finnair</div>
+          <div class="chip on"><div class="chip-dot" style="background:#1d4ed8"></div>Tudo Azul</div>
+          <div class="chip"><div class="chip-dot" style="background:#b91c1c"></div>Ibéria</div>
+        </div>
+      </div>
+    </div>
+    <div class="option-desc">
+      <div class="bullet pros">✓ Gestos nativos de mobile (swipe up)</div>
+      <div class="bullet pros">✓ Chips compactos, rápido de interagir</div>
+      <div class="bullet pros">✓ Menor esforço de implementação</div>
+      <div class="bullet cons">✗ Menos visual — logos pequenos</div>
+      <div class="bullet cons">✗ Chips podem truncar nomes longos</div>
+    </div>
+  </div>
+
+</div>

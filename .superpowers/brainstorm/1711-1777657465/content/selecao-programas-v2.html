@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seleção de Programas — Opções</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0b0b14;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    padding: 2rem;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  .page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.4rem;
+  }
+  .page-header p {
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+
+  /* Grid de opções — 2x2 */
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .option-card {
+    background: #13131f;
+    border: 2px solid #1e1e30;
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+  }
+  .option-card:hover {
+    border-color: #7c3aed;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(124,58,237,0.2);
+  }
+  .option-card.selected {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 4px rgba(124,58,237,0.15), 0 12px 40px rgba(124,58,237,0.25);
+  }
+
+  .option-label {
+    padding: 1.1rem 1.25rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid #1e1e30;
+  }
+  .letter-badge {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.9rem; color: white;
+    flex-shrink: 0;
+  }
+  .option-name { font-weight: 700; font-size: 1rem; color: #f1f5f9; }
+  .option-badge {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.06em;
+  }
+  .badge-rec { background: rgba(124,58,237,0.2); color: #a78bfa; }
+  .badge-new { background: rgba(245,158,66,0.2); color: #fb923c; }
+  .badge-bold { background: rgba(239,68,68,0.15); color: #f87171; }
+  .badge-clean { background: rgba(16,185,129,0.15); color: #34d399; }
+
+  /* Preview area */
+  .preview {
+    padding: 1.25rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 420px;
+    background: #0b0b14;
+  }
+
+  /* ===================== PHONE SHELL ===================== */
+  .phone {
+    width: 220px;
+    background: #0f0f1a;
+    border-radius: 28px;
+    overflow: hidden;
+    border: 1.5px solid #2d2d44;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    position: relative;
+  }
+  .phone-notch {
+    background: #0f0f1a;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #1a1a2e;
+  }
+  .notch-island {
+    width: 60px; height: 11px;
+    background: #1a1a2e;
+    border-radius: 10px;
+  }
+  .phone-screen {
+    background: #111120;
+    min-height: 400px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ===================== OPÇÃO A — Modal Premium ===================== */
+  .modal-bg {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 0;
+  }
+  .modal-sheet {
+    background: #16162a;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    padding: 0 0 0.75rem;
+  }
+  .sheet-grab {
+    display: flex;
+    justify-content: center;
+    padding: 0.6rem;
+  }
+  .grab-bar {
+    width: 36px; height: 3.5px;
+    background: #3d3d5c;
+    border-radius: 2px;
+  }
+  .sheet-header {
+    padding: 0 0.9rem 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sheet-title { font-weight: 700; font-size: 0.82rem; color: #f1f5f9; }
+  .sheet-count {
+    font-size: 0.62rem;
+    color: #a78bfa;
+    background: rgba(124,58,237,0.15);
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .prog-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    padding: 0 0.7rem;
+  }
+  .prog-item {
+    background: #1e1e38;
+    border-radius: 10px;
+    padding: 0.55rem 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1.5px solid transparent;
+    position: relative;
+    transition: all 0.15s;
+  }
+  .prog-item.on { border-color: #7c3aed; background: rgba(124,58,237,0.12); }
+  .prog-item.on2 { border-color: #e91e63; background: rgba(233,30,99,0.1); }
+  .prog-item.on3 { border-color: #f59e42; background: rgba(245,158,66,0.1); }
+  .prog-item.on4 { border-color: #1d4ed8; background: rgba(29,78,216,0.1); }
+  .pill-logo {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.55rem; font-weight: 800; color: white;
+    flex-shrink: 0;
+  }
+  .pill-name { font-size: 0.6rem; color: #cbd5e1; font-weight: 600; line-height: 1.2; }
+  .pill-check {
+    position: absolute; top: -3px; right: -3px;
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; color: white;
+    font-weight: 700;
+  }
+  .home-dimmed {
+    padding: 0.8rem 0.9rem 0;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .dimmed-bar { height: 8px; background: #2d2d44; border-radius: 4px; margin-bottom: 0.5rem; }
+  .dimmed-bar.w60 { width: 60%; }
+  .dimmed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .dimmed-card { height: 55px; background: #1e1e38; border-radius: 8px; }
+
+  /* ===================== OPÇÃO B — Tela dedicada estilo Oktoplus premium ===================== */
+  .page-header-inner {
+    background: linear-gradient(135deg, #1a0533, #0f0f1a);
+    padding: 0.8rem 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid #2d2d44;
+  }
+  .back-btn {
+    width: 22px; height: 22px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; color: #94a3b8;
+    flex-shrink: 0;
+  }
+  .page-title-inner { font-size: 0.78rem; font-weight: 700; color: #f1f5f9; }
+  .search-bar {
+    margin: 0.55rem 0.7rem;
+    background: #1e1e38;
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid #2d2d44;
+  }
+  .search-text { font-size: 0.6rem; color: #475569; }
+  .section-sep {
+    padding: 0.35rem 0.75rem 0.25rem;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #475569;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .sep-line { flex: 1; height: 1px; background: #1e1e38; }
+
+  .prog-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid #111120;
+    position: relative;
+  }
+  .prog-row-logo {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.58rem; font-weight: 800; color: white;
+    flex-shrink: 0;
+  }
+  .prog-row-info { flex: 1; }
+  .prog-row-name { font-size: 0.65rem; font-weight: 600; color: #e2e8f0; }
+  .prog-row-sub { font-size: 0.55rem; color: #64748b; }
+  .remove-btn {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; color: #f87171;
+    flex-shrink: 0;
+  }
+  .add-btn {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; color: #a78bfa;
+    flex-shrink: 0;
+  }
+  .cat-chip {
+    display: flex; align-items: center; gap: 0.3rem;
+    font-size: 0.58rem; color: #7c3aed;
+    background: rgba(124,58,237,0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+
+  /* ===================== OPÇÃO C — Spotlight Search ===================== */
+  .spotlight-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(8,8,18,0.92);
+    backdrop-filter: blur(8px);
+    padding: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .spotlight-input {
+    background: #1e1e38;
+    border: 1.5px solid #7c3aed;
+    border-radius: 12px;
+    padding: 0.5rem 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .spotlight-text { font-size: 0.65rem; color: #f1f5f9; font-weight: 500; }
+  .spotlight-cursor {
+    width: 1px; height: 12px;
+    background: #7c3aed;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .spotlight-results {
+    background: #16162a;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #2d2d44;
+  }
+  .spot-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.65rem;
+    border-bottom: 1px solid #1e1e38;
+    position: relative;
+  }
+  .spot-item.active-item { background: rgba(124,58,237,0.12); }
+  .spot-logo {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.55rem; font-weight: 800; color: white;
+    flex-shrink: 0;
+  }
+  .spot-info { flex: 1; }
+  .spot-name { font-size: 0.65rem; font-weight: 600; color: #e2e8f0; }
+  .spot-sub { font-size: 0.55rem; color: #64748b; }
+  .spot-status {
+    font-size: 0.55rem;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .status-on { background: rgba(124,58,237,0.2); color: #a78bfa; }
+  .status-off { background: rgba(255,255,255,0.05); color: #475569; }
+  .spot-hint {
+    display: flex; gap: 0.4rem;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.55rem;
+    color: #475569;
+    align-items: center;
+  }
+  .hint-key {
+    background: #1e1e38;
+    border: 1px solid #2d2d44;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.55rem;
+    color: #7c3aed;
+    font-weight: 600;
+  }
+
+  /* ===================== OPÇÃO D — Cards Flip/Glow ===================== */
+  .flip-home {
+    padding: 0.7rem;
+  }
+  .flip-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding: 0 0.1rem;
+  }
+  .flip-title { font-size: 0.7rem; font-weight: 700; color: #f1f5f9; }
+  .flip-subtitle { font-size: 0.58rem; color: #64748b; }
+  .flip-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+  }
+  .flip-card {
+    border-radius: 10px;
+    padding: 0.5rem 0.35rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    border: 1.5px solid transparent;
+    background: #1e1e38;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .flip-card.sel {
+    background: rgba(124,58,237,0.12);
+  }
+  .flip-card.sel-lv {
+    border-color: #e91e63;
+    background: rgba(233,30,99,0.1);
+  }
+  .flip-card.sel-sm {
+    border-color: #f59e42;
+    background: rgba(245,158,66,0.09);
+  }
+  .flip-card.sel-lp {
+    border-color: #1a3a6b;
+    background: rgba(26,58,107,0.2);
+  }
+  .flip-card.sel-ta {
+    border-color: #1d4ed8;
+    background: rgba(29,78,216,0.1);
+  }
+  .flip-card.sel-es {
+    border-color: #555;
+    background: rgba(80,80,80,0.1);
+  }
+  .flip-card.not-sel { opacity: 0.45; }
+  .flip-logo {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.58rem; font-weight: 800; color: white;
+  }
+  .flip-name { font-size: 0.52rem; font-weight: 600; color: #94a3b8; text-align: center; line-height: 1.2; }
+  .flip-checkmark {
+    position: absolute; top: -4px; right: -4px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: white; font-weight: 700;
+  }
+  .flip-more {
+    background: #1e1e38;
+    border-radius: 10px;
+    padding: 0.45rem 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1.5px dashed #2d2d44;
+  }
+  .flip-more-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: rgba(124,58,237,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; color: #7c3aed;
+    flex-shrink: 0;
+  }
+  .flip-more-text { font-size: 0.6rem; color: #7c3aed; font-weight: 600; }
+
+  /* Description below each option */
+  .option-desc-bar {
+    padding: 0.85rem 1.25rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem 0.75rem;
+    border-top: 1px solid #1e1e30;
+    background: #0f0f1a;
+  }
+  .desc-item { font-size: 0.72rem; color: #64748b; display: flex; align-items: flex-start; gap: 0.3rem; }
+  .desc-item.pro { color: #34d399; }
+  .desc-item.con { color: #f87171; }
+
+  /* Selection overlay */
+  .sel-overlay {
+    position: absolute;
+    top: 0.75rem; right: 0.75rem;
+    width: 26px; height: 26px;
+    background: #7c3aed;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: white;
+    box-shadow: 0 2px 8px rgba(124,58,237,0.5);
+  }
+  .option-card.selected .sel-overlay { display: flex; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Como selecionar programas no Home?</h1>
+  <p>Clique na opção que preferir — todas são mobile-first e profissionais</p>
+</div>
+
+<div class="options-grid">
+
+  <!-- ============ OPÇÃO A: Bottom Sheet com Cards ============ -->
+  <div class="option-card" data-choice="a" onclick="toggleSelect(this)" style="cursor:pointer">
+    <div class="sel-overlay">✓</div>
+    <div class="option-label">
+      <div class="letter-badge">A</div>
+      <div class="option-name">Bottom Sheet Premium</div>
+      <span class="option-badge badge-rec">RECOMENDADO</span>
+    </div>
+    <div class="preview">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-island"></div></div>
+        <div class="phone-screen" style="position:relative;min-height:400px;">
+          <!-- Home dimmed -->
+          <div class="home-dimmed" style="opacity:0.25;padding:0.8rem">
+            <div style="height:8px;background:#2d2d44;border-radius:4px;width:55%;margin-bottom:0.8rem"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem">
+              <div style="height:62px;background:#1e1e38;border-radius:8px"></div>
+              <div style="height:62px;background:#1e1e38;border-radius:8px"></div>
+            </div>
+          </div>
+          <!-- Modal overlay -->
+          <div class="modal-bg">
+            <div class="modal-sheet">
+              <div class="sheet-grab"><div class="grab-bar"></div></div>
+              <div class="sheet-header">
+                <span class="sheet-title">Meus Programas</span>
+                <span class="sheet-count">4 ativos</span>
+              </div>
+              <div class="prog-grid">
+                <div class="prog-item on">
+                  <div class="pill-logo" style="background:#1a3a6b">LP</div>
+                  <span class="pill-name">Latam Pass</span>
+                  <div class="pill-check" style="background:#7c3aed">✓</div>
+                </div>
+                <div class="prog-item on2">
+                  <div class="pill-logo" style="background:#c2185b">Lv</div>
+                  <span class="pill-name">Livelo</span>
+                  <div class="pill-check" style="background:#e91e63">✓</div>
+                </div>
+                <div class="prog-item on3">
+                  <div class="pill-logo" style="background:#e67e22">Sm</div>
+                  <span class="pill-name">Smiles</span>
+                  <div class="pill-check" style="background:#f59e42">✓</div>
+                </div>
+                <div class="prog-item on4">
+                  <div class="pill-logo" style="background:#1d4ed8">TA</div>
+                  <span class="pill-name">Tudo Azul</span>
+                  <div class="pill-check" style="background:#1d4ed8">✓</div>
+                </div>
+                <div class="prog-item" style="opacity:0.55">
+                  <div class="pill-logo" style="background:#5a1f3d">QA</div>
+                  <span class="pill-name">Qatar Airways</span>
+                </div>
+                <div class="prog-item" style="opacity:0.55">
+                  <div class="pill-logo" style="background:#2563eb">Fn</div>
+                  <span class="pill-name">Finnair</span>
+                </div>
+              </div>
+              <div style="padding:0.6rem 0.7rem 0;display:flex;gap:0.4rem">
+                <div style="flex:1;background:#7c3aed;border-radius:8px;padding:0.45rem;text-align:center;font-size:0.6rem;font-weight:700;color:white">Confirmar</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="option-desc-bar">
+      <div class="desc-item pro">✓ Sheet nativo mobile</div>
+      <div class="desc-item pro">✓ Logo colorido por programa</div>
+      <div class="desc-item pro">✓ Borda colorida = feedback claro</div>
+      <div class="desc-item pro">✓ Contador de ativos</div>
+      <div class="desc-item con">✗ Cobre parte do conteúdo</div>
+      <div class="desc-item">→ Fácil de implementar</div>
+    </div>
+  </div>
+
+  <!-- ============ OPÇÃO B: Tela Dedicada Premium ============ -->
+  <div class="option-card" data-choice="b" onclick="toggleSelect(this)" style="cursor:pointer">
+    <div class="sel-overlay">✓</div>
+    <div class="option-label">
+      <div class="letter-badge">B</div>
+      <div class="option-name">Tela Dedicada</div>
+      <span class="option-badge badge-new">ESTILO OKTOPLUS</span>
+    </div>
+    <div class="preview">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-island"></div></div>
+        <div class="phone-screen">
+          <div class="page-header-inner">
+            <div class="back-btn">←</div>
+            <div class="page-title-inner">Gerenciar Programas</div>
+          </div>
+          <div class="search-bar">
+            <span style="font-size:0.65rem;color:#475569">🔍</span>
+            <span class="search-text">Filtrar programa...</span>
+          </div>
+
+          <div class="section-sep">
+            <div class="sep-line"></div>
+            Ativos (4)
+            <div class="sep-line"></div>
+          </div>
+
+          <div class="prog-row">
+            <div class="prog-row-logo" style="background:#1a3a6b">LP</div>
+            <div class="prog-row-info">
+              <div class="prog-row-name">Latam Pass</div>
+              <div class="prog-row-sub">10.500 milhas</div>
+            </div>
+            <div class="remove-btn">−</div>
+          </div>
+          <div class="prog-row">
+            <div class="prog-row-logo" style="background:#c2185b">Lv</div>
+            <div class="prog-row-info">
+              <div class="prog-row-name">Livelo</div>
+              <div class="prog-row-sub">8.200 pontos</div>
+            </div>
+            <div class="remove-btn">−</div>
+          </div>
+          <div class="prog-row">
+            <div class="prog-row-logo" style="background:#e67e22">Sm</div>
+            <div class="prog-row-info">
+              <div class="prog-row-name">Smiles</div>
+              <div class="prog-row-sub">5.000 milhas</div>
+            </div>
+            <div class="remove-btn">−</div>
+          </div>
+
+          <div class="section-sep" style="margin-top:0.25rem">
+            <div class="sep-line"></div>
+            <div class="cat-chip">✈ Cias Aéreas</div>
+            <div class="sep-line"></div>
+          </div>
+
+          <div class="prog-row">
+            <div class="prog-row-logo" style="background:#5a1f3d">QA</div>
+            <div class="prog-row-info">
+              <div class="prog-row-name">Qatar Airways</div>
+              <div class="prog-row-sub">Privilege Club</div>
+            </div>
+            <div class="add-btn">+</div>
+          </div>
+          <div class="prog-row">
+            <div class="prog-row-logo" style="background:#0f2f6d">BA</div>
+            <div class="prog-row-info">
+              <div class="prog-row-name">British Airways</div>
+              <div class="prog-row-sub">Executive Club</div>
+            </div>
+            <div class="add-btn">+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="option-desc-bar">
+      <div class="desc-item pro">✓ Busca em tempo real</div>
+      <div class="desc-item pro">✓ Separação ativos/disponíveis</div>
+      <div class="desc-item pro">✓ Saldo visível nos ativos</div>
+      <div class="desc-item pro">✓ Categorias por tipo</div>
+      <div class="desc-item con">✗ Navega para outra tela</div>
+      <div class="desc-item">→ Mais robusto, mais código</div>
+    </div>
+  </div>
+
+  <!-- ============ OPÇÃO C: Spotlight Search ============ -->
+  <div class="option-card" data-choice="c" onclick="toggleSelect(this)" style="cursor:pointer">
+    <div class="sel-overlay">✓</div>
+    <div class="option-label">
+      <div class="letter-badge">C</div>
+      <div class="option-name">Spotlight Search</div>
+      <span class="option-badge badge-bold">MODERNO</span>
+    </div>
+    <div class="preview">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-island"></div></div>
+        <div class="phone-screen" style="position:relative;min-height:400px;">
+          <!-- Home faded -->
+          <div style="padding:0.7rem;opacity:0.2">
+            <div style="height:7px;background:#2d2d44;border-radius:4px;width:50%;margin-bottom:0.7rem"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.35rem">
+              <div style="height:55px;background:#1e1e38;border-radius:8px"></div>
+              <div style="height:55px;background:#1e1e38;border-radius:8px"></div>
+              <div style="height:55px;background:#1e1e38;border-radius:8px"></div>
+              <div style="height:55px;background:#1e1e38;border-radius:8px"></div>
+            </div>
+          </div>
+          <!-- Spotlight -->
+          <div class="spotlight-overlay">
+            <div class="spotlight-input">
+              <span style="font-size:0.65rem;color:#7c3aed">🔍</span>
+              <span class="spotlight-text">lat</span>
+              <div class="spotlight-cursor"></div>
+            </div>
+            <div class="spotlight-results">
+              <div class="spot-item active-item">
+                <div class="spot-logo" style="background:#1a3a6b">LP</div>
+                <div class="spot-info">
+                  <div class="spot-name">Latam Pass</div>
+                  <div class="spot-sub">10.500 milhas ativas</div>
+                </div>
+                <span class="spot-status status-on">ativo</span>
+              </div>
+              <div class="spot-item">
+                <div class="spot-logo" style="background:#c2185b">Lv</div>
+                <div class="spot-info">
+                  <div class="spot-name">Livelo</div>
+                  <div class="spot-sub">Programa de pontos</div>
+                </div>
+                <span class="spot-status status-on">ativo</span>
+              </div>
+              <div class="spot-item">
+                <div class="spot-logo" style="background:#e67e22">Sm</div>
+                <div class="spot-info">
+                  <div class="spot-name">Smiles</div>
+                  <div class="spot-sub">GOL Linhas Aéreas</div>
+                </div>
+                <span class="spot-status status-off">inativo</span>
+              </div>
+              <div class="spot-item">
+                <div class="spot-logo" style="background:#5a1f3d">QA</div>
+                <div class="spot-info">
+                  <div class="spot-name">Qatar Airways</div>
+                  <div class="spot-sub">Privilege Club</div>
+                </div>
+                <span class="spot-status status-off">inativo</span>
+              </div>
+              <div class="spot-hint">
+                <span class="hint-key">tap</span> para ativar/desativar
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="option-desc-bar">
+      <div class="desc-item pro">✓ Super rápido para usuários</div>
+      <div class="desc-item pro">✓ Design futurista e único</div>
+      <div class="desc-item pro">✓ Filtro instantâneo por nome</div>
+      <div class="desc-item pro">✓ Status ativo/inativo visível</div>
+      <div class="desc-item con">✗ Menos visual sem busca</div>
+      <div class="desc-item">→ Inovador no mercado</div>
+    </div>
+  </div>
+
+  <!-- ============ OPÇÃO D: Grid Inline Expandível ============ -->
+  <div class="option-card" data-choice="d" onclick="toggleSelect(this)" style="cursor:pointer">
+    <div class="sel-overlay">✓</div>
+    <div class="option-label">
+      <div class="letter-badge">D</div>
+      <div class="option-name">Grid Inline no Home</div>
+      <span class="option-badge badge-clean">INTEGRADO</span>
+    </div>
+    <div class="preview">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-island"></div></div>
+        <div class="phone-screen">
+          <div class="flip-home">
+            <!-- mini header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.7rem">
+              <div style="font-size:0.65rem;color:#64748b">Bom dia, Rick 👋</div>
+              <div style="font-size:0.6rem;color:#7c3aed;font-weight:600;background:rgba(124,58,237,0.1);padding:2px 7px;border-radius:20px">Editar</div>
+            </div>
+            <!-- saldo total mini -->
+            <div style="background:linear-gradient(135deg,#1a0533,#16162a);border-radius:12px;padding:0.6rem 0.8rem;margin-bottom:0.8rem;border:1px solid #2d2d44">
+              <div style="font-size:0.55rem;color:#64748b;margin-bottom:0.2rem">Total em milhas</div>
+              <div style="font-size:1.1rem;font-weight:800;color:#f1f5f9">34.250</div>
+              <div style="font-size:0.55rem;color:#34d399">≈ R$ 1.198</div>
+            </div>
+
+            <div class="flip-section-header">
+              <span class="flip-title">Meus Programas</span>
+              <span style="font-size:0.55rem;color:#7c3aed;font-weight:600">+ Adicionar</span>
+            </div>
+
+            <div class="flip-grid">
+              <div class="flip-card sel-lp">
+                <div class="flip-logo" style="background:#1a3a6b">LP</div>
+                <span class="flip-name">Latam Pass</span>
+                <div class="flip-checkmark" style="background:#1a3a6b">✓</div>
+              </div>
+              <div class="flip-card sel-lv">
+                <div class="flip-logo" style="background:#c2185b">Lv</div>
+                <span class="flip-name">Livelo</span>
+                <div class="flip-checkmark" style="background:#e91e63">✓</div>
+              </div>
+              <div class="flip-card sel-sm">
+                <div class="flip-logo" style="background:#e67e22">Sm</div>
+                <span class="flip-name">Smiles</span>
+                <div class="flip-checkmark" style="background:#f59e42">✓</div>
+              </div>
+              <div class="flip-card sel-ta">
+                <div class="flip-logo" style="background:#1d4ed8">TA</div>
+                <span class="flip-name">Tudo Azul</span>
+                <div class="flip-checkmark" style="background:#1d4ed8">✓</div>
+              </div>
+              <div class="flip-card not-sel">
+                <div class="flip-logo" style="background:#5a1f3d">QA</div>
+                <span class="flip-name">Qatar</span>
+              </div>
+              <div class="flip-card not-sel">
+                <div class="flip-logo" style="background:#2563eb">Fn</div>
+                <span class="flip-name">Finnair</span>
+              </div>
+            </div>
+
+            <div class="flip-more">
+              <div class="flip-more-icon">+</div>
+              <div class="flip-more-text">Toque para ativar / desativar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="option-desc-bar">
+      <div class="desc-item pro">✓ Tudo na mesma tela</div>
+      <div class="desc-item pro">✓ Sem modal ou navegação</div>
+      <div class="desc-item pro">✓ Borda colorida por programa</div>
+      <div class="desc-item pro">✓ Inativo = opaco (leitura clara)</div>
+      <div class="desc-item con">✗ Modo "editar" separado do normal</div>
+      <div class="desc-item">→ Menor esforço de implementação</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleSelect(el) {
+  const wasSelected = el.classList.contains('selected');
+  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  if (!wasSelected) {
+    el.classList.add('selected');
+    if (window.recordChoice) window.recordChoice(el.dataset.choice, el.querySelector('.option-name').textContent);
+  }
+}
+</script>
+</body>
+</html>
