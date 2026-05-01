@@ -22,6 +22,7 @@ import CsatClientePrompt from "@/components/csat/CsatClientePrompt";
 import ClientTimelineSection from "@/components/timeline/ClientTimelineSection";
 import ClientInsightsSection from "@/components/insights/ClientInsightsSection";
 import AirlineLogo from "@/components/AirlineLogo";
+import { ProgramSelectionSheet } from "@/components/ProgramSelectionSheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DatePickerField } from "@/components/ui/date-picker-field";
@@ -1935,56 +1936,28 @@ const Index = () => {
               ) : (
                 <>
                   <div className="flex w-full items-center gap-2">
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setIsAddProgramMenuOpen((prev) => !prev)}
-                        className="inline-flex h-9 items-center justify-center gap-1 rounded-[10px] border border-[#8A05BE] bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-[#8A05BE] shadow-nubank transition-colors hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                      >
-                        <Plus size={12} />
-                        <span>Novo</span>
-                      </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddProgramMenuOpen(true)}
+                      className="inline-flex h-9 items-center justify-center gap-1 rounded-[10px] border border-[#8A05BE] bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-[#8A05BE] shadow-nubank transition-colors hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                    >
+                      <Plus size={12} />
+                      <span>Novo</span>
+                    </button>
 
-                      {isAddProgramMenuOpen && (
-                        <div className="absolute left-0 z-20 mt-2 w-72 rounded-2xl border border-nubank-border bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                          <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-nubank-text-secondary dark:text-slate-400">
-                            Selecione os programas
-                          </p>
-                          <div className="space-y-1">
-                            {AVAILABLE_PROGRAM_OPTIONS.map((option) => (
-                              <label
-                                key={option.programId}
-                                className="flex w-full cursor-pointer items-center gap-2 rounded-xl px-2 py-2 text-left text-xs text-nubank-text transition-colors hover:bg-primary/5 dark:text-slate-200 dark:hover:bg-slate-700"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={programDefs.some(
-                                    (program) => program.programId === option.programId,
-                                  )}
-                                  onChange={() => handleToggleProgramCard(option)}
-                                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
-                                />
-                                <span
-                                  className="inline-flex h-6 w-6 items-center justify-center overflow-hidden text-[10px] font-semibold"
-                                  style={{ color: option.logoColor }}
-                                >
-                                  {optionLogoImages[option.programId] ? (
-                                    <img
-                                      src={optionLogoImages[option.programId]}
-                                      alt={`Logo ${option.name}`}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    option.logo
-                                  )}
-                                </span>
-                                <span>{option.name}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <ProgramSelectionSheet
+                      isOpen={isAddProgramMenuOpen}
+                      onClose={() => setIsAddProgramMenuOpen(false)}
+                      activePrograms={programDefs.map((p) => ({
+                        programId: p.programId,
+                        name: p.name,
+                        logo: p.logo,
+                        logoColor: p.logoColor,
+                        balance: p.balance,
+                      }))}
+                      onToggle={handleToggleProgramCard}
+                      availableOptions={AVAILABLE_PROGRAM_OPTIONS}
+                    />
 
                     {(!managerMode || !!managerClientId) && (
                       <>
