@@ -1,0 +1,144 @@
+<h2>Como exibir promoções na Home?</h2>
+<p class="subtitle">O que o usuário vê antes de entrar na página completa</p>
+
+<div class="cards">
+
+  <!-- OPTION A: Horizontal carousel de cards grandes -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f3f4f6; padding:12px; font-family:sans-serif;">
+      <!-- Section header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 2px;">
+        <div>
+          <div style="font-size:13px; font-weight:800; color:#1a1a1a;">Promoções Bonificadas</div>
+          <div style="font-size:9px; color:#999; margin-top:1px;">Melhores ofertas agora</div>
+        </div>
+        <div style="font-size:10px; color:#8A05BE; font-weight:600;">Ver tudo →</div>
+      </div>
+      <!-- Horizontal scroll of mixed promo cards -->
+      <div style="display:flex; gap:8px; overflow:hidden;">
+        <!-- Card 1: Transferência -->
+        <div style="background:linear-gradient(135deg,#8A05BE,#B56CFF); border-radius:14px; padding:12px; min-width:130px; color:white; flex-shrink:0;">
+          <div style="font-size:8px; opacity:0.8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Transferência</div>
+          <div style="font-size:10px; font-weight:700; margin-bottom:6px;">TUDO AZUL</div>
+          <div style="font-size:28px; font-weight:900; line-height:1;">120%</div>
+          <div style="font-size:8px; opacity:0.8;">de bônus</div>
+          <div style="margin-top:8px; font-size:8px; background:rgba(255,255,255,0.2); border-radius:6px; padding:3px 6px; display:inline-block;">⏰ Encerra hoje</div>
+        </div>
+        <!-- Card 2: Compra -->
+        <div style="background:linear-gradient(135deg,#e67e22,#f39c12); border-radius:14px; padding:12px; min-width:130px; color:white; flex-shrink:0;">
+          <div style="font-size:8px; opacity:0.8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Compras</div>
+          <div style="font-size:10px; font-weight:700; margin-bottom:6px;">LIVELO</div>
+          <div style="font-size:28px; font-weight:900; line-height:1;">85</div>
+          <div style="font-size:8px; opacity:0.8;">pts/R$</div>
+          <div style="margin-top:8px; font-size:8px; background:rgba(255,255,255,0.2); border-radius:6px; padding:3px 6px; display:inline-block;">200+ lojas</div>
+        </div>
+        <!-- Card 3: Milhas -->
+        <div style="background:linear-gradient(135deg,#27ae60,#2ecc71); border-radius:14px; padding:12px; min-width:110px; color:white; flex-shrink:0; opacity:0.7;">
+          <div style="font-size:8px; opacity:0.8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Milhas</div>
+          <div style="font-size:10px; font-weight:700; margin-bottom:6px;">SMILES</div>
+          <div style="font-size:28px; font-weight:900; line-height:1;">-30%</div>
+          <div style="font-size:8px; opacity:0.8;">na compra</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Carrossel de cards coloridos por categoria</h3>
+      <p>Cada card representa a melhor oferta de uma categoria. Visual impactante, alto destaque. Arrasta para ver mais.</p>
+    </div>
+  </div>
+
+  <!-- OPTION B: 2 colunas de highlights compactos -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f3f4f6; padding:12px; font-family:sans-serif;">
+      <!-- Section header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 2px;">
+        <div>
+          <div style="font-size:13px; font-weight:800; color:#1a1a1a;">Promoções Bonificadas</div>
+          <div style="font-size:9px; color:#999;">5 promoções ativas agora</div>
+        </div>
+        <div style="font-size:10px; color:#8A05BE; font-weight:600;">Ver tudo →</div>
+      </div>
+      <!-- Urgency badge -->
+      <div style="background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:6px 10px; font-size:9px; color:#e67e22; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:4px;">
+        ⚡ 2 promoções encerram HOJE à meia-noite
+      </div>
+      <!-- 2-column mini cards -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+        <div style="background:#fff; border-radius:10px; padding:8px; border-left:3px solid #8A05BE;">
+          <div style="font-size:8px; color:#8A05BE; font-weight:600; text-transform:uppercase;">Transferência</div>
+          <div style="font-size:10px; font-weight:700; color:#1a1a1a;">Tudo Azul</div>
+          <div style="font-size:16px; font-weight:900; color:#8A05BE;">120%</div>
+          <div style="font-size:8px; color:#e74c3c;">⏰ Encerra hoje</div>
+        </div>
+        <div style="background:#fff; border-radius:10px; padding:8px; border-left:3px solid #e67e22;">
+          <div style="font-size:8px; color:#e67e22; font-weight:600; text-transform:uppercase;">Compras</div>
+          <div style="font-size:10px; font-weight:700; color:#1a1a1a;">Livelo</div>
+          <div style="font-size:16px; font-weight:900; color:#e67e22;">85pts/R$</div>
+          <div style="font-size:8px; color:#999;">200+ lojas</div>
+        </div>
+        <div style="background:#fff; border-radius:10px; padding:8px; border-left:3px solid #27ae60;">
+          <div style="font-size:8px; color:#27ae60; font-weight:600; text-transform:uppercase;">Milhas</div>
+          <div style="font-size:10px; font-weight:700; color:#1a1a1a;">Smiles</div>
+          <div style="font-size:16px; font-weight:900; color:#27ae60;">-30%</div>
+          <div style="font-size:8px; color:#999;">Na compra</div>
+        </div>
+        <div style="background:#fff; border-radius:10px; padding:8px; border-left:3px solid #3498db;">
+          <div style="font-size:8px; color:#3498db; font-weight:600; text-transform:uppercase;">Cartões</div>
+          <div style="font-size:10px; font-weight:700; color:#1a1a1a;">Nubank</div>
+          <div style="font-size:16px; font-weight:900; color:#3498db;">2x pts</div>
+          <div style="font-size:8px; color:#999;">Em viagens</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Grid 2×2 compacto com urgência</h3>
+      <p>4 categorias visíveis de uma vez. Borda colorida identifica a categoria. Badge de urgência para promos que encerram hoje.</p>
+    </div>
+  </div>
+
+  <!-- OPTION C: Banner hero + lista rápida -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f3f4f6; padding:12px; font-family:sans-serif;">
+      <!-- Section header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 2px;">
+        <div>
+          <div style="font-size:13px; font-weight:800; color:#1a1a1a;">Promoções Bonificadas</div>
+        </div>
+        <div style="font-size:10px; color:#8A05BE; font-weight:600;">Ver tudo →</div>
+      </div>
+      <!-- Hero banner: top promo -->
+      <div style="background:linear-gradient(135deg,#8A05BE,#B56CFF); border-radius:14px; padding:14px; color:white; margin-bottom:8px; position:relative; overflow:hidden;">
+        <div style="position:absolute; right:-10px; top:-10px; width:70px; height:70px; background:rgba(255,255,255,0.08); border-radius:50%;"></div>
+        <div style="font-size:8px; opacity:0.8; text-transform:uppercase; letter-spacing:1px;">🔥 DESTAQUE DO DIA</div>
+        <div style="font-size:14px; font-weight:800; margin:4px 0 2px;">TudoAzul — Transferência</div>
+        <div style="display:flex; align-items:baseline; gap:4px;">
+          <div style="font-size:36px; font-weight:900; line-height:1;">120%</div>
+          <div style="font-size:12px; opacity:0.9;">de bônus</div>
+        </div>
+        <div style="font-size:9px; opacity:0.75; margin-top:4px;">Credicard, Itaú, C6 e +4 bancos · Encerra hoje</div>
+      </div>
+      <!-- Quick list: 2 more -->
+      <div style="display:flex; flex-direction:column; gap:5px;">
+        <div style="background:#fff; border-radius:10px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <div style="width:28px; height:28px; background:#fff8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px;">🛍</div>
+            <div><div style="font-size:10px; font-weight:700;">Livelo — Compras</div><div style="font-size:8px; color:#999;">200+ lojas parceiras</div></div>
+          </div>
+          <div style="font-size:14px; font-weight:800; color:#e67e22;">85pts/R$</div>
+        </div>
+        <div style="background:#fff; border-radius:10px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <div style="width:28px; height:28px; background:#f0fff5; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px;">✈️</div>
+            <div><div style="font-size:10px; font-weight:700;">Smiles — Milhas</div><div style="font-size:8px; color:#999;">Compra com bônus</div></div>
+          </div>
+          <div style="font-size:14px; font-weight:800; color:#27ae60;">-30%</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Banner hero + lista rápida</h3>
+      <p>Destaca a melhor promoção em banner grande. Abaixo, lista compacta com as próximas. Máximo impacto na promo principal.</p>
+    </div>
+  </div>
+
+</div>

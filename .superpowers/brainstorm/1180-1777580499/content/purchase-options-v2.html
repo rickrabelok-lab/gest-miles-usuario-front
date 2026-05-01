@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tela 4 — Opções de Compra (v2)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #ede8f7;
+  min-height: 100vh;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 32px 16px 80px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.page-header { text-align: center; margin-bottom: 32px; }
+.page-header h1 { font-size: 22px; font-weight: 800; color: #1a0a2e; }
+.page-header p  { font-size: 13px; color: #6b5d7e; margin-top: 6px; }
+
+.phones-row { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+
+.phone-wrap { display: flex; flex-direction: column; align-items: center; }
+.phone-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: #8A05BE; background: #f3e8ff; border-radius: 20px;
+  padding: 5px 14px; margin-bottom: 14px;
+}
+
+.phone {
+  width: 360px; border-radius: 36px;
+  background: #f7f7f8;
+  box-shadow: 0 28px 72px -8px rgba(138,5,190,0.2), 0 8px 24px -4px rgba(0,0,0,0.1);
+  overflow: hidden; border: 1.5px solid rgba(138,5,190,0.12);
+}
+
+.status-bar {
+  background: #fff; display: flex; align-items: center;
+  justify-content: space-between; padding: 12px 20px 6px;
+  font-size: 12px; font-weight: 600; color: #1a0a2e;
+}
+.screen-header {
+  background: #fff; padding: 10px 20px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #f0edf5;
+}
+.back-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #f7f4fb; display: flex; align-items: center; justify-content: center;
+  color: #6b5d7e;
+}
+.header-title { font-size: 15px; font-weight: 600; color: #1a0a2e; }
+
+.screen-body { overflow-y: auto; max-height: 640px; }
+
+.purchase-hero {
+  background: linear-gradient(135deg, #8A05BE 0%, #6A00A3 100%);
+  padding: 18px 20px 22px; color: white; text-align: center;
+}
+.purchase-hero h2 { font-size: 17px; font-weight: 700; }
+.purchase-hero p  { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+.route-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.15); border-radius: 20px;
+  padding: 5px 14px; margin-top: 10px; font-size: 12px;
+}
+
+.purchase-options { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+
+/* Single airline card - clean */
+.purchase-card {
+  background: white; border-radius: 18px; padding: 18px 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  border: 1.5px solid #f0edf5;
+}
+.pc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.pc-title { font-size: 13px; color: #6b5d7e; }
+.airline-logo-pill {
+  width: 44px; height: 26px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+}
+.logo-gol { background: #fff4ed; color: #e87722; }
+
+.pc-total-label { font-size: 11px; color: #9888ac; }
+.pc-total-value {
+  font-size: 28px; font-weight: 800; color: #1a0a2e;
+  letter-spacing: -1px; line-height: 1.1; margin: 4px 0 12px;
+}
+.pc-total-value span { font-size: 14px; font-weight: 500; color: #9888ac; }
+
+.pc-breakdown { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.pc-line { display: flex; justify-content: space-between; font-size: 12px; color: #6b5d7e; }
+.pc-line strong { color: #1a0a2e; font-weight: 600; }
+.pc-line.total { border-top: 1px solid #f0edf5; padding-top: 8px; margin-top: 2px; }
+.pc-line.total .pc-label { font-size: 13px; font-weight: 700; color: #1a0a2e; }
+.pc-line.total strong { font-size: 14px; font-weight: 800; color: #1a0a2e; }
+
+.pc-btn {
+  width: 100%; padding: 14px; border-radius: 14px; border: none;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  background: linear-gradient(135deg, #8A05BE, #9E2FD4);
+  color: white; box-shadow: 0 4px 14px rgba(138,5,190,0.3);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+/* Placeholder for future Gest Miles option */
+.future-placeholder {
+  border: 1.5px dashed #d8caed;
+  border-radius: 18px; padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  background: #fdfbff; opacity: 0.6;
+}
+.future-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: linear-gradient(135deg, #8A05BE, #9E2FD4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0; opacity: 0.4;
+}
+.future-text { flex: 1; }
+.future-title { font-size: 13px; font-weight: 600; color: #9888ac; }
+.future-sub   { font-size: 11px; color: #c4b5d4; margin-top: 2px; }
+.future-badge {
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+  background: #f3e8ff; color: #c4b5d4;
+}
+
+/* Note cards */
+.notes-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 28px; max-width: 780px; }
+.note-card {
+  background: white; border-radius: 16px; padding: 16px 18px;
+  box-shadow: 0 2px 12px rgba(138,5,190,0.08);
+  border: 1px solid #e8d8f7; max-width: 360px; flex: 1; min-width: 260px;
+}
+.note-card h4 { font-size: 13px; font-weight: 700; color: #8A05BE; margin-bottom: 8px; }
+.note-card p  { font-size: 12px; color: #4a3a5e; line-height: 1.6; }
+.note-card code {
+  background: #f3e8ff; color: #8A05BE; border-radius: 4px;
+  padding: 1px 5px; font-size: 11px;
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Tela 4 — Opções de Compra (v2)</h1>
+  <p>Apenas "Site da Cia Aérea" ativo agora • "Emitir com Gest Miles" reservado para o futuro</p>
+</div>
+
+<div class="phones-row">
+
+  <!-- PHONE -->
+  <div class="phone-wrap">
+    <div class="phone-label">Versão atual (sem Gest Miles)</div>
+    <div class="phone">
+
+      <div class="status-bar">
+        <span>17:13</span>
+        <div style="display:flex;gap:4px;align-items:center">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 6 1 22 5 22 5 6"/><polyline points="9 2 9 22 13 22 13 2"/><polyline points="17 10 17 22 21 22 21 10"/></svg>
+        </div>
+      </div>
+
+      <div class="screen-header">
+        <div class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </div>
+        <div class="header-title">Opções de compra</div>
+        <div style="width:34px;text-align:center;color:#9888ac">?</div>
+      </div>
+
+      <div class="screen-body">
+
+        <div class="purchase-hero">
+          <h2>Como deseja adquirir?</h2>
+          <p>Escolha a melhor forma de comprar sua passagem</p>
+          <div class="route-pill">✈ SAO → CWB · 18 jun — 09 jul</div>
+        </div>
+
+        <div class="purchase-options">
+
+          <!-- ATIVA: Site da Cia Aérea -->
+          <div class="purchase-card">
+            <div class="pc-header">
+              <span class="pc-title">Compre pelo site da Cia Aérea</span>
+              <div class="airline-logo-pill logo-gol">GOL</div>
+            </div>
+
+            <div class="pc-total-label">Total estimado</div>
+            <div class="pc-total-value">R$ 640<span>,14</span></div>
+
+            <div class="pc-breakdown">
+              <div class="pc-line">
+                <span>Tarifa adulto × 1</span>
+                <strong>R$ 532,80</strong>
+              </div>
+              <div class="pc-line">
+                <span>Taxa de embarque</span>
+                <strong>R$ 107,34</strong>
+              </div>
+              <div class="pc-line total">
+                <span class="pc-label">Total</span>
+                <strong>R$ 640,14</strong>
+              </div>
+            </div>
+
+            <button class="pc-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Ir para o site da GOL
+            </button>
+          </div>
+
+          <!-- PLACEHOLDER: Gest Miles (em breve) -->
+          <div class="future-placeholder">
+            <div class="future-icon">✦</div>
+            <div class="future-text">
+              <div class="future-title">Emitir com Gest Miles</div>
+              <div class="future-sub">Suporte completo + gestão de pontos</div>
+            </div>
+            <div class="future-badge">Em breve</div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Notes -->
+<div class="notes-row">
+  <div class="note-card">
+    <h4>🔧 Como foi estruturado no código</h4>
+    <p>
+      Uma constante <code>GESTMILES_EMISSION_ENABLED = false</code> em <code>src/config/features.ts</code>
+      controla se o card da Gest Miles aparece ou não.<br><br>
+      O componente já existe renderizado, só fica oculto enquanto a flag está <code>false</code>.
+      Quando você for ativar: mude para <code>true</code>, pronto.
+    </p>
+  </div>
+  <div class="note-card">
+    <h4>🚀 Para ativar no futuro</h4>
+    <p>
+      1. Abra <code>src/config/features.ts</code><br>
+      2. Mude <code>GESTMILES_EMISSION_ENABLED = false</code> para <code>true</code><br>
+      3. O card completo com "Emitir agora" aparece automaticamente na tela.<br><br>
+      Nenhuma outra mudança necessária — o card já está pronto no JSX.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design — Promoções Bonificadas</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; background: #f0edf5; color: #1a1a1a; }
+
+  .page-title { font-size: 22px; font-weight: 800; color: #1a1a1a; padding: 24px 24px 6px; }
+  .page-sub { font-size: 13px; color: #888; padding: 0 24px 20px; }
+
+  .screens-row {
+    display: flex;
+    gap: 20px;
+    padding: 0 24px 40px;
+    overflow-x: auto;
+    align-items: flex-start;
+  }
+
+  .screen-wrap {
+    flex-shrink: 0;
+    width: 280px;
+  }
+
+  .screen-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #8A05BE;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .phone {
+    width: 280px;
+    background: #fff;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(138, 5, 190, 0.15), 0 4px 16px rgba(0,0,0,0.08);
+    border: 6px solid #1a1a1a;
+  }
+
+  .status-bar {
+    background: #8A05BE;
+    padding: 8px 16px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .status-bar span { color: rgba(255,255,255,0.9); font-size: 10px; font-weight: 600; }
+
+  /* ===== TELA 1: HOME SECTION ===== */
+  .home-bg { background: #f7f7f8; min-height: 520px; }
+
+  .home-header {
+    background: linear-gradient(135deg, #8A05BE 0%, #9E2FD4 100%);
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .home-header .logo { color: white; font-size: 14px; font-weight: 800; }
+  .home-header .icons { display: flex; gap: 10px; }
+  .home-header .icon { width: 28px; height: 28px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
+
+  .balance-card {
+    background: linear-gradient(135deg, #8A05BE 0%, #B56CFF 100%);
+    margin: 0;
+    padding: 14px 16px 18px;
+  }
+  .balance-label { color: rgba(255,255,255,0.75); font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .balance-value { color: white; font-size: 22px; font-weight: 900; line-height: 1.1; margin-top: 2px; }
+  .balance-sub { color: rgba(255,255,255,0.7); font-size: 9px; margin-top: 2px; }
+
+  .home-content { padding: 12px 14px; }
+
+  .other-section {
+    background: #fff;
+    border-radius: 14px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border: 1px solid #f0e8ff;
+  }
+  .other-section-title { font-size: 11px; font-weight: 700; color: #999; margin-bottom: 6px; }
+  .prog-row { display: flex; gap: 6px; }
+  .prog-chip { flex: 1; background: #f8f5ff; border-radius: 8px; padding: 6px; text-align: center; }
+  .prog-chip .prog-name { font-size: 8px; font-weight: 700; color: #8A05BE; }
+  .prog-chip .prog-pts { font-size: 10px; font-weight: 800; color: #1a1a1a; }
+
+  /* BONUS SECTION on home */
+  .bonus-section { margin-bottom: 10px; }
+  .section-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .section-title { font-size: 14px; font-weight: 800; color: #1a1a1a; }
+  .section-subtitle { font-size: 9px; color: #999; margin-top: 1px; }
+  .see-all { font-size: 10px; color: #8A05BE; font-weight: 700; white-space: nowrap; margin-top: 2px; }
+
+  /* Hero banner */
+  .hero-banner {
+    background: linear-gradient(135deg, #8A05BE 0%, #B56CFF 100%);
+    border-radius: 16px;
+    padding: 14px 16px;
+    color: white;
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-banner::before {
+    content: '';
+    position: absolute;
+    right: -20px; top: -20px;
+    width: 100px; height: 100px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 50%;
+  }
+  .hero-tag { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.8; margin-bottom: 3px; }
+  .hero-program { font-size: 12px; font-weight: 800; margin-bottom: 4px; }
+  .hero-value-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
+  .hero-value { font-size: 38px; font-weight: 900; line-height: 1; }
+  .hero-unit { font-size: 13px; opacity: 0.9; }
+  .hero-banks { font-size: 8px; opacity: 0.7; }
+  .hero-expiry { font-size: 8px; background: rgba(255,255,255,0.18); border-radius: 6px; padding: 3px 8px; display: inline-block; margin-top: 6px; }
+
+  /* Quick list */
+  .quick-item {
+    background: #fff;
+    border-radius: 12px;
+    padding: 9px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    border: 1px solid #f0e8ff;
+  }
+  .quick-left { display: flex; align-items: center; gap: 8px; }
+  .quick-icon { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .quick-name { font-size: 10px; font-weight: 700; color: #1a1a1a; }
+  .quick-sub { font-size: 8px; color: #999; margin-top: 1px; }
+  .quick-value { font-size: 15px; font-weight: 900; }
+
+  /* ===== TELA 2: FULL PAGE ===== */
+  .page-header {
+    background: linear-gradient(135deg, #8A05BE 0%, #9E2FD4 100%);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .back-btn { color: white; font-size: 16px; }
+  .page-header-title { color: white; font-size: 13px; font-weight: 700; }
+
+  .full-page-bg { background: #f7f7f8; min-height: 560px; }
+
+  /* Pill filters */
+  .pills-bar {
+    background: #fff;
+    padding: 10px 14px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    border-bottom: 1px solid #f0e8ff;
+    position: sticky;
+    top: 0;
+  }
+  .pills-bar::-webkit-scrollbar { display: none; }
+  .pill {
+    flex-shrink: 0;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .pill.active { background: #8A05BE; color: white; }
+  .pill.inactive { background: #f0e8ff; color: #8A05BE; }
+
+  .full-content { padding: 12px 14px; }
+
+  /* Category section */
+  .cat-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    margin-top: 4px;
+  }
+  .cat-icon { font-size: 14px; }
+  .cat-title { font-size: 12px; font-weight: 800; }
+  .cat-count { font-size: 9px; color: #999; margin-left: 2px; }
+
+  /* Transfer card (full width) */
+  .transfer-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border: 1px solid #f0e8ff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .transfer-left {}
+  .transfer-program { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #999; }
+  .transfer-name { font-size: 12px; font-weight: 800; color: #1a1a1a; margin: 2px 0; }
+  .transfer-banks { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px; }
+  .bank-chip { background: #f0e8ff; border-radius: 6px; padding: 2px 5px; font-size: 7px; color: #8A05BE; font-weight: 600; }
+  .transfer-expiry { font-size: 8px; color: #e74c3c; margin-top: 4px; }
+  .transfer-badge {
+    border-radius: 12px;
+    padding: 10px 12px;
+    text-align: center;
+    color: white;
+    min-width: 64px;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+  .badge-value { font-size: 22px; font-weight: 900; line-height: 1; }
+  .badge-label { font-size: 7px; opacity: 0.9; }
+
+  /* Shopping horizontal scroll */
+  .shopping-scroll { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 2px; }
+  .shopping-scroll::-webkit-scrollbar { display: none; }
+  .shop-card {
+    flex-shrink: 0;
+    width: 76px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    border: 1px solid #f0e8ff;
+  }
+  .shop-logo { font-size: 18px; margin-bottom: 4px; }
+  .shop-name { font-size: 8px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+  .shop-pts { font-size: 11px; font-weight: 900; color: #e67e22; }
+  .shop-unit { font-size: 7px; color: #999; }
+  .shop-more { flex-shrink: 0; width: 60px; background: #f0e8ff; border-radius: 12px; padding: 10px 8px; text-align: center; display: flex; align-items: center; justify-content: center; }
+  .shop-more span { font-size: 10px; color: #8A05BE; font-weight: 700; }
+
+  /* ===== TELA 3: DETAIL ===== */
+  .detail-bg { background: #f7f7f8; min-height: 560px; }
+  .detail-content { padding: 12px 14px; }
+
+  .detail-tabs {
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid #f0e8ff;
+  }
+  .detail-tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .detail-tab.active { color: #8A05BE; border-bottom: 2px solid #8A05BE; }
+  .detail-tab.inactive { color: #bbb; }
+
+  .detail-hero {
+    background: linear-gradient(135deg, #0080ff 0%, #0099ff 100%);
+    border-radius: 16px;
+    padding: 16px;
+    color: white;
+    text-align: center;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .detail-hero::before {
+    content: '';
+    position: absolute;
+    right: -30px; top: -30px;
+    width: 120px; height: 120px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+  .detail-hero-value { font-size: 48px; font-weight: 900; line-height: 1; }
+  .detail-hero-label { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+  .detail-hero-target { font-size: 10px; opacity: 0.75; margin-top: 6px; }
+
+  .detail-tiers { margin-bottom: 12px; }
+  .tiers-title { font-size: 10px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .tier-row {
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    border: 1px solid #f0e8ff;
+  }
+  .tier-row.best { border-color: #0080ff; background: #f0f7ff; }
+  .tier-label { font-size: 10px; color: #555; }
+  .tier-value { font-size: 16px; font-weight: 900; color: #0080ff; }
+  .tier-row.best .tier-value { color: #0080ff; }
+
+  .max-bonus {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 9px;
+    color: #856404;
+    text-align: center;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .banks-section { margin-bottom: 12px; }
+  .banks-title { font-size: 10px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .banks-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .bank-pill { background: #f0e8ff; border-radius: 20px; padding: 4px 10px; font-size: 9px; color: #8A05BE; font-weight: 600; }
+
+  .detail-expiry {
+    text-align: center;
+    font-size: 9px;
+    color: #e74c3c;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .cta-btn {
+    background: linear-gradient(135deg, #8A05BE 0%, #B56CFF 100%);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 16px rgba(138,5,190,0.3);
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Design — Promoções Bonificadas</div>
+<div class="page-sub">Fluxo completo: seção na Home → Página completa → Detalhe da promoção</div>
+
+<div class="screens-row">
+
+  <!-- ======================== TELA 1: HOME ======================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">① Seção na Home</div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>22:30</span>
+        <span>● ▲ ■</span>
+      </div>
+      <div class="home-bg">
+        <div class="home-header">
+          <div class="logo">Gest Miles</div>
+          <div class="icons">
+            <div class="icon">🔔</div>
+            <div class="icon">👤</div>
+          </div>
+        </div>
+        <div class="balance-card">
+          <div class="balance-label">Saldo total estimado</div>
+          <div class="balance-value">248.500 pts</div>
+          <div class="balance-sub">LATAM Pass · TudoAzul · Smiles</div>
+        </div>
+        <div class="home-content">
+          <!-- Fake previous section -->
+          <div class="other-section">
+            <div class="other-section-title">Seus Programas</div>
+            <div class="prog-row">
+              <div class="prog-chip"><div class="prog-name">LATAM</div><div class="prog-pts">120k</div></div>
+              <div class="prog-chip"><div class="prog-name">TudoAzul</div><div class="prog-pts">85k</div></div>
+              <div class="prog-chip"><div class="prog-name">Smiles</div><div class="prog-pts">43k</div></div>
+            </div>
+          </div>
+
+          <!-- BONUS SECTION -->
+          <div class="bonus-section">
+            <div class="section-header">
+              <div>
+                <div class="section-title">Promoções Bonificadas</div>
+                <div class="section-subtitle">5 ativas · 2 encerram hoje</div>
+              </div>
+              <div class="see-all">Ver tudo →</div>
+            </div>
+
+            <!-- Hero -->
+            <div class="hero-banner">
+              <div class="hero-tag">🔥 Destaque do dia</div>
+              <div class="hero-program">TudoAzul — Transferência</div>
+              <div class="hero-value-row">
+                <div class="hero-value">120%</div>
+                <div class="hero-unit">de bônus</div>
+              </div>
+              <div class="hero-banks">Credicard · Itaú · C6 · Sicredi e +4 bancos</div>
+              <div class="hero-expiry">⏰ Encerra hoje às 23:59</div>
+            </div>
+
+            <!-- Quick list -->
+            <div class="quick-item">
+              <div class="quick-left">
+                <div class="quick-icon" style="background:#fff8f0;">🛍</div>
+                <div>
+                  <div class="quick-name">Livelo — Compras</div>
+                  <div class="quick-sub">200+ lojas parceiras</div>
+                </div>
+              </div>
+              <div class="quick-value" style="color:#e67e22;">85pts/R$</div>
+            </div>
+
+            <div class="quick-item">
+              <div class="quick-left">
+                <div class="quick-icon" style="background:#f0fff5;">✈️</div>
+                <div>
+                  <div class="quick-name">Smiles — Milhas</div>
+                  <div class="quick-sub">Compra com bônus</div>
+                </div>
+              </div>
+              <div class="quick-value" style="color:#27ae60;">-30%</div>
+            </div>
+
+            <div class="quick-item">
+              <div class="quick-left">
+                <div class="quick-icon" style="background:#f0f4ff;">💳</div>
+                <div>
+                  <div class="quick-name">Nubank — Cartão</div>
+                  <div class="quick-sub">Em compras de viagem</div>
+                </div>
+              </div>
+              <div class="quick-value" style="color:#3498db;">2× pts</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== TELA 2: PÁGINA COMPLETA ======================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">② Página /bonus-offers</div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>22:30</span>
+        <span>● ▲ ■</span>
+      </div>
+      <div class="full-page-bg">
+        <div class="page-header">
+          <div class="back-btn">←</div>
+          <div class="page-header-title">Promoções Bonificadas</div>
+        </div>
+
+        <!-- Pills -->
+        <div class="pills-bar">
+          <div class="pill active">Tudo</div>
+          <div class="pill inactive">🔄 Transferências</div>
+          <div class="pill inactive">🛍 Compras</div>
+          <div class="pill inactive">✈️ Milhas</div>
+          <div class="pill inactive">💳 Cartões</div>
+        </div>
+
+        <div class="full-content">
+
+          <!-- SECTION: Transferências -->
+          <div class="cat-header">
+            <span class="cat-icon">🔄</span>
+            <span class="cat-title" style="color:#8A05BE;">Transferências Bonificadas</span>
+            <span class="cat-count">5 ativas</span>
+          </div>
+
+          <div class="transfer-card" style="border-color:#d8b4fe;">
+            <div class="transfer-left">
+              <div class="transfer-program">Programa destino</div>
+              <div class="transfer-name">TudoAzul</div>
+              <div class="transfer-banks">
+                <div class="bank-chip">C6</div>
+                <div class="bank-chip">Itaú</div>
+                <div class="bank-chip">Sicredi</div>
+                <div class="bank-chip">+4</div>
+              </div>
+              <div class="transfer-expiry">⏰ Encerra hoje</div>
+            </div>
+            <div class="transfer-badge" style="background:linear-gradient(135deg,#0080ff,#0099ff);">
+              <div class="badge-value">120%</div>
+              <div class="badge-label">bônus</div>
+            </div>
+          </div>
+
+          <div class="transfer-card">
+            <div class="transfer-left">
+              <div class="transfer-program">Programa destino</div>
+              <div class="transfer-name">LATAM Pass</div>
+              <div class="transfer-banks">
+                <div class="bank-chip">Itaú</div>
+                <div class="bank-chip">Credicard</div>
+              </div>
+              <div class="transfer-expiry">⏰ Encerra hoje</div>
+            </div>
+            <div class="transfer-badge" style="background:linear-gradient(135deg,#8A05BE,#B56CFF);">
+              <div class="badge-value">25%</div>
+              <div class="badge-label">bônus</div>
+            </div>
+          </div>
+
+          <!-- SECTION: Compras -->
+          <div class="cat-header" style="margin-top:4px;">
+            <span class="cat-icon">🛍</span>
+            <span class="cat-title" style="color:#e67e22;">Compras Bonificadas</span>
+            <span class="cat-count">200+ lojas</span>
+          </div>
+
+          <div class="shopping-scroll">
+            <div class="shop-card">
+              <div class="shop-logo">💗</div>
+              <div class="shop-name">Livelo</div>
+              <div class="shop-pts">85</div>
+              <div class="shop-unit">pts/R$</div>
+            </div>
+            <div class="shop-card">
+              <div class="shop-logo" style="font-size:14px; font-weight:800; color:#e53935;">Esfera</div>
+              <div class="shop-name" style="margin-top:2px;">Esfera</div>
+              <div class="shop-pts">30</div>
+              <div class="shop-unit">pts/R$</div>
+            </div>
+            <div class="shop-card">
+              <div class="shop-logo">✈️</div>
+              <div class="shop-name">TudoAzul</div>
+              <div class="shop-pts">25</div>
+              <div class="shop-unit">pts/R$</div>
+            </div>
+            <div class="shop-more"><span>Ver tudo →</span></div>
+          </div>
+
+          <!-- SECTION: Milhas -->
+          <div class="cat-header">
+            <span class="cat-icon">✈️</span>
+            <span class="cat-title" style="color:#27ae60;">Promoções de Milhas</span>
+            <span class="cat-count">3 ativas</span>
+          </div>
+
+          <div class="transfer-card">
+            <div class="transfer-left">
+              <div class="transfer-program">Compra de milhas</div>
+              <div class="transfer-name">Smiles</div>
+              <div class="transfer-banks">
+                <div class="bank-chip" style="background:#e8f8ee; color:#27ae60;">Todos os clientes</div>
+              </div>
+              <div style="font-size:8px; color:#999; margin-top:4px;">Bônus máx: 50.000 pts</div>
+            </div>
+            <div class="transfer-badge" style="background:linear-gradient(135deg,#27ae60,#2ecc71);">
+              <div class="badge-value">-30%</div>
+              <div class="badge-label">na compra</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== TELA 3: DETALHE ======================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">③ Detalhe da Promoção</div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>22:30</span>
+        <span>● ▲ ■</span>
+      </div>
+      <div class="detail-bg">
+        <div class="page-header">
+          <div class="back-btn">←</div>
+          <div class="page-header-title">TudoAzul — Transferência</div>
+        </div>
+
+        <div class="detail-tabs">
+          <div class="detail-tab active">Promoção</div>
+          <div class="detail-tab inactive">Regras</div>
+        </div>
+
+        <div class="detail-content">
+
+          <!-- Hero value -->
+          <div class="detail-hero">
+            <div class="detail-hero-value">120%</div>
+            <div class="detail-hero-label">de bônus na transferência</div>
+            <div class="detail-hero-target">Transfira seus pontos para TudoAzul</div>
+          </div>
+
+          <!-- Tiers -->
+          <div class="detail-tiers">
+            <div class="tiers-title">Bônus por perfil</div>
+            <div class="tier-row best">
+              <div class="tier-label">Clube Azul há +5 anos</div>
+              <div class="tier-value">120%</div>
+            </div>
+            <div class="tier-row">
+              <div class="tier-label">Clube Azul 3–4 anos</div>
+              <div class="tier-value" style="color:#0066cc;">110%</div>
+            </div>
+            <div class="tier-row">
+              <div class="tier-label">Clube Azul 1–2 anos</div>
+              <div class="tier-value" style="color:#0066cc;">100%</div>
+            </div>
+            <div class="tier-row">
+              <div class="tier-label">Clube Azul 6–11 meses</div>
+              <div class="tier-value" style="color:#0066cc;">95%</div>
+            </div>
+            <div class="tier-row">
+              <div class="tier-label">Clientes Azul</div>
+              <div class="tier-value" style="color:#0066cc;">60%</div>
+            </div>
+          </div>
+
+          <div class="max-bonus">⚠️ Bônus máximo da promoção: 300.000 pts</div>
+
+          <!-- Banks -->
+          <div class="banks-section">
+            <div class="banks-title">Bancos participantes</div>
+            <div class="banks-row">
+              <div class="bank-pill">C6 Atomos</div>
+              <div class="bank-pill">Itaú</div>
+              <div class="bank-pill">Sicredi</div>
+              <div class="bank-pill">Itaucard</div>
+              <div class="bank-pill">Merece</div>
+              <div class="bank-pill">+4 mais</div>
+            </div>
+          </div>
+
+          <div class="detail-expiry">⏰ Encerra em 30/04/26 às 23:59</div>
+
+          <div class="cta-btn">Cadastrar-se na promoção →</div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

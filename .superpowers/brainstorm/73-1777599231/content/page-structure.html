@@ -1,0 +1,146 @@
+<h2>Como organizar a página /bonus-offers?</h2>
+<p class="subtitle">Escolha a estrutura de navegação entre as 4 categorias de promoções</p>
+
+<div class="cards">
+
+  <!-- OPTION A: Tabs -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f5ff; padding:16px; font-family:sans-serif;">
+      <div style="background:#8A05BE; border-radius:12px 12px 0 0; padding:10px 14px; display:flex; align-items:center; gap:8px;">
+        <span style="color:white; font-size:11px;">← Promoções Bonificadas</span>
+      </div>
+      <div style="background:#fff; border-radius:0 0 12px 12px; padding:8px 0 4px;">
+        <!-- Tabs -->
+        <div style="display:flex; border-bottom:2px solid #f0e8ff; overflow:hidden;">
+          <div style="flex:1; text-align:center; padding:8px 4px; font-size:10px; font-weight:700; color:#8A05BE; border-bottom:2px solid #8A05BE; margin-bottom:-2px;">Transferências</div>
+          <div style="flex:1; text-align:center; padding:8px 4px; font-size:10px; color:#999;">Lojas</div>
+          <div style="flex:1; text-align:center; padding:8px 4px; font-size:10px; color:#999;">Milhas</div>
+          <div style="flex:1; text-align:center; padding:8px 4px; font-size:10px; color:#999;">Cartões</div>
+        </div>
+        <!-- Content -->
+        <div style="padding:10px 12px; display:flex; flex-direction:column; gap:8px;">
+          <div style="background:#f8f5ff; border:1px solid #e8d8ff; border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:9px; color:#666; font-weight:600;">LATAM PASS</div>
+              <div style="font-size:11px; font-weight:700; color:#1a1a1a;">Transfira do Itaú</div>
+              <div style="font-size:9px; color:#999;">Encerra 30/04 às 23:59</div>
+            </div>
+            <div style="background:#8A05BE; color:white; border-radius:8px; padding:6px 10px; text-align:center;">
+              <div style="font-size:18px; font-weight:900; line-height:1;">25%</div>
+              <div style="font-size:8px;">bônus</div>
+            </div>
+          </div>
+          <div style="background:#f8f5ff; border:1px solid #e8d8ff; border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:9px; color:#0080ff; font-weight:600;">TUDO AZUL</div>
+              <div style="font-size:11px; font-weight:700; color:#1a1a1a;">Vários bancos</div>
+              <div style="font-size:9px; color:#999;">Encerra 30/04 às 23:59</div>
+            </div>
+            <div style="background:#0080ff; color:white; border-radius:8px; padding:6px 10px; text-align:center;">
+              <div style="font-size:18px; font-weight:900; line-height:1;">120%</div>
+              <div style="font-size:8px;">bônus</div>
+            </div>
+          </div>
+          <div style="text-align:center; font-size:9px; color:#aaa;">+ 3 promoções ativas</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Abas fixas no topo</h3>
+      <p>4 abas fixas. Uma categoria por vez. Navegação limpa e focada. Ideal para quem sabe o que quer.</p>
+    </div>
+  </div>
+
+  <!-- OPTION B: Scrollable sections with pill filters -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f5ff; padding:16px; font-family:sans-serif;">
+      <div style="background:#8A05BE; border-radius:12px 12px 0 0; padding:10px 14px;">
+        <span style="color:white; font-size:11px;">← Promoções Bonificadas</span>
+      </div>
+      <div style="background:#fff; border-radius:0 0 12px 12px; padding:8px;">
+        <!-- Sticky pill filters -->
+        <div style="display:flex; gap:6px; padding:8px 4px; overflow:hidden;">
+          <div style="background:#8A05BE; color:white; border-radius:20px; padding:4px 10px; font-size:9px; font-weight:600; white-space:nowrap;">Tudo</div>
+          <div style="background:#f0e8ff; color:#8A05BE; border-radius:20px; padding:4px 10px; font-size:9px; white-space:nowrap;">Transferências</div>
+          <div style="background:#f0e8ff; color:#8A05BE; border-radius:20px; padding:4px 10px; font-size:9px; white-space:nowrap;">Lojas</div>
+          <div style="background:#f0e8ff; color:#8A05BE; border-radius:20px; padding:4px 8px; font-size:9px; white-space:nowrap;">+2</div>
+        </div>
+        <!-- Section 1 -->
+        <div style="padding:4px 4px 0;">
+          <div style="font-size:10px; font-weight:700; color:#8A05BE; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">🔥 Transferências Bonificadas</div>
+          <div style="background:#f8f5ff; border-radius:8px; padding:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <div><div style="font-size:10px; font-weight:700;">LATAM PASS</div><div style="font-size:8px; color:#999;">Encerra hoje</div></div>
+            <div style="background:#8A05BE; color:white; border-radius:6px; padding:4px 8px; font-size:14px; font-weight:900;">25%</div>
+          </div>
+          <div style="background:#f8f5ff; border-radius:8px; padding:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div><div style="font-size:10px; font-weight:700;">TUDO AZUL</div><div style="font-size:8px; color:#999;">Encerra hoje</div></div>
+            <div style="background:#0080ff; color:white; border-radius:6px; padding:4px 8px; font-size:14px; font-weight:900;">120%</div>
+          </div>
+          <!-- Section 2 preview -->
+          <div style="font-size:10px; font-weight:700; color:#e67e22; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">🛍 Compras Bonificadas</div>
+          <div style="display:flex; gap:4px;">
+            <div style="flex:1; background:#fff8f0; border-radius:6px; padding:6px; text-align:center; font-size:8px; border:1px solid #ffe0b2;">
+              <div style="font-weight:700;">Livelo</div><div style="color:#e67e22; font-weight:700;">85pts/R$</div>
+            </div>
+            <div style="flex:1; background:#fff8f0; border-radius:6px; padding:6px; text-align:center; font-size:8px; border:1px solid #ffe0b2;">
+              <div style="font-weight:700;">Esfera</div><div style="color:#e67e22; font-weight:700;">30pts/R$</div>
+            </div>
+            <div style="flex:1; background:#fff8f0; border-radius:6px; padding:6px; text-align:center; font-size:8px; border:1px solid #ffe0b2; color:#aaa; display:flex; align-items:center; justify-content:center;">+mais →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Scroll contínuo + filtros pill</h3>
+      <p>Todas as categorias em scroll único. Pills filtram a view. Descoberta natural, sem precisar saber o que procura.</p>
+    </div>
+  </div>
+
+  <!-- OPTION C: Category hub -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f5ff; padding:16px; font-family:sans-serif;">
+      <div style="background:#8A05BE; border-radius:12px 12px 0 0; padding:10px 14px;">
+        <span style="color:white; font-size:11px;">← Promoções Bonificadas</span>
+      </div>
+      <div style="background:#fff; border-radius:0 0 12px 12px; padding:10px;">
+        <!-- Category grid -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+          <div style="background:linear-gradient(135deg,#8A05BE,#B56CFF); border-radius:10px; padding:12px; color:white; position:relative; overflow:hidden;">
+            <div style="font-size:18px; margin-bottom:4px;">🔄</div>
+            <div style="font-size:10px; font-weight:700;">Transferências</div>
+            <div style="font-size:8px; opacity:0.8;">5 ativas</div>
+            <div style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.25); border-radius:20px; padding:2px 6px; font-size:8px; font-weight:700;">ATÉ 120%</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#e67e22,#f39c12); border-radius:10px; padding:12px; color:white; position:relative; overflow:hidden;">
+            <div style="font-size:18px; margin-bottom:4px;">🛍</div>
+            <div style="font-size:10px; font-weight:700;">Compras</div>
+            <div style="font-size:8px; opacity:0.8;">200+ lojas</div>
+            <div style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.25); border-radius:20px; padding:2px 6px; font-size:8px; font-weight:700;">85pts/R$</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#27ae60,#2ecc71); border-radius:10px; padding:12px; color:white; position:relative; overflow:hidden;">
+            <div style="font-size:18px; margin-bottom:4px;">✈️</div>
+            <div style="font-size:10px; font-weight:700;">Milhas</div>
+            <div style="font-size:8px; opacity:0.8;">Compra bonif.</div>
+            <div style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.25); border-radius:20px; padding:2px 6px; font-size:8px; font-weight:700;">-30%</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#2c3e50,#3498db); border-radius:10px; padding:12px; color:white; position:relative; overflow:hidden;">
+            <div style="font-size:18px; margin-bottom:4px;">💳</div>
+            <div style="font-size:10px; font-weight:700;">Cartões</div>
+            <div style="font-size:8px; opacity:0.8;">3 ofertas</div>
+            <div style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.25); border-radius:20px; padding:2px 6px; font-size:8px; font-weight:700;">NOVO</div>
+          </div>
+        </div>
+        <!-- Featured banner -->
+        <div style="background:linear-gradient(90deg,#8A05BE,#B56CFF); border-radius:10px; padding:10px 14px; color:white; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:9px; opacity:0.8;">DESTAQUE DO DIA</div><div style="font-size:11px; font-weight:700;">TudoAzul até 120% bônus</div></div>
+          <div style="font-size:8px; border:1px solid rgba(255,255,255,0.5); border-radius:6px; padding:4px 8px;">Ver →</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Hub de categorias + banner destaque</h3>
+      <p>Tela inicial mostra 4 cards por categoria com melhor oferta. Tap entra na categoria. Banner destaca a promo do dia.</p>
+    </div>
+  </div>
+
+</div>

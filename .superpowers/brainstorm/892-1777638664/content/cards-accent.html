@@ -1,0 +1,104 @@
+<h2>Como tratar os cards de programa?</h2>
+<p class="subtitle">Mesma estrutura. A diferença é se os cards têm um toque de cor por programa ou ficam puramente neutros.</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:700px;margin:0 auto;margin-top:16px;">
+
+  <!-- Option A: Monochrome / purely neutral -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#F8F8FA;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:'Inter',system-ui,sans-serif;">
+
+        <div style="background:white;border-radius:12px;padding:12px;border:1px solid #EBEBEB;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="width:22px;height:22px;border-radius:6px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#555;">LP</div>
+            <span style="font-size:9px;color:#22c55e;background:#F0FDF4;padding:2px 5px;border-radius:5px;font-weight:700;">↑</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#111;letter-spacing:-0.5px;margin-bottom:2px;">502.000</div>
+          <div style="font-size:9px;color:#999;">R$ 23,94 · CPM</div>
+        </div>
+
+        <div style="background:white;border-radius:12px;padding:12px;border:1px solid #EBEBEB;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="width:22px;height:22px;border-radius:6px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#555;">Lv</div>
+            <span style="font-size:9px;color:#22c55e;background:#F0FDF4;padding:2px 5px;border-radius:5px;font-weight:700;">↑</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#111;letter-spacing:-0.5px;margin-bottom:2px;">300.000</div>
+          <div style="font-size:9px;color:#999;">R$ 43,33 · CPM</div>
+        </div>
+
+        <div style="background:white;border-radius:12px;padding:12px;border:1px solid #EBEBEB;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="width:22px;height:22px;border-radius:6px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#555;">Es</div>
+            <span style="font-size:9px;color:#EF4444;background:#FEF2F2;padding:2px 5px;border-radius:5px;font-weight:700;">↓</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#111;letter-spacing:-0.5px;margin-bottom:2px;">200.000</div>
+          <div style="font-size:9px;color:#999;">R$ 25,00 · CPM</div>
+        </div>
+
+        <div style="background:white;border-radius:12px;padding:12px;border:1px solid #EBEBEB;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="width:22px;height:22px;border-radius:6px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#555;">Sm</div>
+            <span style="font-size:9px;color:#ccc;background:#FAFAFA;padding:2px 5px;border-radius:5px;font-weight:700;">—</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#111;letter-spacing:-0.5px;margin-bottom:2px;">0</div>
+          <div style="font-size:9px;color:#999;">R$ 0 · CPM</div>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Neutro / Puro</h3>
+      <p>Avatares cinza para todos. Clean total, sem distração de cor. Foco no número.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Colored avatar per program -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#F8F8FA;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:'Inter',system-ui,sans-serif;">
+
+        <div style="background:white;border-radius:12px;padding:12px;border:1px solid #EBEBEB;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="width:22px;height:22px;border-radius:6px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#6D28D9;">LP</div>
+            <span style="font-size:9px;color:#22c55e;background:#F0FDF4;padding:2px 5px;border-radius:5px;font-weight:700;">↑</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#111;letter-spacing:-0.5px;margin-bottom:2px;">502.000</div>
+          <div style="font-size:9px;color:#999;">R$ 23,94 · CPM</div>
+        </div>
+
+        <div style="background:white;border-radius:12px;padding:12px;border:1px solid #EBEBEB;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="width:22px;height:22px;border-radius:6px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#D97706;">Lv</div>
+            <span style="font-size:9px;color:#22c55e;background:#F0FDF4;padding:2px 5px;border-radius:5px;font-weight:700;">↑</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#111;letter-spacing:-0.5px;margin-bottom:2px;">300.000</div>
+          <div style="font-size:9px;color:#999;">R$ 43,33 · CPM</div>
+        </div>
+
+        <div style="background:white;border-radius:12px;padding:12px;border:1px solid #EBEBEB;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="width:22px;height:22px;border-radius:6px;background:#FEE2E2;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#DC2626;">Es</div>
+            <span style="font-size:9px;color:#EF4444;background:#FEF2F2;padding:2px 5px;border-radius:5px;font-weight:700;">↓</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#111;letter-spacing:-0.5px;margin-bottom:2px;">200.000</div>
+          <div style="font-size:9px;color:#999;">R$ 25,00 · CPM</div>
+        </div>
+
+        <div style="background:white;border-radius:12px;padding:12px;border:1px solid #EBEBEB;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="width:22px;height:22px;border-radius:6px;background:#DBEAFE;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#1D4ED8;">Sm</div>
+            <span style="font-size:9px;color:#ccc;background:#FAFAFA;padding:2px 5px;border-radius:5px;font-weight:700;">—</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:#111;letter-spacing:-0.5px;margin-bottom:2px;">0</div>
+          <div style="font-size:9px;color:#999;">R$ 0 · CPM</div>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Avatar colorido por programa</h3>
+      <p>Cada programa tem uma cor discreta no avatar. Fica fácil de identificar de relance, sem perder o clean.</p>
+    </div>
+  </div>
+
+</div>

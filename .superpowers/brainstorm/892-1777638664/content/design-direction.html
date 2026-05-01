@@ -1,0 +1,136 @@
+<h2>Qual direção visual combina com o Gest Miles?</h2>
+<p class="subtitle">Considere o público (gestores de milhas) e a sensação que o app deve transmitir. Escolha a que mais te atrai.</p>
+
+<div class="cards">
+
+  <!-- OPTION A: Clean Premium -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;overflow:hidden;border-radius:8px 8px 0 0;">
+      <div style="background:#FAFAFA;padding:16px;font-family:'Inter',sans-serif;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#7C3AED,#6D28D9);border-radius:16px;padding:20px;margin-bottom:12px;color:white;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:11px;opacity:0.7;margin-bottom:4px;">Bom dia, Eduardo</div>
+            <div style="font-size:22px;font-weight:700;">802.000 <span style="font-size:13px;font-weight:400;">pts</span></div>
+            <div style="font-size:11px;opacity:0.7;">≈ R$ 67,27 em valor</div>
+          </div>
+          <div style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;">EM</div>
+        </div>
+        <!-- Tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <div style="background:#7C3AED;color:white;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;">Início</div>
+          <div style="background:white;color:#666;padding:6px 14px;border-radius:20px;font-size:11px;border:1px solid #eee;">Vencendo</div>
+          <div style="background:white;color:#666;padding:6px 14px;border-radius:20px;font-size:11px;border:1px solid #eee;">Extrato</div>
+        </div>
+        <!-- Cards -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:white;border-radius:14px;padding:14px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+            <div style="font-size:10px;color:#888;margin-bottom:6px;">LATAM Pass</div>
+            <div style="font-size:16px;font-weight:700;color:#111;">502.000</div>
+            <div style="font-size:10px;color:#22c55e;font-weight:600;">↑ +12% mês</div>
+            <div style="font-size:11px;color:#555;margin-top:4px;">R$ 23,94</div>
+          </div>
+          <div style="background:white;border-radius:14px;padding:14px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+            <div style="font-size:10px;color:#888;margin-bottom:6px;">Livelo</div>
+            <div style="font-size:16px;font-weight:700;color:#111;">300.000</div>
+            <div style="font-size:10px;color:#22c55e;font-weight:600;">↑ +8% mês</div>
+            <div style="font-size:11px;color:#555;margin-top:4px;">R$ 43,33</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Clean Premium</h3>
+      <p>Fundo branco, cartões com sombra suave, header com gradiente roxo. Transmite confiança e sofisticação. Estilo Nubank evoluído.</p>
+    </div>
+  </div>
+
+  <!-- OPTION B: Dark Finance -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;overflow:hidden;border-radius:8px 8px 0 0;">
+      <div style="background:#0F0F14;padding:16px;font-family:'Inter',sans-serif;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:16px;padding:20px;margin-bottom:12px;border:1px solid rgba(139,92,246,0.3);">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:11px;color:#8B5CF6;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase;">Total de Milhas</div>
+              <div style="font-size:24px;font-weight:700;color:white;">802.000</div>
+              <div style="font-size:11px;color:#6b7280;">≈ R$ 67,27</div>
+            </div>
+            <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#8B5CF6,#6D28D9);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:13px;">EM</div>
+          </div>
+        </div>
+        <!-- Tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <div style="background:rgba(139,92,246,0.2);color:#8B5CF6;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid rgba(139,92,246,0.4);">Início</div>
+          <div style="background:rgba(255,255,255,0.05);color:#9ca3af;padding:6px 14px;border-radius:20px;font-size:11px;">Vencendo</div>
+          <div style="background:rgba(255,255,255,0.05);color:#9ca3af;padding:6px 14px;border-radius:20px;font-size:11px;">Extrato</div>
+        </div>
+        <!-- Cards -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px;">
+            <div style="font-size:10px;color:#6b7280;margin-bottom:6px;">LATAM Pass</div>
+            <div style="font-size:16px;font-weight:700;color:white;">502k</div>
+            <div style="font-size:10px;color:#34d399;font-weight:600;">↑ R$ 23,94</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px;">
+            <div style="font-size:10px;color:#6b7280;margin-bottom:6px;">Livelo</div>
+            <div style="font-size:16px;font-weight:700;color:white;">300k</div>
+            <div style="font-size:10px;color:#34d399;font-weight:600;">↑ R$ 43,33</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Dark Finance</h3>
+      <p>Fundo escuro com acentos roxo neon. Visual de fintech premium, como apps de cripto/investimentos. Moderno e impactante.</p>
+    </div>
+  </div>
+
+  <!-- OPTION C: Vibrant Modern -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;overflow:hidden;border-radius:8px 8px 0 0;">
+      <div style="background:#F5F3FF;padding:16px;font-family:'Inter',sans-serif;">
+        <!-- Full-bleed header -->
+        <div style="background:linear-gradient(135deg,#8A05BE 0%,#A855F7 50%,#C084FC 100%);border-radius:20px;padding:20px;margin-bottom:12px;color:white;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+            <div>
+              <div style="font-size:11px;opacity:0.8;margin-bottom:2px;">Bom dia 👋</div>
+              <div style="font-size:15px;font-weight:700;">Eduardo M.</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.25);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">EM</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:12px;backdrop-filter:blur(4px);">
+            <div style="font-size:10px;opacity:0.8;margin-bottom:4px;">TOTAL CONSOLIDADO</div>
+            <div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;">802.000 pts</div>
+            <div style="font-size:11px;opacity:0.8;">≈ R$ 67,27 em passagens</div>
+          </div>
+        </div>
+        <!-- Tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;overflow:hidden;">
+          <div style="background:#8A05BE;color:white;padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;">Início</div>
+          <div style="background:white;color:#555;padding:7px 14px;border-radius:20px;font-size:11px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.08);">Vencendo</div>
+          <div style="background:white;color:#555;padding:7px 14px;border-radius:20px;font-size:11px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.08);">Extrato</div>
+        </div>
+        <!-- Cards with colored left border -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:white;border-radius:16px;padding:14px;box-shadow:0 4px 20px rgba(138,5,190,0.08);border-left:3px solid #8A05BE;">
+            <div style="font-size:10px;color:#8A05BE;font-weight:700;margin-bottom:4px;letter-spacing:0.5px;">LATAM</div>
+            <div style="font-size:18px;font-weight:800;color:#111;letter-spacing:-0.5px;">502k</div>
+            <div style="font-size:10px;color:#22c55e;font-weight:700;">↑ R$ 23,94</div>
+          </div>
+          <div style="background:white;border-radius:16px;padding:14px;box-shadow:0 4px 20px rgba(138,5,190,0.08);border-left:3px solid #F59E0B;">
+            <div style="font-size:10px;color:#F59E0B;font-weight:700;margin-bottom:4px;letter-spacing:0.5px;">LIVELO</div>
+            <div style="font-size:18px;font-weight:800;color:#111;letter-spacing:-0.5px;">300k</div>
+            <div style="font-size:10px;color:#22c55e;font-weight:700;">↑ R$ 43,33</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Vibrant Modern</h3>
+      <p>Gradiente roxo bold no header, fundo levemente roxo, cards brancos com borda colorida. Energético e contemporâneo, estilo fintech brasileiro.</p>
+    </div>
+  </div>
+
+</div>

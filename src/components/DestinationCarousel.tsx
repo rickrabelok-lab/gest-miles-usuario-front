@@ -20,10 +20,57 @@ import destChileNew from "@/assets/dest-chile-new.png";
 import destPeruNew from "@/assets/dest-peru-new.png";
 import destMexicoNew from "@/assets/dest-mexico-new.png";
 import destUruguaiNew from "@/assets/dest-uruguai-new.png";
+import { useRef, type ReactNode } from "react";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import AirlineLogo from "@/components/AirlineLogo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDestinationBestPrices } from "@/hooks/useDestinationBestPrices";
+import { cn } from "@/lib/utils";
+
+/** Embla `dragFree` rouba o gesto; ignoramos o click se houve arrasto real (desktop e touch). */
+const DRAG_THRESHOLD_PX = 14;
+
+function DestinationCardButton({
+  className,
+  children,
+  onActivate,
+}: {
+  className?: string;
+  children: ReactNode;
+  onActivate: () => void;
+}) {
+  const dragged = useRef(false);
+  const origin = useRef({ x: 0, y: 0 });
+
+  return (
+    <button
+      type="button"
+      className={cn("touch-manipulation", className)}
+      onPointerDown={(e) => {
+        dragged.current = false;
+        origin.current = { x: e.clientX, y: e.clientY };
+      }}
+      onPointerMove={(e) => {
+        const dx = Math.abs(e.clientX - origin.current.x);
+        const dy = Math.abs(e.clientY - origin.current.y);
+        if (dx > DRAG_THRESHOLD_PX || dy > DRAG_THRESHOLD_PX) dragged.current = true;
+      }}
+      onPointerUp={(e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        if (dragged.current) return;
+        onActivate();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onActivate();
+        }
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 type DestinationCard = {
   code: string;
@@ -117,9 +164,8 @@ const DestinationCarousel = ({
                 key={destination.code}
                 className="basis-[46%] pl-2 sm:basis-[38%]"
               >
-                <button
-                  type="button"
-                  onClick={() =>
+                <DestinationCardButton
+                  onActivate={() =>
                     onDestinationClick?.({ code: destination.code, name: destination.name })
                   }
                   className="w-full overflow-hidden rounded-[14px] gradient-card-subtle p-2.5 text-left shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover hover:-translate-y-0.5"
@@ -151,7 +197,7 @@ const DestinationCarousel = ({
                       <AirlineLogo airline={money?.airline} size={16} />
                     </div>
                   </div>
-                </button>
+                </DestinationCardButton>
               </CarouselItem>
             );
           })}

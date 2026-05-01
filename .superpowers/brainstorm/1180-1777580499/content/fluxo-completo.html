@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluxo Completo — Passagens Gest Miles</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #ede8f7;
+  min-height: 100vh;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 32px 16px 80px;
+}
+
+/* ─── Page header ─── */
+.page-header { text-align: center; margin-bottom: 36px; }
+.page-header h1 { font-size: 24px; font-weight: 800; color: #1a0a2e; }
+.page-header p  { font-size: 14px; color: #6b5d7e; margin-top: 6px; }
+
+/* ─── Flow arrow line ─── */
+.flow-row {
+  display: flex; align-items: flex-start; justify-content: center;
+  gap: 0; flex-wrap: wrap; max-width: 1680px; margin: 0 auto;
+}
+.flow-item { display: flex; align-items: flex-start; gap: 0; }
+.flow-arrow {
+  display: flex; align-items: center; padding: 0 8px; margin-top: 120px;
+  font-size: 24px; color: #8A05BE; opacity: 0.5;
+}
+
+/* ─── Phone frame ─── */
+.phone {
+  width: 360px; border-radius: 36px;
+  background: #f7f7f8;
+  box-shadow: 0 28px 72px -8px rgba(138,5,190,0.2), 0 8px 24px -4px rgba(0,0,0,0.1);
+  overflow: hidden; border: 1.5px solid rgba(138,5,190,0.12);
+  position: relative; flex-shrink: 0;
+}
+.phone-label {
+  text-align: center; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #8A05BE; margin-top: 12px; margin-bottom: 16px;
+  background: #f3e8ff; border-radius: 20px; padding: 5px 14px;
+  width: fit-content; margin-left: auto; margin-right: auto;
+}
+.step-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #8A05BE; color: white; font-size: 11px; font-weight: 700;
+  margin-right: 6px; vertical-align: middle;
+}
+
+/* ─── Status bar ─── */
+.status-bar {
+  background: #fff; display: flex; align-items: center;
+  justify-content: space-between; padding: 12px 20px 6px;
+  font-size: 12px; font-weight: 600; color: #1a0a2e;
+}
+.status-icons { display: flex; gap: 4px; align-items: center; }
+
+/* ─── Screen scroll ─── */
+.screen-body { overflow-y: auto; max-height: 740px; }
+
+/* ─── Shared ─── */
+.screen-header {
+  background: #fff; padding: 10px 20px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #f0edf5; position: sticky; top: 0; z-index: 10;
+}
+.back-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #f7f4fb; display: flex; align-items: center; justify-content: center;
+  color: #6b5d7e; cursor: pointer;
+}
+.header-title { font-size: 15px; font-weight: 600; color: #1a0a2e; }
+.header-sub   { font-size: 11px; color: #9888ac; margin-top: 1px; text-align: center; }
+
+/* ═══════════════════════════════════════════
+   SCREEN 1 — FLIGHT RESULTS
+═══════════════════════════════════════════ */
+.results-hero {
+  background: linear-gradient(135deg, #8A05BE 0%, #6A00A3 100%);
+  padding: 14px 20px 18px; color: white;
+}
+.results-route {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-size: 18px; font-weight: 700; letter-spacing: -0.5px;
+}
+.results-route .arrow { opacity: 0.7; font-size: 14px; }
+.results-dates {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 6px; font-size: 12px; opacity: 0.85;
+}
+.results-dates .dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.5); }
+.edit-btn {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(255,255,255,0.15); border-radius: 20px;
+  padding: 4px 10px; font-size: 11px; color: white; margin: 10px auto 0;
+  width: fit-content; cursor: pointer;
+}
+
+/* Date navigator */
+.date-nav {
+  background: #fff; padding: 10px 0;
+  border-bottom: 1px solid #f0edf5;
+  overflow-x: auto; scrollbar-width: none;
+  display: flex; gap: 0;
+}
+.date-nav-item {
+  flex-shrink: 0; text-align: center; padding: 6px 14px;
+  cursor: pointer; border-right: 1px solid #f3f0f7; position: relative;
+}
+.date-nav-item:last-child { border-right: none; }
+.date-nav-item .day { font-size: 10px; color: #a896ba; text-transform: uppercase; letter-spacing: 0.3px; }
+.date-nav-item .num { font-size: 14px; font-weight: 700; color: #1a0a2e; margin-top: 1px; }
+.date-nav-item .price { font-size: 10px; color: #6b9e77; font-weight: 600; margin-top: 2px; }
+.date-nav-item.active { background: #f9f4ff; }
+.date-nav-item.active .num { color: #8A05BE; }
+.date-nav-item.active::after {
+  content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
+  height: 2px; background: #8A05BE; border-radius: 2px;
+}
+.date-nav-item.cheapest .price { color: #16a34a; }
+.date-nav-item.cheapest .price::before { content: '★ '; font-size: 8px; }
+
+/* Airline summary */
+.airline-summary {
+  margin: 14px 16px 0;
+  background: #fff; border-radius: 16px;
+  overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.airline-summary-header {
+  display: flex; background: #f7f4fb;
+  padding: 8px 14px; font-size: 10px; font-weight: 600;
+  color: #a896ba; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.airline-summary-header .col-cia { flex: 1.4; }
+.airline-summary-header .col-pts { flex: 1; text-align: right; }
+.airline-summary-header .col-money { flex: 1; text-align: right; }
+
+.airline-row {
+  display: flex; align-items: center; padding: 10px 14px;
+  border-top: 1px solid #f7f4fb; cursor: pointer;
+  transition: background 0.15s;
+}
+.airline-row:hover { background: #faf7ff; }
+.airline-row .col-cia { flex: 1.4; display: flex; align-items: center; gap: 8px; }
+.airline-row .col-pts { flex: 1; text-align: right; }
+.airline-row .col-money { flex: 1; text-align: right; }
+.airline-name { font-size: 13px; font-weight: 600; color: #1a0a2e; }
+.airline-pts { font-size: 13px; font-weight: 700; color: #8A05BE; }
+.airline-money { font-size: 12px; color: #4a3a5e; }
+.airline-money.best { color: #16a34a; font-weight: 700; }
+.airline-add-btn {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #f3e8ff; color: #8A05BE; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; cursor: pointer; margin-left: 4px;
+}
+.airline-logo-pill {
+  width: 32px; height: 20px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 800; letter-spacing: -0.3px;
+}
+.logo-gol   { background: #fff4ed; color: #e87722; }
+.logo-latam { background: #fff0f3; color: #d42054; }
+.logo-azul  { background: #eef4ff; color: #0050b3; }
+
+/* Flight tabs */
+.flight-tabs {
+  display: flex; margin: 14px 16px 0;
+  background: #fff; border-radius: 14px; padding: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.flight-tab {
+  flex: 1; padding: 8px; border-radius: 10px; border: none;
+  font-size: 12px; font-weight: 500; cursor: pointer; text-align: center;
+}
+.flight-tab.active {
+  background: #8A05BE; color: white; font-weight: 600;
+  box-shadow: 0 2px 8px rgba(138,5,190,0.25);
+}
+.flight-tab.inactive { background: transparent; color: #9888ac; }
+.flight-tab-date { font-size: 10px; margin-top: 1px; opacity: 0.8; }
+
+/* Filter row */
+.filter-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 10px 16px 0; padding: 8px 12px;
+  background: #fff; border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.filter-left { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8A05BE; font-weight: 500; }
+.flights-count { font-size: 12px; color: #9888ac; }
+.okto-tip { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #8A05BE; font-weight: 600; }
+
+/* Sort header */
+.sort-header {
+  display: flex; margin: 8px 16px 0;
+  background: #fff; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.sort-col {
+  flex: 1; padding: 8px 10px; font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px; color: #9888ac;
+  text-align: center; border-right: 1px solid #f3f0f7;
+}
+.sort-col:last-child { border-right: none; }
+.sort-col.first { flex: 1.6; text-align: left; }
+.sort-col.active { color: #8A05BE; }
+.sort-arrow { font-size: 9px; margin-left: 3px; }
+
+/* Flight list items */
+.flight-list { margin: 8px 16px 0; display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; }
+.flight-item {
+  background: #fff; border-radius: 14px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  cursor: pointer; transition: all 0.15s; position: relative;
+  border: 1.5px solid transparent;
+}
+.flight-item:hover { border-color: #e0cff5; }
+.flight-item.selected { border-color: #8A05BE; background: #faf7ff; }
+.flight-item.best-value::after {
+  content: '★ Melhor custo'; position: absolute; top: -1px; right: 10px;
+  background: #8A05BE; color: white; font-size: 9px; font-weight: 700;
+  padding: 2px 8px; border-radius: 0 0 8px 8px; letter-spacing: 0.3px;
+}
+
+.flight-time-col { flex: 1.6; }
+.flight-time-row { display: flex; align-items: center; gap: 6px; }
+.time-big { font-size: 14px; font-weight: 700; color: #1a0a2e; }
+.time-arrow { color: #c4b5d4; font-size: 12px; }
+.flight-info { font-size: 10px; color: #9888ac; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+.direct-badge { background: #eef7f0; color: #16a34a; font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 4px; }
+.stop-badge   { background: #fef3e8; color: #d97706; font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 4px; }
+
+.flight-pts-col  { flex: 1; text-align: right; }
+.flight-money-col { flex: 1; text-align: right; }
+.pts-value { font-size: 13px; font-weight: 700; color: #1a0a2e; }
+.pts-label { font-size: 9px; color: #9888ac; }
+.money-value { font-size: 13px; font-weight: 700; color: #1a0a2e; }
+.money-best  { color: #16a34a; }
+.more-info { font-size: 10px; color: #8A05BE; font-weight: 500; margin-top: 2px; }
+
+.check-mark {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #8A05BE; color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; flex-shrink: 0; margin-left: 8px;
+}
+
+/* Sticky bottom bar */
+.sticky-bottom {
+  position: sticky; bottom: 0; background: white;
+  border-top: 1px solid #f0edf5; padding: 10px 16px 14px;
+  box-shadow: 0 -4px 20px rgba(138,5,190,0.08);
+}
+.selected-summary {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #f9f4ff; border-radius: 10px; padding: 8px 12px;
+  margin-bottom: 8px;
+}
+.sel-route { font-size: 11px; font-weight: 600; color: #8A05BE; }
+.sel-time  { font-size: 11px; color: #6b5d7e; margin-top: 1px; }
+.sel-price { font-size: 13px; font-weight: 700; color: #1a0a2e; text-align: right; }
+.sel-price-sub { font-size: 10px; color: #9888ac; }
+.continue-btn {
+  width: 100%; background: linear-gradient(135deg, #8A05BE, #9E2FD4);
+  color: white; border: none; border-radius: 14px; padding: 13px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(138,5,190,0.3);
+}
+
+/* ═══════════════════════════════════════════
+   SCREEN 2 — PAYMENT OPTIONS DRAWER
+═══════════════════════════════════════════ */
+.drawer-screen { background: #f7f7f8; }
+.drawer-backdrop {
+  height: 120px;
+  background: linear-gradient(135deg, #8A05BE 0%, #6A00A3 100%);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; padding: 16px;
+}
+.backdrop-route { font-size: 20px; font-weight: 700; color: white; }
+.backdrop-info  { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 4px; }
+
+.drawer-sheet {
+  background: white; border-radius: 24px 24px 0 0;
+  margin-top: -20px; padding: 8px 20px 20px;
+  box-shadow: 0 -8px 30px rgba(0,0,0,0.08);
+}
+.drawer-handle {
+  width: 36px; height: 4px; background: #e8e0f0; border-radius: 2px;
+  margin: 0 auto 16px;
+}
+.drawer-title { font-size: 16px; font-weight: 700; color: #1a0a2e; margin-bottom: 4px; }
+.drawer-sub   { font-size: 12px; color: #9888ac; margin-bottom: 16px; }
+
+.pay-options { display: flex; flex-direction: column; gap: 8px; }
+.pay-option {
+  border: 1.5px solid #ede8f4; border-radius: 14px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  transition: all 0.15s;
+}
+.pay-option.selected { border-color: #8A05BE; background: #faf7ff; }
+.pay-radio {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid #d0c4e0; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.pay-option.selected .pay-radio {
+  border-color: #8A05BE; background: #8A05BE;
+}
+.pay-radio-inner {
+  width: 8px; height: 8px; border-radius: 50%; background: white;
+}
+.pay-main { flex: 1; }
+.pay-pts  { font-size: 14px; font-weight: 700; color: #1a0a2e; }
+.pay-pts span { font-size: 11px; font-weight: 500; color: #9888ac; }
+.pay-cash { font-size: 12px; color: #6b5d7e; margin-top: 2px; }
+.pay-tag {
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+}
+.tag-best   { background: #eef7f0; color: #16a34a; }
+.tag-mixed  { background: #f3e8ff; color: #8A05BE; }
+
+.confirm-btn {
+  width: 100%; margin-top: 16px;
+  background: linear-gradient(135deg, #8A05BE, #9E2FD4);
+  color: white; border: none; border-radius: 14px; padding: 14px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(138,5,190,0.3);
+}
+
+/* ═══════════════════════════════════════════
+   SCREEN 3 — EMISSION DETAILS
+═══════════════════════════════════════════ */
+.emission-tabs {
+  display: flex; border-bottom: 2px solid #f0edf5;
+  background: white; padding: 0 20px;
+}
+.em-tab {
+  flex: 1; padding: 12px 0; text-align: center;
+  font-size: 13px; font-weight: 500; color: #9888ac;
+  cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px;
+}
+.em-tab.active { color: #8A05BE; border-bottom-color: #8A05BE; font-weight: 700; }
+
+.em-content { padding: 16px 20px; }
+.em-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 8px; padding: 4px 10px; margin-bottom: 10px;
+  font-size: 11px; font-weight: 700;
+}
+.em-tag.ida    { background: #f3e8ff; color: #8A05BE; }
+.em-tag.volta  { background: #eef7f0; color: #16a34a; }
+.em-date { font-size: 12px; color: #6b5d7e; margin-left: 4px; font-weight: 500; }
+
+.flight-card {
+  background: #f9f6ff; border-radius: 16px; padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.fc-airline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.fc-flight-name { font-size: 14px; font-weight: 700; color: #1a0a2e; }
+.fc-route { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.fc-iata { font-size: 13px; font-weight: 700; color: #1a0a2e; }
+.fc-line  { flex: 1; height: 1px; background: linear-gradient(to right, #8A05BE, #d0b8f0); }
+.fc-plane { color: #8A05BE; font-size: 14px; }
+.fc-times { display: flex; align-items: center; justify-content: space-between; }
+.fc-time  { font-size: 16px; font-weight: 700; color: #1a0a2e; }
+.fc-city  { font-size: 11px; color: #9888ac; margin-top: 1px; }
+.fc-duration { font-size: 11px; color: #8A05BE; font-weight: 600; text-align: center; }
+.fc-duration-sub { font-size: 10px; color: #9888ac; }
+
+.price-breakdown {
+  background: white; border-radius: 14px; padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.pb-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; border-bottom: 1px solid #f7f4fb;
+}
+.pb-row:last-child { border-bottom: none; }
+.pb-label { font-size: 13px; color: #6b5d7e; }
+.pb-value { font-size: 13px; color: #1a0a2e; }
+.pb-row.total .pb-label { font-size: 14px; font-weight: 700; color: #1a0a2e; }
+.pb-row.total .pb-value { font-size: 16px; font-weight: 800; color: #8A05BE; }
+
+.iniciar-btn {
+  position: sticky; bottom: 0; margin: 0 -20px;
+  background: white; padding: 10px 20px 16px;
+  border-top: 1px solid #f0edf5;
+}
+.iniciar-btn button {
+  width: 100%; background: linear-gradient(135deg, #8A05BE, #9E2FD4);
+  color: white; border: none; border-radius: 14px; padding: 14px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(138,5,190,0.3);
+}
+
+/* ═══════════════════════════════════════════
+   SCREEN 4 — PURCHASE OPTIONS
+═══════════════════════════════════════════ */
+.purchase-hero {
+  background: linear-gradient(135deg, #8A05BE 0%, #6A00A3 100%);
+  padding: 18px 20px 22px; color: white; text-align: center;
+}
+.purchase-hero h2 { font-size: 17px; font-weight: 700; }
+.purchase-hero p  { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+.purchase-route-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.15); border-radius: 20px;
+  padding: 5px 14px; margin-top: 10px; font-size: 12px;
+}
+
+.purchase-options { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.purchase-card {
+  background: white; border-radius: 18px; padding: 16px 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  border: 1.5px solid #f0edf5;
+}
+.purchase-card.featured { border-color: #8A05BE; background: #faf7ff; }
+.pc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.pc-title { font-size: 13px; color: #6b5d7e; }
+.pc-badge {
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+  background: #f3e8ff; color: #8A05BE;
+}
+.pc-logo {
+  width: 48px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800;
+}
+.logo-gm { background: linear-gradient(135deg, #8A05BE, #9E2FD4); color: white; }
+
+.pc-total { margin-bottom: 14px; }
+.pc-total-label { font-size: 11px; color: #9888ac; }
+.pc-total-value {
+  font-size: 26px; font-weight: 800; color: #8A05BE;
+  letter-spacing: -1px; line-height: 1.1;
+}
+.pc-total-value span { font-size: 14px; font-weight: 500; color: #9888ac; margin-left: 2px; }
+.pc-breakdown { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.pc-line { display: flex; justify-content: space-between; font-size: 12px; color: #6b5d7e; }
+.pc-line strong { color: #1a0a2e; }
+.pc-btn {
+  width: 100%; padding: 12px; border-radius: 12px; border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #8A05BE, #9E2FD4);
+  color: white; box-shadow: 0 3px 10px rgba(138,5,190,0.25);
+}
+.btn-secondary { background: #f3e8ff; color: #8A05BE; }
+
+.savings-banner {
+  background: linear-gradient(135deg, #eef7f0, #dcf0e3);
+  border-radius: 12px; padding: 10px 14px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.savings-text { font-size: 12px; color: #16a34a; font-weight: 600; }
+
+/* ─── Notes grid ─── */
+.notes-grid {
+  max-width: 1680px; margin: 32px auto 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px; padding: 0 8px;
+}
+.note-card {
+  background: white; border-radius: 16px; padding: 16px 18px;
+  box-shadow: 0 2px 12px rgba(138,5,190,0.08);
+  border: 1px solid #e8d8f7;
+}
+.note-card h4 { font-size: 13px; font-weight: 700; color: #8A05BE; margin-bottom: 8px; }
+.note-card ul { padding-left: 16px; }
+.note-card li { font-size: 12px; color: #4a3a5e; margin-bottom: 5px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Fluxo Completo de Passagens — Gest Miles</h1>
+  <p>4 telas redesenhadas • Totalmente funcionais • Tema roxo premium</p>
+</div>
+
+<div class="flow-row">
+
+  <!-- ══════ SCREEN 1: RESULTS ══════ -->
+  <div class="flow-item">
+    <div>
+      <div class="phone-label"><span class="step-badge">2</span>Resultados de Voos</div>
+      <div class="phone">
+
+        <div class="status-bar">
+          <span>17:11</span>
+          <div class="status-icons">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 6 1 22 5 22 5 6"/><polyline points="9 2 9 22 13 22 13 2"/><polyline points="17 10 17 22 21 22 21 10"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12" y2="20" stroke-linecap="round" stroke-width="3"/></svg>
+          </div>
+        </div>
+
+        <!-- Hero -->
+        <div class="results-hero">
+          <div class="results-route">
+            <span>SAO</span>
+            <span class="arrow">✈</span>
+            <span>CWB</span>
+          </div>
+          <div class="results-dates">
+            <span>18 Jun (qui)</span>
+            <div class="dot"></div>
+            <span>09 Jul (qui)</span>
+            <div class="dot"></div>
+            <span>1 adulto</span>
+          </div>
+          <div class="edit-btn">✏ Editar busca</div>
+        </div>
+
+        <div class="screen-body">
+          <!-- Date navigator -->
+          <div class="date-nav">
+            <div class="date-nav-item"><div class="day">ter</div><div class="num">16</div><div class="price">—</div></div>
+            <div class="date-nav-item"><div class="day">qua</div><div class="num">17</div><div class="price">R$89</div></div>
+            <div class="date-nav-item active"><div class="day">qui</div><div class="num">18 jun</div><div class="price" style="color:#8A05BE">ativo</div></div>
+            <div class="date-nav-item cheapest"><div class="day">sex</div><div class="num">19</div><div class="price">R$97</div></div>
+            <div class="date-nav-item"><div class="day">sáb</div><div class="num">20</div><div class="price">R$124</div></div>
+            <div class="date-nav-item"><div class="day">dom</div><div class="num">21</div><div class="price">R$109</div></div>
+          </div>
+
+          <!-- Airline summary -->
+          <div class="airline-summary">
+            <div class="airline-summary-header">
+              <div class="col-cia">Cia Aérea</div>
+              <div class="col-pts">Pontos</div>
+              <div class="col-money">A partir de</div>
+            </div>
+            <div class="airline-row">
+              <div class="col-cia">
+                <div class="airline-logo-pill logo-azul">AZUL</div>
+                <div>
+                  <div class="airline-name">Azul</div>
+                </div>
+                <div class="airline-add-btn">+</div>
+              </div>
+              <div class="col-pts"><span class="airline-pts">10.000</span></div>
+              <div class="col-money"><span class="airline-money">R$ 453</span></div>
+            </div>
+            <div class="airline-row">
+              <div class="col-cia">
+                <div class="airline-logo-pill logo-gol">GOL</div>
+                <div>
+                  <div class="airline-name">GOL</div>
+                </div>
+                <div class="airline-add-btn">+</div>
+              </div>
+              <div class="col-pts"><span class="airline-pts">31.600</span></div>
+              <div class="col-money"><span class="airline-money">R$ 532</span></div>
+            </div>
+            <div class="airline-row">
+              <div class="col-cia">
+                <div class="airline-logo-pill logo-latam">LTAM</div>
+                <div>
+                  <div class="airline-name">LATAM</div>
+                </div>
+                <div class="airline-add-btn">+</div>
+              </div>
+              <div class="col-pts"><span class="airline-pts">13.986</span></div>
+              <div class="col-money"><span class="airline-money best">R$ 409 ★</span></div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flight-tabs">
+            <div class="flight-tab active">
+              Voo de Ida
+              <div class="flight-tab-date">18/jun/2026</div>
+            </div>
+            <div class="flight-tab inactive">
+              Voo de Volta
+              <div class="flight-tab-date">09/jul/2026</div>
+            </div>
+          </div>
+
+          <!-- Filter row -->
+          <div class="filter-row">
+            <div class="filter-left">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              Filtrar resultado
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span class="flights-count">93 voos</span>
+              <span class="okto-tip">✓ Dica Gest Miles</span>
+            </div>
+          </div>
+
+          <!-- Sort header -->
+          <div class="sort-header">
+            <div class="sort-col first">Horário</div>
+            <div class="sort-col">Pontos</div>
+            <div class="sort-col active">R$ <span class="sort-arrow">↓</span></div>
+          </div>
+
+          <!-- Flight list -->
+          <div class="flight-list">
+            <!-- Best value flight -->
+            <div class="flight-item selected best-value" style="margin-top:14px">
+              <div class="flight-time-col">
+                <div class="flight-time-row">
+                  <span class="time-big">06:40</span>
+                  <span class="time-arrow">→</span>
+                  <span class="time-big">07:45</span>
+                </div>
+                <div class="flight-info">
+                  <div class="airline-logo-pill logo-gol" style="width:28px;height:18px;font-size:8px">GOL</div>
+                  <span>1h 05m</span>
+                  <span class="direct-badge">Direto</span>
+                </div>
+              </div>
+              <div class="flight-pts-col">
+                <div class="pts-value">6.100</div>
+                <div class="pts-label">pontos</div>
+                <div class="more-info">+ info</div>
+              </div>
+              <div class="flight-money-col">
+                <div class="money-value money-best">R$107</div>
+                <div class="pts-label">,90</div>
+              </div>
+              <div class="check-mark">✓</div>
+            </div>
+
+            <div class="flight-item">
+              <div class="flight-time-col">
+                <div class="flight-time-row">
+                  <span class="time-big">08:50</span>
+                  <span class="time-arrow">→</span>
+                  <span class="time-big">09:55</span>
+                </div>
+                <div class="flight-info">
+                  <div class="airline-logo-pill logo-gol" style="width:28px;height:18px;font-size:8px">GOL</div>
+                  <span>1h 05m</span>
+                  <span class="direct-badge">Direto</span>
+                </div>
+              </div>
+              <div class="flight-pts-col">
+                <div class="pts-value">6.100</div>
+                <div class="pts-label">pontos</div>
+                <div class="more-info">+ info</div>
+              </div>
+              <div class="flight-money-col">
+                <div class="money-value">R$107</div>
+                <div class="pts-label">,90</div>
+              </div>
+            </div>
+
+            <div class="flight-item">
+              <div class="flight-time-col">
+                <div class="flight-time-row">
+                  <span class="time-big">10:00</span>
+                  <span class="time-arrow">→</span>
+                  <span class="time-big">12:30</span>
+                </div>
+                <div class="flight-info">
+                  <div class="airline-logo-pill logo-latam" style="width:28px;height:18px;font-size:8px">LTAM</div>
+                  <span>2h 30m</span>
+                  <span class="stop-badge">1 escala</span>
+                </div>
+              </div>
+              <div class="flight-pts-col">
+                <div class="pts-value">13.986</div>
+                <div class="pts-label">pontos</div>
+                <div class="more-info">+ info</div>
+              </div>
+              <div class="flight-money-col">
+                <div class="money-value">R$409</div>
+                <div class="pts-label">,39</div>
+              </div>
+            </div>
+
+            <div class="flight-item">
+              <div class="flight-time-col">
+                <div class="flight-time-row">
+                  <span class="time-big">14:20</span>
+                  <span class="time-arrow">→</span>
+                  <span class="time-big">16:00</span>
+                </div>
+                <div class="flight-info">
+                  <div class="airline-logo-pill logo-azul" style="width:28px;height:18px;font-size:8px">AZUL</div>
+                  <span>1h 40m</span>
+                  <span class="direct-badge">Direto</span>
+                </div>
+              </div>
+              <div class="flight-pts-col">
+                <div class="pts-value">10.000</div>
+                <div class="pts-label">pontos</div>
+                <div class="more-info">+ info</div>
+              </div>
+              <div class="flight-money-col">
+                <div class="money-value">R$453</div>
+                <div class="pts-label">,73</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sticky bottom -->
+          <div class="sticky-bottom">
+            <div class="selected-summary">
+              <div>
+                <div class="sel-route">IDA · CGH 06:40 → CWB 07:45</div>
+                <div class="sel-time">GOL · 1h 05m · Direto</div>
+              </div>
+              <div>
+                <div class="sel-price">R$107<span style="font-size:11px;color:#9888ac">,90</span></div>
+                <div class="sel-price-sub">6.100 pts</div>
+              </div>
+            </div>
+            <button class="continue-btn">Selecionar voo de volta →</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="flow-arrow">→</div>
+  </div>
+
+  <!-- ══════ SCREEN 2: PAYMENT OPTIONS ══════ -->
+  <div class="flow-item">
+    <div>
+      <div class="phone-label"><span class="step-badge">3</span>Opções de Pagamento</div>
+      <div class="phone">
+
+        <div class="status-bar">
+          <span>17:12</span>
+          <div class="status-icons">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 6 1 22 5 22 5 6"/><polyline points="9 2 9 22 13 22 13 2"/><polyline points="17 10 17 22 21 22 21 10"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-body">
+          <!-- Backdrop -->
+          <div class="drawer-backdrop">
+            <div class="backdrop-route">SAO → CWB</div>
+            <div class="backdrop-info">GOL Voo 1104 · 18 jun · 06:40 → 07:45 · 1h 05m</div>
+          </div>
+
+          <!-- Drawer sheet -->
+          <div class="drawer-sheet">
+            <div class="drawer-handle"></div>
+            <div class="drawer-title">Como quer usar seus pontos?</div>
+            <div class="drawer-sub">Selecione a combinação ideal para você</div>
+
+            <div class="pay-options">
+              <div class="pay-option selected">
+                <div class="pay-radio"><div class="pay-radio-inner"></div></div>
+                <div class="pay-main">
+                  <div class="pay-pts">6.100 <span>pontos</span></div>
+                  <div class="pay-cash">Somente pontos, sem custo extra</div>
+                </div>
+                <div class="pay-tag tag-best">Mais pts</div>
+              </div>
+
+              <div class="pay-option">
+                <div class="pay-radio"></div>
+                <div class="pay-main">
+                  <div class="pay-pts">4.300 <span>pts</span> + R$ 40,00</div>
+                  <div class="pay-cash">Economize pontos pagando um pouco</div>
+                </div>
+                <div class="pay-tag tag-mixed">Misto</div>
+              </div>
+
+              <div class="pay-option">
+                <div class="pay-radio"></div>
+                <div class="pay-main">
+                  <div class="pay-pts">2.200 <span>pts</span> + R$ 80,00</div>
+                  <div class="pay-cash">Menos pontos, mais dinheiro</div>
+                </div>
+                <div class="pay-tag tag-mixed">Misto</div>
+              </div>
+
+              <div class="pay-option">
+                <div class="pay-radio"></div>
+                <div class="pay-main">
+                  <div class="pay-pts">1.100 <span>pts</span> + R$ 100,00</div>
+                  <div class="pay-cash">Mínimo de pontos necessário</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:14px;padding:10px 14px;background:#f9f6ff;border-radius:12px">
+              <div style="font-size:11px;color:#6b5d7e;font-weight:500">Voo selecionado</div>
+              <div style="font-size:13px;font-weight:700;color:#1a0a2e;margin-top:2px">IDA · CGH 06:40 → CWB 07:45</div>
+              <div style="font-size:11px;color:#9888ac;margin-top:2px">GOL 1104 · 1h 05m Direto</div>
+            </div>
+
+            <button class="confirm-btn">Confirmar seleção →</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="flow-arrow">→</div>
+  </div>
+
+  <!-- ══════ SCREEN 3: EMISSION DETAILS ══════ -->
+  <div class="flow-item">
+    <div>
+      <div class="phone-label"><span class="step-badge">4</span>Detalhes da Emissão</div>
+      <div class="phone">
+
+        <div class="status-bar">
+          <span>17:12</span>
+          <div class="status-icons"></div>
+        </div>
+
+        <div class="screen-header">
+          <div class="back-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          </div>
+          <div style="text-align:center">
+            <div class="header-title">Detalhes da emissão</div>
+            <div class="header-sub">SAO → CWB · 18 jun — 09 jul</div>
+          </div>
+          <div style="width:34px"></div>
+        </div>
+
+        <div class="screen-body">
+          <!-- Tabs -->
+          <div class="emission-tabs">
+            <div class="em-tab">Ida</div>
+            <div class="em-tab">Volta</div>
+            <div class="em-tab active">Total</div>
+          </div>
+
+          <div class="em-content">
+
+            <!-- IDA section -->
+            <div>
+              <div style="display:flex;align-items:center;margin-bottom:10px">
+                <div class="em-tag ida">IDA</div>
+                <span class="em-date">qui, 18 jun 2026</span>
+              </div>
+
+              <div class="flight-card">
+                <div class="fc-airline">
+                  <div style="font-size:13px;font-weight:700;color:#1a0a2e">GOL: Voo 1104</div>
+                  <div class="airline-logo-pill logo-gol" style="width:38px;height:22px;font-size:10px">GOL</div>
+                </div>
+                <div class="fc-route">
+                  <span class="fc-iata">CGH</span>
+                  <div class="fc-line"></div>
+                  <span class="fc-plane">✈</span>
+                  <div class="fc-line"></div>
+                  <span class="fc-iata">CWB</span>
+                </div>
+                <div class="fc-times">
+                  <div><div class="fc-time">06:40</div><div class="fc-city">São Paulo</div></div>
+                  <div style="text-align:center">
+                    <div class="fc-duration">1h 05m</div>
+                    <div class="fc-duration-sub">sem paradas</div>
+                  </div>
+                  <div style="text-align:right"><div class="fc-time">07:45</div><div class="fc-city">Curitiba</div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VOLTA section -->
+            <div style="margin-top:14px">
+              <div style="display:flex;align-items:center;margin-bottom:10px">
+                <div class="em-tag volta">VOLTA</div>
+                <span class="em-date">qui, 09 jul 2026</span>
+              </div>
+
+              <div class="flight-card" style="background:#f3fef6">
+                <div class="fc-airline">
+                  <div style="font-size:13px;font-weight:700;color:#1a0a2e">GOL: Voo 1109</div>
+                  <div class="airline-logo-pill logo-gol" style="width:38px;height:22px;font-size:10px">GOL</div>
+                </div>
+                <div class="fc-route">
+                  <span class="fc-iata">CWB</span>
+                  <div class="fc-line" style="background:linear-gradient(to right,#16a34a,#bbf7d0)"></div>
+                  <span class="fc-plane" style="color:#16a34a">✈</span>
+                  <div class="fc-line" style="background:linear-gradient(to right,#bbf7d0,#16a34a)"></div>
+                  <span class="fc-iata">CGH</span>
+                </div>
+                <div class="fc-times">
+                  <div><div class="fc-time">10:45</div><div class="fc-city">Curitiba</div></div>
+                  <div style="text-align:center">
+                    <div class="fc-duration" style="color:#16a34a">1h 05m</div>
+                    <div class="fc-duration-sub">sem paradas</div>
+                  </div>
+                  <div style="text-align:right"><div class="fc-time">11:50</div><div class="fc-city">São Paulo</div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Price breakdown -->
+            <div style="margin-top:16px">
+              <div style="font-size:12px;font-weight:600;color:#a896ba;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Resumo de valores</div>
+              <div class="price-breakdown">
+                <div class="pb-row">
+                  <span class="pb-label">Tarifa por adulto</span>
+                  <span class="pb-value">R$ 532,80</span>
+                </div>
+                <div class="pb-row">
+                  <span class="pb-label">Adulto(s)</span>
+                  <span class="pb-value">× 1</span>
+                </div>
+                <div class="pb-row">
+                  <span class="pb-label">Taxa de embarque</span>
+                  <span class="pb-value">R$ 107,34</span>
+                </div>
+                <div class="pb-row total">
+                  <span class="pb-label">Total</span>
+                  <span class="pb-value">R$ 640,14</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="iniciar-btn">
+              <button>Iniciar compra →</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="flow-arrow">→</div>
+  </div>
+
+  <!-- ══════ SCREEN 4: PURCHASE OPTIONS ══════ -->
+  <div class="flow-item">
+    <div>
+      <div class="phone-label"><span class="step-badge">5</span>Opções de Compra</div>
+      <div class="phone">
+
+        <div class="status-bar">
+          <span>17:13</span>
+          <div class="status-icons"></div>
+        </div>
+
+        <div class="screen-header">
+          <div class="back-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          </div>
+          <div style="text-align:center">
+            <div class="header-title">Opções de compra</div>
+          </div>
+          <div style="width:34px;display:flex;align-items:center;justify-content:center;color:#9888ac;font-size:16px">?</div>
+        </div>
+
+        <div class="screen-body">
+
+          <div class="purchase-hero">
+            <h2>Como deseja adquirir?</h2>
+            <p>Escolha a melhor opção para você</p>
+            <div class="purchase-route-pill">✈ SAO → CWB · 18 jun — 09 jul</div>
+          </div>
+
+          <div class="purchase-options">
+
+            <div class="savings-banner">
+              <span style="font-size:16px">💡</span>
+              <span class="savings-text">Emitir pela Gest Miles garante suporte completo</span>
+            </div>
+
+            <!-- Option 1: Site da Cia Aérea -->
+            <div class="purchase-card">
+              <div class="pc-header">
+                <span class="pc-title">Compre pelo site da Cia Aérea</span>
+                <div class="airline-logo-pill logo-gol" style="width:44px;height:26px;font-size:11px">GOL</div>
+              </div>
+              <div class="pc-total">
+                <div class="pc-total-label">Total estimado</div>
+                <div class="pc-total-value">R$ 640<span>,14</span></div>
+              </div>
+              <div class="pc-breakdown">
+                <div class="pc-line"><span>Tarifa adulto</span><strong>R$ 532,80</strong></div>
+                <div class="pc-line"><span>Taxa de embarque</span><strong>R$ 107,34</strong></div>
+              </div>
+              <button class="pc-btn btn-secondary">Ir para site da GOL ↗</button>
+            </div>
+
+            <!-- Option 2: Gest Miles (featured) -->
+            <div class="purchase-card featured">
+              <div class="pc-header">
+                <span class="pc-title">Emitir com Gest Miles</span>
+                <div class="pc-logo logo-gm">GM</div>
+              </div>
+              <div class="pc-badge" style="margin-bottom:10px;display:inline-block">✦ Recomendado</div>
+              <div class="pc-total">
+                <div class="pc-total-label">Total com suporte</div>
+                <div class="pc-total-value">R$ 661<span>,22</span></div>
+              </div>
+              <div class="pc-breakdown">
+                <div class="pc-line"><span>Tarifa adulto</span><strong>R$ 532,80</strong></div>
+                <div class="pc-line"><span>Taxa de embarque</span><strong>R$ 107,34</strong></div>
+                <div class="pc-line"><span>Taxa de serviço</span><strong>R$ 21,08</strong></div>
+              </div>
+              <div style="background:#f3e8ff;border-radius:10px;padding:8px 12px;margin-bottom:12px">
+                <div style="font-size:11px;color:#8A05BE;font-weight:600">Inclui:</div>
+                <div style="font-size:11px;color:#6b5d7e;margin-top:4px;line-height:1.6">✓ Suporte 24h · ✓ Monitoramento de voo · ✓ Assistência em reembolso · ✓ Gestão de pontos</div>
+              </div>
+              <button class="pc-btn btn-primary">Emitir agora →</button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- end flow-row -->
+
+<!-- Notes grid -->
+<div class="notes-grid">
+  <div class="note-card">
+    <h4>📍 Roteamento (novos paths)</h4>
+    <ul>
+      <li><code>/search-flights</code> — tela 1 (já existe, redesenhada)</li>
+      <li><code>/flight-results</code> — tela 2 (nova)</li>
+      <li><code>/emission-details</code> — tela 3 (nova)</li>
+      <li><code>/purchase-options</code> — tela 4 (nova)</li>
+      <li><code>/price-calendar</code> — <em>mantido como rota alternativa</em> acessível via menu</li>
+    </ul>
+  </div>
+  <div class="note-card">
+    <h4>📊 Dados (demo / Supabase)</h4>
+    <ul>
+      <li>Tela 2 usa <code>demoFlightsService</code> existente + estrutura expandida por horário</li>
+      <li>Tabela de cias aéreas vem do <code>useDestinationBestPrices</code> hook já existente</li>
+      <li>Opções de pagamento pts+R$ geradas dinamicamente por proporção configurável</li>
+      <li>Todas as telas têm estado de loading com Skeleton shadcn/ui</li>
+    </ul>
+  </div>
+  <div class="note-card">
+    <h4>⚡ Melhorias vs Oktoplus</h4>
+    <ul>
+      <li>Tema roxo Gest Miles premium — não teal genérico</li>
+      <li>Hero roxo gradiente no header de resultados</li>
+      <li>"Melhor custo" badge com destaque visual no voo recomendado</li>
+      <li>Navegador de datas com preço por dia integrado</li>
+      <li>Cards de cias aéreas com estilo pill colorido</li>
+      <li>Tela de compra com "Emitir com Gest Miles" destaque como opção recomendada</li>
+      <li>Bottom bar sempre visível com resumo do voo selecionado</li>
+    </ul>
+  </div>
+  <div class="note-card">
+    <h4>🔗 Integração cards do Dashboard</h4>
+    <ul>
+      <li>Card de destino → <code>/search-flights?destination=CWB</code></li>
+      <li>Usuário confirma datas na tela 1 → <code>/flight-results?from=SAO&to=CWB&dep=2026-06-18&ret=2026-07-09</code></li>
+      <li>Clique no voo → abre drawer de pagamento (tela 3 como Drawer)</li>
+      <li>Confirma → navega para <code>/emission-details</code></li>
+      <li>Iniciar → navega para <code>/purchase-options</code></li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>

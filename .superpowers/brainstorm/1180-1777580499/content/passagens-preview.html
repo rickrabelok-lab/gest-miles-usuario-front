@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prévia — Painel de Passagens</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #f0ecf7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 60px;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  .page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a0a2e;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .page-subtitle {
+    font-size: 14px;
+    color: #6b5d7e;
+    margin-bottom: 32px;
+    text-align: center;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 390px;
+    max-width: 100%;
+    border-radius: 40px;
+    background: #f7f7f8;
+    box-shadow: 0 32px 80px -12px rgba(138,5,190,0.18), 0 8px 24px -4px rgba(0,0,0,0.12);
+    overflow: hidden;
+    position: relative;
+    border: 1.5px solid rgba(138,5,190,0.15);
+  }
+
+  /* Status bar mock */
+  .status-bar {
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a0a2e;
+  }
+  .status-icons { display: flex; gap: 5px; align-items: center; }
+  .status-icons svg { width: 14px; height: 14px; }
+
+  /* Header */
+  .screen-header {
+    background: #fff;
+    border-bottom: 1px solid #f0edf5;
+    padding: 10px 20px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #f7f4fb;
+    display: flex; align-items: center; justify-content: center;
+    color: #6b5d7e;
+    border: none; cursor: pointer;
+  }
+  .header-title {
+    font-size: 16px; font-weight: 600; color: #1a0a2e;
+    letter-spacing: -0.3px;
+  }
+  .header-right { width: 36px; }
+
+  /* Screen scroll area */
+  .screen-body {
+    overflow-y: auto;
+    max-height: 780px;
+    padding-bottom: 100px;
+  }
+
+  /* Trip type toggle */
+  .trip-toggle {
+    margin: 16px 20px 0;
+    display: flex;
+    background: #fff;
+    border-radius: 14px;
+    padding: 4px;
+    gap: 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .trip-btn {
+    flex: 1; padding: 9px 0;
+    border-radius: 10px;
+    border: none;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .trip-btn.active {
+    background: #8A05BE;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(138,5,190,0.3);
+  }
+  .trip-btn.inactive { background: transparent; color: #7a6d8a; }
+
+  /* Route section */
+  .route-card {
+    margin: 14px 20px 0;
+    background: #fff;
+    border-radius: 18px;
+    padding: 6px 16px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .route-field {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+  }
+  .route-field + .route-field {
+    border-top: 1px solid #f3f0f7;
+  }
+  .route-icon {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+  .route-icon.origin { background: #f3e8ff; color: #8A05BE; }
+  .route-icon.dest { background: #edf9f0; color: #16a34a; }
+  .route-label { font-size: 11px; font-weight: 500; color: #a896ba; text-transform: uppercase; letter-spacing: 0.5px; }
+  .route-value { font-size: 15px; font-weight: 600; color: #1a0a2e; margin-top: 1px; }
+  .route-sub { font-size: 11px; color: #9888ac; margin-top: 1px; }
+
+  .swap-btn {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #f7f4fb;
+    border: 1.5px solid #e8e0f0;
+    display: flex; align-items: center; justify-content: center;
+    color: #8A05BE;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  /* Dates row */
+  .dates-row {
+    margin: 10px 20px 0;
+    display: flex; gap: 8px;
+  }
+  .date-card {
+    flex: 1;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    cursor: pointer;
+  }
+  .date-card.return-active { border: 1.5px solid #8A05BE; }
+  .date-card-label { font-size: 10px; font-weight: 500; color: #a896ba; text-transform: uppercase; letter-spacing: 0.5px; }
+  .date-card-value { font-size: 14px; font-weight: 600; color: #1a0a2e; margin-top: 3px; }
+  .date-card-day { font-size: 11px; color: #9888ac; margin-top: 1px; }
+  .date-card.no-date .date-card-value { color: #c4b5d4; font-weight: 500; font-size: 13px; }
+
+  /* Passengers */
+  .pax-card {
+    margin: 10px 20px 0;
+    background: #fff;
+    border-radius: 14px;
+    padding: 13px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    cursor: pointer;
+  }
+  .pax-left { display: flex; align-items: center; gap: 10px; }
+  .pax-icon { font-size: 18px; }
+  .pax-text { font-size: 14px; font-weight: 500; color: #1a0a2e; }
+  .pax-sub { font-size: 11px; color: #9888ac; margin-top: 1px; }
+  .chevron { color: #c4b5d4; font-size: 16px; }
+
+  /* Mode toggle */
+  .mode-section { margin: 10px 20px 0; }
+  .mode-label { font-size: 11px; font-weight: 500; color: #a896ba; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .mode-toggle {
+    display: flex;
+    background: #fff;
+    border-radius: 14px;
+    padding: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .mode-btn {
+    flex: 1; padding: 8px 0;
+    border-radius: 10px; border: none;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer; text-align: center;
+  }
+  .mode-btn.active {
+    background: #8A05BE;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(138,5,190,0.25);
+  }
+  .mode-btn.inactive { background: transparent; color: #9888ac; }
+
+  /* Airlines filter */
+  .airlines-section { margin: 10px 20px 0; }
+  .airlines-header {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    cursor: pointer;
+  }
+  .airlines-header-left { display: flex; align-items: center; gap: 8px; }
+  .filter-icon { font-size: 15px; color: #8A05BE; }
+  .airlines-text { font-size: 13px; font-weight: 500; color: #1a0a2e; }
+  .airlines-badge {
+    background: #f3e8ff; color: #8A05BE;
+    font-size: 11px; font-weight: 600;
+    border-radius: 20px; padding: 2px 8px;
+  }
+
+  .airlines-chips {
+    display: flex; gap: 8px; margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .airline-chip {
+    display: flex; align-items: center; gap: 6px;
+    background: #fff;
+    border: 1.5px solid #e8e0f0;
+    border-radius: 10px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 12px; font-weight: 500; color: #5a4f6a;
+  }
+  .airline-chip.selected {
+    border-color: #8A05BE;
+    background: #faf5ff;
+    color: #8A05BE;
+  }
+  .airline-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+
+  /* CTA Button */
+  .cta-area {
+    margin: 16px 20px 0;
+  }
+  .search-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #8A05BE 0%, #9E2FD4 60%, #B56CFF 100%);
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 6px 20px rgba(138,5,190,0.35);
+    letter-spacing: -0.2px;
+  }
+  .search-btn svg { width: 18px; height: 18px; }
+
+  /* Divider */
+  .section-divider {
+    margin: 20px 20px 0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .divider-line { flex: 1; height: 1px; background: #ede8f4; }
+  .divider-text { font-size: 11px; font-weight: 500; color: #a896ba; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Explore destinations */
+  .explore-section { margin: 14px 20px 0; }
+  .explore-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .explore-title { font-size: 15px; font-weight: 700; color: #1a0a2e; }
+  .explore-sub { font-size: 11px; color: #9888ac; margin-top: 2px; }
+  .explore-link { font-size: 12px; font-weight: 600; color: #8A05BE; }
+
+  .dest-cards-row {
+    display: flex; gap: 10px; overflow-x: auto;
+    scrollbar-width: none; padding-bottom: 4px;
+  }
+  .dest-card {
+    flex-shrink: 0;
+    width: 140px;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .dest-card-img {
+    height: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .dest-card-img img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .dest-card-img .overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%);
+  }
+  .dest-card-img .dest-name {
+    position: absolute; bottom: 6px; left: 8px;
+    font-size: 12px; font-weight: 600; color: #fff;
+  }
+  .dest-card-body { padding: 8px 10px 10px; }
+  .dest-pts { font-size: 12px; font-weight: 700; color: #1a0a2e; }
+  .dest-money { font-size: 11px; color: #9888ac; margin-top: 2px; }
+  .dest-airline { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .airline-pill {
+    font-size: 10px; font-weight: 600;
+    padding: 2px 6px; border-radius: 6px;
+  }
+  .gol { background: #fff0e6; color: #e87722; }
+  .latam { background: #fff0f3; color: #d42054; }
+  .azul { background: #e8f4ff; color: #0050b3; }
+
+  /* Bottom nav mock */
+  .bottom-nav {
+    position: sticky; bottom: 0;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #f0edf5;
+    padding: 8px 0 14px;
+    display: flex; justify-content: space-around; align-items: center;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 4px 12px; cursor: pointer;
+    font-size: 10px; font-weight: 500; color: #a896ba;
+  }
+  .nav-item.active { color: #8A05BE; }
+  .nav-item svg { width: 20px; height: 20px; }
+  .nav-item.active svg path { stroke: #8A05BE; }
+
+  /* Destination placeholder colors for cards */
+  .card-brasil { background: linear-gradient(135deg, #1a472a, #2d6a4f); }
+  .card-eua { background: linear-gradient(135deg, #1e3a5f, #2563eb); }
+  .card-europa { background: linear-gradient(135deg, #7c3aed, #4f46e5); }
+  .card-nordeste { background: linear-gradient(135deg, #92400e, #d97706); }
+
+  /* Labels section */
+  .label-section {
+    margin: 28px 0 12px;
+    text-align: center;
+  }
+  .label-section h3 {
+    font-size: 16px; font-weight: 700; color: #1a0a2e;
+  }
+  .label-section p { font-size: 13px; color: #6b5d7e; margin-top: 4px; }
+
+  .note {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    max-width: 390px;
+    width: 100%;
+    box-shadow: 0 2px 12px rgba(138,5,190,0.08);
+    border: 1px solid #e8d8f7;
+  }
+  .note h4 { font-size: 14px; font-weight: 700; color: #8A05BE; margin-bottom: 10px; }
+  .note ul { padding-left: 18px; }
+  .note li { font-size: 13px; color: #4a3a5e; margin-bottom: 6px; line-height: 1.5; }
+
+  /* Also show the card improvement */
+  .two-col { display: flex; gap: 16px; margin-top: 24px; max-width: 800px; width: 100%; align-items: flex-start; }
+  @media (max-width: 700px) { .two-col { flex-direction: column; align-items: center; } }
+</style>
+</head>
+<body>
+
+<div class="page-title">Prévia — Painel de Passagens</div>
+<div class="page-subtitle">Design proposto para o novo SearchFlightsScreen • Tema Gest Miles</div>
+
+<div class="two-col">
+
+  <!-- PHONE MOCKUP -->
+  <div class="phone" id="phone">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span>17:30</span>
+      <div class="status-icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 6 1 22 5 22 5 6"/><polyline points="9 2 9 22 13 22 13 2"/><polyline points="17 10 17 22 21 22 21 10"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12" y2="20" stroke-linecap="round" stroke-width="3"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor"><rect x="2" y="7" width="18" height="11" rx="2"/><path d="M22 11v3" stroke-linecap="round" stroke-width="2.5"/></svg>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="screen-header">
+      <div class="back-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </div>
+      <span class="header-title">Passagens</span>
+      <div class="header-right"></div>
+    </div>
+
+    <div class="screen-body">
+
+      <!-- Trip type -->
+      <div class="trip-toggle">
+        <button class="trip-btn active">✈ Ida e volta</button>
+        <button class="trip-btn inactive">→ Somente ida</button>
+      </div>
+
+      <!-- Route -->
+      <div class="route-card">
+        <div class="route-field">
+          <div class="route-icon origin">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <div style="flex:1">
+            <div class="route-label">Origem</div>
+            <div class="route-value">São Paulo</div>
+            <div class="route-sub">GRU / CGH / VCP</div>
+          </div>
+        </div>
+        <div class="swap-btn">⇅</div>
+        <div class="route-field">
+          <div class="route-icon dest">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div style="flex:1">
+            <div class="route-label">Destino</div>
+            <div class="route-value" style="color:#c4b5d4;font-weight:500">Para onde?</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="dates-row">
+        <div class="date-card">
+          <div class="date-card-label">✈ Ida</div>
+          <div class="date-card-value">18 Jun 2026</div>
+          <div class="date-card-day">quinta-feira</div>
+        </div>
+        <div class="date-card return-active">
+          <div class="date-card-label" style="color:#8A05BE">↩ Volta</div>
+          <div class="date-card-value">09 Jul 2026</div>
+          <div class="date-card-day" style="color:#8A05BE">quinta-feira ✕</div>
+        </div>
+      </div>
+
+      <!-- Passengers -->
+      <div class="pax-card">
+        <div class="pax-left">
+          <span class="pax-icon">👤</span>
+          <div>
+            <div class="pax-text">1 Adulto</div>
+            <div class="pax-sub">Classe Econômica</div>
+          </div>
+        </div>
+        <span class="chevron">›</span>
+      </div>
+
+      <!-- Payment mode -->
+      <div class="mode-section">
+        <div class="mode-label">Forma de pagamento</div>
+        <div class="mode-toggle">
+          <button class="mode-btn active">Pts + R$</button>
+          <button class="mode-btn inactive">Pontos</button>
+          <button class="mode-btn inactive">Dinheiro</button>
+        </div>
+      </div>
+
+      <!-- Airlines filter -->
+      <div class="airlines-section">
+        <div class="airlines-header">
+          <div class="airlines-header-left">
+            <span class="filter-icon">⊞</span>
+            <span class="airlines-text">Companhias Aéreas</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="airlines-badge">5 selecionadas</span>
+            <span style="color:#c4b5d4;font-size:16px">›</span>
+          </div>
+        </div>
+        <div class="airlines-chips">
+          <div class="airline-chip selected">
+            <span style="width:8px;height:8px;border-radius:50%;background:#e87722;display:inline-block"></span>
+            GOL
+          </div>
+          <div class="airline-chip selected">
+            <span style="width:8px;height:8px;border-radius:50%;background:#d42054;display:inline-block"></span>
+            LATAM
+          </div>
+          <div class="airline-chip selected">
+            <span style="width:8px;height:8px;border-radius:50%;background:#0050b3;display:inline-block"></span>
+            Azul
+          </div>
+          <div class="airline-chip">
+            <span style="width:8px;height:8px;border-radius:50%;background:#9b59b6;display:inline-block"></span>
+            TAP
+          </div>
+          <div class="airline-chip selected">
+            <span style="width:8px;height:8px;border-radius:50%;background:#c0392b;display:inline-block"></span>
+            American
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-area">
+        <button class="search-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Pesquisar passagens
+        </button>
+      </div>
+
+      <!-- Divider -->
+      <div class="section-divider">
+        <div class="divider-line"></div>
+        <span class="divider-text">Explorar destinos</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- Destinations section -->
+      <div class="explore-section">
+        <div class="explore-header">
+          <div>
+            <div class="explore-title">Destinos em destaque</div>
+            <div class="explore-sub">Melhores preços com suas origens habilitadas</div>
+          </div>
+          <span class="explore-link">Ver todos</span>
+        </div>
+
+        <div class="dest-cards-row">
+          <!-- Card 1 -->
+          <div class="dest-card">
+            <div class="dest-card-img">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a472a,#2d6a4f);display:flex;align-items:center;justify-content:center;font-size:28px">🇧🇷</div>
+              <div class="overlay"></div>
+              <div class="dest-name">Brasil</div>
+            </div>
+            <div class="dest-card-body">
+              <div class="dest-pts">4.000 pts</div>
+              <div class="dest-money">R$ 107,90</div>
+              <div class="dest-airline">
+                <span class="airline-pill gol">GOL</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="dest-card">
+            <div class="dest-card-img">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#92400e,#d97706);display:flex;align-items:center;justify-content:center;font-size:28px">🌴</div>
+              <div class="overlay"></div>
+              <div class="dest-name">Nordeste</div>
+            </div>
+            <div class="dest-card-body">
+              <div class="dest-pts">5.200 pts</div>
+              <div class="dest-money">R$ 184,00</div>
+              <div class="dest-airline">
+                <span class="airline-pill latam">LATAM</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="dest-card">
+            <div class="dest-card-img">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#1e3a5f,#2563eb);display:flex;align-items:center;justify-content:center;font-size:28px">🗽</div>
+              <div class="overlay"></div>
+              <div class="dest-name">EUA</div>
+            </div>
+            <div class="dest-card-body">
+              <div class="dest-pts">42.000 pts</div>
+              <div class="dest-money">R$ 3.200,00</div>
+              <div class="dest-airline">
+                <span class="airline-pill azul">Azul</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="dest-card">
+            <div class="dest-card-img">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#7c3aed,#4f46e5);display:flex;align-items:center;justify-content:center;font-size:28px">🗼</div>
+              <div class="overlay"></div>
+              <div class="dest-name">Europa</div>
+            </div>
+            <div class="dest-card-body">
+              <div class="dest-pts">55.000 pts</div>
+              <div class="dest-money">R$ 4.800,00</div>
+              <div class="dest-airline">
+                <span class="airline-pill latam">LATAM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second row destinations -->
+      <div class="explore-section" style="margin-top:8px">
+        <div class="dest-cards-row">
+          <div class="dest-card">
+            <div class="dest-card-img">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#0f4c81,#1e6eb5);display:flex;align-items:center;justify-content:center;font-size:28px">🌊</div>
+              <div class="overlay"></div>
+              <div class="dest-name">Sul</div>
+            </div>
+            <div class="dest-card-body">
+              <div class="dest-pts">4.823 pts</div>
+              <div class="dest-money">R$ 89,00</div>
+              <div class="dest-airline">
+                <span class="airline-pill gol">GOL</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dest-card">
+            <div class="dest-card-img">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#155e75,#0e7490);display:flex;align-items:center;justify-content:center;font-size:28px">🌿</div>
+              <div class="overlay"></div>
+              <div class="dest-name">Norte</div>
+            </div>
+            <div class="dest-card-body">
+              <div class="dest-pts">6.100 pts</div>
+              <div class="dest-money">R$ 220,00</div>
+              <div class="dest-airline">
+                <span class="airline-pill azul">Azul</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dest-card">
+            <div class="dest-card-img">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#831843,#be185d);display:flex;align-items:center;justify-content:center;font-size:28px">🏛</div>
+              <div class="overlay"></div>
+              <div class="dest-name">Portugal</div>
+            </div>
+            <div class="dest-card-body">
+              <div class="dest-pts">38.500 pts</div>
+              <div class="dest-money">R$ 3.100,00</div>
+              <div class="dest-airline">
+                <span class="airline-pill latam">LATAM</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dest-card">
+            <div class="dest-card-img">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#78350f,#b45309);display:flex;align-items:center;justify-content:center;font-size:28px">💃</div>
+              <div class="overlay"></div>
+              <div class="dest-name">Argentina</div>
+            </div>
+            <div class="dest-card-body">
+              <div class="dest-pts">18.000 pts</div>
+              <div class="dest-money">R$ 1.400,00</div>
+              <div class="dest-airline">
+                <span class="airline-pill gol">GOL</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end screen-body -->
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Início
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Programas
+      </div>
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8A05BE" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7" stroke-linecap="round" stroke-width="3"/></svg>
+        Passagens
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Alertas
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Perfil
+      </div>
+    </div>
+  </div><!-- end phone -->
+
+  <!-- Notes panel -->
+  <div style="flex:1; min-width:280px">
+    <div class="note">
+      <h4>✦ Melhorias vs tela atual</h4>
+      <ul>
+        <li><strong>Toggle Ida e volta / Somente ida</strong> — hoje não existe; remove o campo de volta automaticamente</li>
+        <li><strong>Campos de origem/destino redesenhados</strong> — layout vertical com ícones coloridos, mais claro visualmente</li>
+        <li><strong>Seletor de datas explícito</strong> — hoje a tela atual não tem datepicker; ida + volta com botão ×</li>
+        <li><strong>Modo de pagamento 3 opções</strong> — "Pts + R$", "Pontos", "Dinheiro" (hoje só 2)</li>
+        <li><strong>Filtro de Cias Aéreas com chips selecionáveis</strong> — sempre visível, não em collapsible escondido</li>
+        <li><strong>Botão CTA primário roxo</strong> — gradiente com shadow, muito mais destaque</li>
+        <li><strong>Destinos em destaque integrados na tela</strong> — clicar em um card já preenche o destino</li>
+        <li><strong>Cards de destino com cia aérea + preço pts + R$</strong> — dados reais do hook existente</li>
+      </ul>
+    </div>
+
+    <div class="note" style="margin-top:14px">
+      <h4>🔗 Integração com cards do Dashboard</h4>
+      <ul>
+        <li>Clicar em qualquer card de destino (DestinationCarousel) já navega para <code>/search-flights?destination=CWB</code></li>
+        <li>A tela nova vai ler o param <code>destination</code> e pré-preencher o campo destino</li>
+        <li>O efeito visual: o campo destino aparece preenchido ao abrir a tela vindo de um card</li>
+        <li>Isso já existe parcialmente no código; apenas melhoraremos o feedback visual</li>
+      </ul>
+    </div>
+
+    <div class="note" style="margin-top:14px">
+      <h4>🏗 O que será implementado</h4>
+      <ul>
+        <li>Refatorar <code>SearchFlightsScreen.tsx</code> completamente</li>
+        <li>Adicionar <code>tripType</code> state (ida-volta / somente-ida)</li>
+        <li>Adicionar date pickers com <code>react-day-picker</code> (já instalado)</li>
+        <li>Novo design de chips de cias aéreas</li>
+        <li>Incorporar <code>DestinationCarousel</code> (mini versão) dentro da própria tela</li>
+        <li>Manter todos os Drawers existentes (aeroporto, passageiros)</li>
+        <li>Botão "Pesquisar" navega para <code>/price-calendar</code> com datas nos params</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

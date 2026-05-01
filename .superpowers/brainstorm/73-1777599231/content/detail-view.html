@@ -1,0 +1,119 @@
+<h2>Detalhe de uma promoção</h2>
+<p class="subtitle">O que acontece quando o usuário toca em uma promo</p>
+
+<div class="split">
+
+  <!-- OPTION A: Bottom Sheet -->
+  <div class="mockup" data-choice="a" onclick="toggleSelect(this)" style="cursor:pointer; border:2px solid transparent; border-radius:12px; transition:border-color 0.2s;">
+    <div class="mockup-header">A — Bottom Sheet</div>
+    <div class="mockup-body" style="font-family:sans-serif; padding:0; overflow:hidden;">
+      <!-- Phone frame -->
+      <div style="background:#f3f4f6; border-radius:8px; overflow:hidden; position:relative;">
+        <!-- Page behind (dimmed) -->
+        <div style="background:#1a1a1a; opacity:0.5; position:absolute; inset:0; border-radius:8px;"></div>
+        <!-- Promo list (background) -->
+        <div style="padding:12px; opacity:0.3;">
+          <div style="height:10px; background:#8A05BE; border-radius:4px; margin-bottom:8px;"></div>
+          <div style="height:60px; background:#ddd; border-radius:8px; margin-bottom:6px;"></div>
+          <div style="height:60px; background:#ddd; border-radius:8px; margin-bottom:6px;"></div>
+        </div>
+        <!-- Bottom sheet -->
+        <div style="position:absolute; bottom:0; left:0; right:0; background:#fff; border-radius:20px 20px 0 0; padding:16px; box-shadow:0 -8px 32px rgba(0,0,0,0.18);">
+          <!-- Handle -->
+          <div style="width:36px; height:4px; background:#e0e0e0; border-radius:2px; margin:0 auto 14px;"></div>
+          <!-- Tabs -->
+          <div style="display:flex; border-bottom:1px solid #f0e8ff; margin-bottom:12px;">
+            <div style="flex:1; text-align:center; padding:6px; font-size:10px; font-weight:700; color:#8A05BE; border-bottom:2px solid #8A05BE; margin-bottom:-1px;">Promoção</div>
+            <div style="flex:1; text-align:center; padding:6px; font-size:10px; color:#999;">Regras</div>
+          </div>
+          <!-- Bonus badge -->
+          <div style="background:linear-gradient(135deg,#8A05BE,#B56CFF); border-radius:12px; padding:10px 16px; color:white; text-align:center; margin-bottom:10px;">
+            <div style="font-size:32px; font-weight:900; line-height:1;">120%</div>
+            <div style="font-size:10px; opacity:0.9;">de bônus na transferência</div>
+          </div>
+          <!-- Target program -->
+          <div style="font-size:9px; color:#999; text-align:center; margin-bottom:4px;">Transfira seus pontos para</div>
+          <div style="font-size:13px; font-weight:800; color:#0080ff; text-align:center; margin-bottom:10px;">TudoAzul</div>
+          <!-- Participating banks -->
+          <div style="font-size:9px; color:#666; margin-bottom:6px; font-weight:600;">Bancos participantes</div>
+          <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px;">
+            <div style="background:#f0f0f0; border-radius:20px; padding:3px 8px; font-size:8px;">C6</div>
+            <div style="background:#f0f0f0; border-radius:20px; padding:3px 8px; font-size:8px;">Itaú</div>
+            <div style="background:#f0f0f0; border-radius:20px; padding:3px 8px; font-size:8px;">Sicredi</div>
+            <div style="background:#f0f0f0; border-radius:20px; padding:3px 8px; font-size:8px;">+4</div>
+          </div>
+          <!-- Expiry -->
+          <div style="font-size:9px; color:#e74c3c; text-align:center; margin-bottom:10px;">⏰ Encerra em 30/04 às 23:59</div>
+          <!-- CTA -->
+          <div style="background:linear-gradient(135deg,#8A05BE,#B56CFF); border-radius:12px; padding:12px; text-align:center; color:white; font-size:12px; font-weight:700;">Cadastrar-se na promoção →</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px 12px; background:#f8f5ff; border-radius:0 0 10px 10px;">
+      <p style="margin:0; font-size:12px; color:#555;"><strong style="color:#8A05BE;">Prós:</strong> Contexto não quebrado, experiência fluida, fecha com swipe down. Mais rápido.</p>
+      <p style="margin:4px 0 0; font-size:12px; color:#555;"><strong style="color:#e74c3c;">Contras:</strong> Pouco espaço para muita informação (ex: regras longas).</p>
+    </div>
+  </div>
+
+  <!-- OPTION B: Full screen detail -->
+  <div class="mockup" data-choice="b" onclick="toggleSelect(this)" style="cursor:pointer; border:2px solid transparent; border-radius:12px; transition:border-color 0.2s;">
+    <div class="mockup-header">B — Tela de Detalhe</div>
+    <div class="mockup-body" style="font-family:sans-serif; padding:0; overflow:hidden;">
+      <div style="background:#f3f4f6; border-radius:8px; overflow:hidden;">
+        <!-- Header -->
+        <div style="background:#8A05BE; padding:10px 14px; display:flex; align-items:center; gap:8px;">
+          <span style="color:white; font-size:14px;">←</span>
+          <span style="color:white; font-size:11px; font-weight:600;">Promoção TudoAzul</span>
+        </div>
+        <!-- Content -->
+        <div style="padding:12px; background:#fff;">
+          <!-- Tabs -->
+          <div style="display:flex; border-bottom:1px solid #f0e8ff; margin-bottom:12px;">
+            <div style="flex:1; text-align:center; padding:8px; font-size:10px; font-weight:700; color:#8A05BE; border-bottom:2px solid #8A05BE; margin-bottom:-1px;">Promoção</div>
+            <div style="flex:1; text-align:center; padding:8px; font-size:10px; color:#999;">Regras</div>
+          </div>
+          <!-- Hero badge -->
+          <div style="background:linear-gradient(135deg,#8A05BE,#B56CFF); border-radius:16px; padding:16px; color:white; text-align:center; margin-bottom:12px;">
+            <div style="font-size:40px; font-weight:900; line-height:1;">120%</div>
+            <div style="font-size:11px; opacity:0.9; margin-top:4px;">de bônus na transferência</div>
+            <div style="font-size:10px; margin-top:8px; background:rgba(255,255,255,0.2); border-radius:8px; padding:4px 10px; display:inline-block;">Assinante Clube Azul há +5 anos</div>
+          </div>
+          <!-- Tiers -->
+          <div style="display:flex; flex-direction:column; gap:5px; margin-bottom:10px;">
+            <div style="background:#f8f5ff; border-radius:8px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:9px; color:#555;">Clube Azul 5+ anos</span>
+              <span style="font-size:13px; font-weight:800; color:#8A05BE;">120%</span>
+            </div>
+            <div style="background:#f8f5ff; border-radius:8px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:9px; color:#555;">Clube Azul 3-4 anos</span>
+              <span style="font-size:13px; font-weight:800; color:#8A05BE;">110%</span>
+            </div>
+            <div style="background:#f8f5ff; border-radius:8px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:9px; color:#555;">Clube Azul 1-2 anos</span>
+              <span style="font-size:13px; font-weight:800; color:#8A05BE;">100%</span>
+            </div>
+          </div>
+          <!-- Expiry + CTA -->
+          <div style="font-size:9px; color:#e74c3c; text-align:center; margin-bottom:8px;">⏰ Encerra 30/04 às 23:59 · Bônus máx: 300.000 pts</div>
+          <div style="background:linear-gradient(135deg,#8A05BE,#B56CFF); border-radius:12px; padding:13px; text-align:center; color:white; font-size:12px; font-weight:700;">Cadastrar-se na promoção →</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px 12px; background:#f8f5ff; border-radius:0 0 10px 10px;">
+      <p style="margin:0; font-size:12px; color:#555;"><strong style="color:#8A05BE;">Prós:</strong> Espaço total para tiers de bônus, regras longas, histórico. Mais completo.</p>
+      <p style="margin:4px 0 0; font-size:12px; color:#555;"><strong style="color:#e74c3c;">Contras:</strong> Quebra o contexto, requer navegação back.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Make the mockup divs selectable like option cards
+document.querySelectorAll('.mockup[data-choice]').forEach(el => {
+  el.addEventListener('click', function() {
+    document.querySelectorAll('.mockup[data-choice]').forEach(m => m.style.borderColor = 'transparent');
+    this.style.borderColor = '#8A05BE';
+    if (window.recordChoice) window.recordChoice(this.dataset.choice, this.querySelector('.mockup-header').textContent);
+  });
+});
+</script>

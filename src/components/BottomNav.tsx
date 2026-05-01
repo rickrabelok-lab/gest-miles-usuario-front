@@ -119,11 +119,54 @@ const BottomNav: FC<BottomNavProps> = () => {
     navigate(`/?${next.toString()}`);
   };
 
+  const passagensHref = useMemo(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("view");
+    const q = next.toString();
+    return q ? `/search-flights?${q}` : "/search-flights";
+  }, [searchParams]);
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-stone-200/80 bg-white shadow-[0_-2px_16px_rgba(0,0,0,0.06)]">
+    <div className="pointer-events-auto fixed bottom-0 left-0 right-0 z-[100] border-t border-stone-200/80 bg-white shadow-[0_-2px_16px_rgba(0,0,0,0.06)]">
       <div className="mx-auto flex max-w-md items-stretch justify-between gap-0 px-1.5 py-1.5 sm:px-2">
         {NAV.map(({ id, label, Icon }) => {
           const isActive = active === id;
+          const tabClass = cn(
+            "flex w-full flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 transition-colors no-underline",
+            isActive ? "text-nubank-primary" : "text-stone-500 hover:text-stone-800",
+          );
+
+          if (id === "passagens") {
+            return (
+              <div key={id} className="min-w-0 flex-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.assign(new URL(passagensHref, window.location.origin).href);
+                  }}
+                  className={cn(tabClass, "cursor-pointer")}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <span className="relative">
+                    <Icon
+                      className="h-5 w-5 shrink-0"
+                      strokeWidth={isActive ? 2.25 : 1.75}
+                      aria-hidden
+                    />
+                  </span>
+                  <span
+                    className={cn(
+                      "max-w-full truncate px-0.5 text-center text-[9px] leading-tight",
+                      isActive ? "font-semibold" : "font-medium",
+                    )}
+                  >
+                    {label}
+                  </span>
+                </button>
+              </div>
+            );
+          }
+
           return (
             <div key={id} className="min-w-0 flex-1">
               <button
@@ -137,22 +180,13 @@ const BottomNav: FC<BottomNavProps> = () => {
                     goProgramas();
                     return;
                   }
-                  if (id === "passagens") {
-                    navigate("/search-flights");
-                    return;
-                  }
                   if (id === "alertas") {
                     navigate("/vencimentos");
                     return;
                   }
                   navigate("/perfil");
                 }}
-                className={cn(
-                  "flex w-full flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 transition-colors",
-                  isActive
-                    ? "text-nubank-primary"
-                    : "text-stone-500 hover:text-stone-800",
-                )}
+                className={tabClass}
               >
                 <span className="relative">
                   <Icon
