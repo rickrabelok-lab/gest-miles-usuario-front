@@ -14,6 +14,8 @@ export function useBonusPromotions(category?: BonusCategory): {
     return category ? active.filter(p => p.category === category) : active
   }, [category])
 
+  // highlight is intentionally global (ignores category) — it is only consumed by
+  // BonusOfferSection which calls this hook without a category argument.
   const highlight = useMemo(
     () => BONUS_PROMOTIONS.find(p => p.isActive && p.isHighlight) ?? null,
     []

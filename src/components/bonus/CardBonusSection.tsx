@@ -43,7 +43,7 @@ export function CardBonusSection({ sectionRef }: Props) {
               style={{ background: 'linear-gradient(135deg, #2c3e50, #3498db)' }}
             >
               <p className="text-xl font-black leading-none">{promo.bonusValue}</p>
-              <p className="text-[9px] opacity-90">bônus</p>
+              <p className="text-[9px] opacity-90">{promo.bonusLabel}</p>
             </div>
           </button>
         ))}
