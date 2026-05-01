@@ -1100,7 +1100,12 @@ const Index = () => {
     code,
   }: SelectedDestinationSearch) => {
     const destinationAirportCode = CARD_DESTINATION_TO_AIRPORT_CODE[code] ?? code;
-    navigate(`/search-flights?destination=${encodeURIComponent(destinationAirportCode)}`);
+    const q = new URLSearchParams();
+    q.set("destination", destinationAirportCode);
+    const clientId = searchParams.get("clientId");
+    if (clientId) q.set("clientId", clientId);
+    const path = `/search-flights?${q.toString()}`;
+    window.location.assign(new URL(path, window.location.origin).href);
   };
 
   const visiblePrograms = showAll ? programs : programs.slice(0, 4);
@@ -1943,7 +1948,7 @@ const Index = () => {
                       <button
                         type="button"
                         onClick={() => setIsAddProgramMenuOpen((prev) => !prev)}
-                        className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-full border border-nubank-border bg-white px-2 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-white/90 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-[10px] border border-[#8A05BE] bg-white px-2 text-[11px] font-semibold whitespace-nowrap text-[#8A05BE] shadow-nubank transition-colors hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                       >
                         <Plus size={12} />
                       </button>
@@ -1994,7 +1999,7 @@ const Index = () => {
                         <button
                           type="button"
                           onClick={() => setIsDemandDialogOpen(true)}
-                          className="inline-flex h-9 w-full items-center justify-center rounded-full border border-transparent bg-primary px-2 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-nubank transition-colors hover:bg-primary/90"
+                          className="inline-flex h-9 w-full items-center justify-center rounded-[10px] border border-transparent bg-primary px-2 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-nubank transition-colors hover:bg-primary/90"
                         >
                           Solicitar Cotação
                         </button>
@@ -2005,7 +2010,7 @@ const Index = () => {
                             setIsActionPlanDialogOpen(true);
                           }}
                           disabled={!canEditActionPlan}
-                          className={`inline-flex h-9 w-full items-center justify-center gap-1 rounded-full border border-nubank-border bg-transparent px-2 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-white/90 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-700 ${
+                          className={`inline-flex h-9 w-full items-center justify-center gap-1 rounded-[10px] border border-gray-200 bg-white px-2 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-700 ${
                             !canEditActionPlan ? "cursor-not-allowed opacity-60" : ""
                           }`}
                         >
@@ -2187,8 +2192,9 @@ const Index = () => {
             </div>
           ) : (
             <>
-              <section id="meus-programas" className="px-5 pb-1">
-                <h2 className="section-label-lg text-lg">Meus programas</h2>
+              <section id="meus-programas" className="flex items-center justify-between px-5 pb-1">
+                <h2 className="text-[15px] font-bold text-gray-900">Meus programas</h2>
+                <span className="text-[11px] font-semibold text-[#8A05BE]">Ver todos →</span>
               </section>
               <div className="grid grid-cols-2 gap-1.5 px-5 pb-2">
                 {visiblePrograms.map((prog) => (
