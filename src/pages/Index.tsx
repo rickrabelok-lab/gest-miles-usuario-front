@@ -1957,6 +1957,7 @@ const Index = () => {
                       }))}
                       onToggle={handleToggleProgramCard}
                       availableOptions={AVAILABLE_PROGRAM_OPTIONS}
+                      logoImages={optionLogoImages}
                     />
 
                     {(!managerMode || !!managerClientId) && (
