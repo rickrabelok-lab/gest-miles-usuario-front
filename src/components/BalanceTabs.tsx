@@ -45,15 +45,8 @@ const BalanceTabs = ({
     return true;
   });
 
-  const gridColsClass =
-    visibleTabs.length === 5
-      ? "grid-cols-5"
-      : visibleTabs.length === 6
-        ? "grid-cols-6"
-        : "grid-cols-7";
-
   return (
-    <div className={`grid ${gridColsClass} gap-1.5 px-5 py-3`}>
+    <div className="flex overflow-x-auto border-b border-gray-200 px-5 scrollbar-hide">
       {visibleTabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
@@ -62,10 +55,10 @@ const BalanceTabs = ({
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex items-center justify-center gap-1 rounded-[14px] border px-2.5 py-2 text-[11px] font-medium transition-all duration-300 ease-out ${
+            className={`-mb-px flex shrink-0 items-center justify-center gap-1 border-b-2 px-3 py-2.5 text-[11px] font-medium transition-colors ${
               isActive
-                ? "border-transparent gradient-primary text-primary-foreground shadow-[0_2px_10px_-2px_rgba(138,5,190,0.25)] active:scale-[0.98]"
-                : "border-nubank-border bg-white text-nubank-text-secondary shadow-nubank hover:shadow-nubank-hover hover:border-primary/15 hover:text-nubank-text active:scale-[0.98]"
+                ? "border-[#8A05BE] font-bold text-[#8A05BE]"
+                : "border-transparent text-gray-400 hover:text-gray-600"
             }`}
           >
             {Icon ? (
