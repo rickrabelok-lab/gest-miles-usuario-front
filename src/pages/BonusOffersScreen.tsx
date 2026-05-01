@@ -1,123 +1,96 @@
-import { Gift } from "lucide-react";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import BonusOfferCard from "@/components/bonus/BonusOfferCard";
-import BonusOfferCardSkeleton from "@/components/bonus/BonusOfferCardSkeleton";
-import TopStoreCard from "@/components/bonus/TopStoreCard";
-import { Button } from "@/components/ui/button";
-import { useBonusOffers } from "@/hooks/useBonusOffers";
-import type { LoyaltyProgram } from "@/lib/bonus-offers/types";
+// src/pages/BonusOffersScreen.tsx
+import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { BonusCategory } from '@/lib/bonusMockData'
+import { useBonusPromotions } from '@/hooks/useBonusPromotions'
+import { TransferBonusSection } from '@/components/bonus/TransferBonusSection'
+import { ShoppingBonusSection } from '@/components/bonus/ShoppingBonusSection'
+import { MilesBonusSection } from '@/components/bonus/MilesBonusSection'
+import { CardBonusSection } from '@/components/bonus/CardBonusSection'
 
-type ProgramFilter = "Todos" | LoyaltyProgram;
+const PILLS: { id: BonusCategory | 'all'; label: string }[] = [
+  { id: 'all', label: 'Tudo' },
+  { id: 'transfer', label: '🔄 Transferências' },
+  { id: 'shopping', label: '🛍 Compras' },
+  { id: 'miles', label: '✈️ Milhas' },
+  { id: 'cards', label: '💳 Cartões' },
+]
 
-const FILTERS: ProgramFilter[] = [
-  "Todos",
-  "Livelo",
-  "Smiles",
-  "LATAM Pass",
-  "Azul Fidelidade",
-];
+export default function BonusOffersScreen() {
+  const navigate = useNavigate()
+  const [activePill, setActivePill] = useState<BonusCategory | 'all'>('all')
+  const { activeCount, expiringToday } = useBonusPromotions()
 
-const BonusOffersScreen = () => {
-  const [activeFilter, setActiveFilter] = useState<ProgramFilter>("Todos");
-  const selectedProgram = activeFilter === "Todos" ? undefined : activeFilter;
-  const { offers, loading, error, retry } = useBonusOffers(selectedProgram);
+  const transferRef = useRef<HTMLDivElement>(null)
+  const shoppingRef = useRef<HTMLDivElement>(null)
+  const milesRef = useRef<HTMLDivElement>(null)
+  const cardsRef = useRef<HTMLDivElement>(null)
 
-  const topStores = useMemo(() => {
-    const map = new Map<string, number>();
-    offers.forEach((offer) => {
-      const current = map.get(offer.store) ?? 0;
-      if (offer.multiplier > current) map.set(offer.store, offer.multiplier);
-    });
-    return [...map.entries()]
-      .map(([store, bestMultiplier]) => ({ store, bestMultiplier }))
-      .sort((a, b) => b.bestMultiplier - a.bestMultiplier)
-      .slice(0, 6);
-  }, [offers]);
+  const sectionRefs: Record<BonusCategory, React.RefObject<HTMLDivElement>> = {
+    transfer: transferRef,
+    shopping: shoppingRef,
+    miles: milesRef,
+    cards: cardsRef,
+  }
+
+  function handlePillClick(id: BonusCategory | 'all') {
+    setActivePill(id)
+    if (id === 'all') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    sectionRefs[id].current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
-    <div className="mx-auto min-h-screen max-w-[480px] bg-nubank-bg px-5 pb-14 pt-6">
-      <header className="mb-6">
-        <div className="flex items-center gap-3">
-          <Gift size={24} className="text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight text-nubank-text">Compras Bonificadas</h1>
+    <div className="min-h-screen bg-[#f7f7f8]">
+      {/* Header */}
+      <div
+        className="px-4 py-3 flex items-center gap-3"
+        style={{ background: 'linear-gradient(135deg, #8A05BE 0%, #9E2FD4 100%)' }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className="text-white text-xl font-light leading-none"
+        >
+          ←
+        </button>
+        <div>
+          <h1 className="text-white font-bold text-base leading-tight">Promoções Bonificadas</h1>
+          <p className="text-white/70 text-[10px]">
+            {activeCount} ativas
+            {expiringToday > 0 ? ` · ${expiringToday} encerram hoje` : ''}
+          </p>
         </div>
-        <p className="mt-1 text-sm text-nubank-text-secondary">
-          Ganhe mais pontos comprando nas lojas parceiras
-        </p>
-      </header>
+      </div>
 
-      <section className="mb-5 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {FILTERS.map((filter) => (
+      {/* Pills */}
+      <div
+        className="sticky top-0 z-10 flex gap-2 overflow-x-auto bg-white px-4 py-2.5 shadow-sm border-b border-[#f0e8ff]"
+        style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+      >
+        {PILLS.map(pill => (
           <button
-            key={filter}
-            type="button"
-            onClick={() => setActiveFilter(filter)}
-            className={`shrink-0 rounded-[14px] px-5 py-2.5 text-sm font-semibold transition-all duration-300 ease-out ${
-              activeFilter === filter
-                ? "gradient-primary text-primary-foreground shadow-[0_2px_8px_-2px_rgba(138,5,190,0.2)]"
-                : "bg-white border border-nubank-border text-nubank-text-secondary shadow-nubank hover:border-primary/20"
+            key={pill.id}
+            onClick={() => handlePillClick(pill.id)}
+            className={`flex-shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+              activePill === pill.id
+                ? 'bg-primary text-white'
+                : 'bg-[#f0e8ff] text-primary'
             }`}
           >
-            {filter}
+            {pill.label}
           </button>
         ))}
-      </section>
+      </div>
 
-      <section className="space-y-3">
-        {loading && (
-          <>
-            <BonusOfferCardSkeleton />
-            <BonusOfferCardSkeleton />
-            <BonusOfferCardSkeleton />
-          </>
-        )}
-
-        {!loading && error && (
-          <div className="rounded-[16px] bg-white p-4 text-center shadow-nubank">
-            <p className="text-sm text-slate-600">{error}</p>
-            <Button
-              className="mt-3 h-9"
-              onClick={() => void retry()}
-            >
-              Tentar novamente
-            </Button>
-          </div>
-        )}
-
-        {!loading && !error && offers.length === 0 && (
-          <div className="rounded-[16px] bg-white p-4 text-center shadow-nubank">
-            <p className="text-sm text-slate-600">Nenhuma oferta ativa para este programa.</p>
-          </div>
-        )}
-
-        {!loading &&
-          !error &&
-          offers.map((offer) => (
-            <BonusOfferCard
-              key={offer.id}
-              offer={offer}
-              onAccessOffer={(url) => {
-                toast.success(`Redirecionando para oferta: ${url}`);
-              }}
-            />
-          ))}
-      </section>
-
-      <section className="mt-7">
-        <h2 className="mb-6 text-xl font-bold tracking-tight text-nubank-text">Principais Lojas</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {topStores.map((store) => (
-            <TopStoreCard
-              key={store.store}
-              store={store.store}
-              bestMultiplier={store.bestMultiplier}
-            />
-          ))}
-        </div>
-      </section>
+      {/* Content */}
+      <div className="px-4 pt-4 pb-24">
+        <TransferBonusSection sectionRef={transferRef} />
+        <ShoppingBonusSection sectionRef={shoppingRef} />
+        <MilesBonusSection sectionRef={milesRef} />
+        <CardBonusSection sectionRef={cardsRef} />
+      </div>
     </div>
-  );
-};
-
-export default BonusOffersScreen;
+  )
+}
