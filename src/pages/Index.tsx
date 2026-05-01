@@ -2189,7 +2189,13 @@ const Index = () => {
             <>
               <section id="meus-programas" className="flex items-center justify-between px-5 pb-1">
                 <h2 className="text-[15px] font-bold text-gray-900">Meus programas</h2>
-                <span className="text-[11px] font-semibold text-[#8A05BE]">Ver todos →</span>
+                <button
+                  type="button"
+                  onClick={() => setShowAll(true)}
+                  className="text-[11px] font-semibold text-[#8A05BE]"
+                >
+                  Ver todos →
+                </button>
               </section>
               <div className="grid grid-cols-2 gap-1.5 px-5 pb-2">
                 {visiblePrograms.map((prog) => (
