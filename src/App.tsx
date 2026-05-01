@@ -14,6 +14,9 @@ import AcceptInvite from "./pages/AcceptInvite";
 import Me from "./pages/Me";
 import ClientProfile from "./pages/ClientProfile";
 import SearchFlightsScreen from "./pages/SearchFlightsScreen";
+import FlightResultsScreen from "./pages/FlightResultsScreen";
+import EmissionDetailsScreen from "./pages/EmissionDetailsScreen";
+import PurchaseOptionsScreen from "./pages/PurchaseOptionsScreen";
 import PriceCalendarScreen from "./pages/PriceCalendarScreen";
 import BonusOffersScreen from "./pages/BonusOffersScreen";
 import VencimentosPage from "./pages/VencimentosPage";
@@ -110,6 +113,30 @@ const App = () => {
                 element={
                   <ClienteOnly>
                     <SearchFlightsScreen />
+                  </ClienteOnly>
+                }
+              />
+              <Route
+                path="/flight-results"
+                element={
+                  <ClienteOnly>
+                    <FlightResultsScreen />
+                  </ClienteOnly>
+                }
+              />
+              <Route
+                path="/emission-details"
+                element={
+                  <ClienteOnly>
+                    <EmissionDetailsScreen />
+                  </ClienteOnly>
+                }
+              />
+              <Route
+                path="/purchase-options"
+                element={
+                  <ClienteOnly>
+                    <PurchaseOptionsScreen />
                   </ClienteOnly>
                 }
               />
