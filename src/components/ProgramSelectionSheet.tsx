@@ -68,11 +68,16 @@ export function ProgramSelectionSheet({
     if (isOpen) {
       setMounted(true);
       // dois frames para garantir que o DOM pintou antes de animar
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => setVisible(true)),
-      );
+      let id2: number;
+      const id1 = requestAnimationFrame(() => {
+        id2 = requestAnimationFrame(() => setVisible(true));
+      });
       const t = setTimeout(() => searchRef.current?.focus(), 400);
-      return () => clearTimeout(t);
+      return () => {
+        cancelAnimationFrame(id1);
+        cancelAnimationFrame(id2);
+        clearTimeout(t);
+      };
     } else {
       setVisible(false);
       const t = setTimeout(() => {
@@ -116,6 +121,9 @@ export function ProgramSelectionSheet({
 
       {/* Sheet */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="program-sheet-title"
         className={cn(
           "absolute inset-x-0 bottom-0 top-12 flex flex-col rounded-t-[22px]",
           "border-t border-white/10 bg-[#16162a] shadow-2xl",
@@ -131,7 +139,7 @@ export function ProgramSelectionSheet({
         {/* Header */}
         <div className="flex-shrink-0 px-4 pb-3">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-bold text-white">Meus Programas</h2>
+            <h2 id="program-sheet-title" className="text-base font-bold text-white">Meus Programas</h2>
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-purple-500/20 px-2 py-0.5 text-[11px] font-semibold text-purple-300">
                 {activePrograms.length} ativos
@@ -139,7 +147,8 @@ export function ProgramSelectionSheet({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/8 text-slate-400 transition-colors hover:bg-white/15 hover:text-white"
+                aria-label="Fechar"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-slate-400 transition-colors hover:bg-white/15 hover:text-white"
               >
                 <X size={14} />
               </button>
@@ -166,6 +175,7 @@ export function ProgramSelectionSheet({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar programa..."
+              aria-label="Buscar programa"
               className="flex-1 bg-transparent text-[13px] text-white placeholder:text-slate-500 focus:outline-none"
             />
             {search && (
@@ -193,7 +203,7 @@ export function ProgramSelectionSheet({
                   logoColor={prog.logoColor}
                   name={prog.name}
                   sub={
-                    prog.balance !== "0"
+                    Number(prog.balance) > 0
                       ? `${Number(prog.balance).toLocaleString("pt-BR")} milhas`
                       : undefined
                   }
@@ -238,7 +248,7 @@ export function ProgramSelectionSheet({
         </div>
 
         {/* Botão fixo no rodapé */}
-        <div className="flex-shrink-0 border-t border-white/8 px-4 py-3">
+        <div className="flex-shrink-0 border-t border-white/10 px-4 py-3">
           <button
             type="button"
             onClick={onClose}
@@ -268,7 +278,7 @@ function SectionLabel({
       <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-slate-500">
         {label}
       </span>
-      <div className="h-px flex-1 bg-white/8" />
+      <div className="h-px flex-1 bg-white/10" />
       <span
         className={cn(
           "whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold",
@@ -345,11 +355,12 @@ function ProgramRow({
       <button
         type="button"
         onClick={onAction}
+        aria-label={isActive ? `Remover ${name}` : `Adicionar ${name}`}
         className={cn(
           "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-colors",
           isActive
-            ? "border border-red-500/25 bg-red-500/12 text-red-400 hover:bg-red-500/20"
-            : "border border-purple-500/35 bg-purple-500/12 text-purple-400 hover:bg-purple-500/20",
+            ? "border border-red-500/25 bg-red-500/15 text-red-400 hover:bg-red-500/20"
+            : "border border-purple-500/35 bg-purple-500/15 text-purple-400 hover:bg-purple-500/20",
         )}
       >
         {isActive ? <Minus size={13} /> : <Plus size={13} />}
