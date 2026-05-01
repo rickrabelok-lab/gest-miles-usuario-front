@@ -1100,12 +1100,7 @@ const Index = () => {
     code,
   }: SelectedDestinationSearch) => {
     const destinationAirportCode = CARD_DESTINATION_TO_AIRPORT_CODE[code] ?? code;
-    const q = new URLSearchParams();
-    q.set("destination", destinationAirportCode);
-    const clientId = searchParams.get("clientId");
-    if (clientId) q.set("clientId", clientId);
-    const path = `/search-flights?${q.toString()}`;
-    window.location.assign(new URL(path, window.location.origin).href);
+    navigate(`/search-flights?destination=${encodeURIComponent(destinationAirportCode)}`);
   };
 
   const visiblePrograms = showAll ? programs : programs.slice(0, 4);
