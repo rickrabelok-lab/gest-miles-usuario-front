@@ -1,5 +1,5 @@
 // src/pages/BonusOffersScreen.tsx
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BonusCategory } from '@/lib/bonusMockData'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
@@ -26,12 +26,10 @@ export default function BonusOffersScreen() {
   const milesRef = useRef<HTMLDivElement>(null)
   const cardsRef = useRef<HTMLDivElement>(null)
 
-  const sectionRefs: Record<BonusCategory, React.RefObject<HTMLDivElement>> = {
-    transfer: transferRef,
-    shopping: shoppingRef,
-    miles: milesRef,
-    cards: cardsRef,
-  }
+  const sectionRefs = useMemo<Record<BonusCategory, React.RefObject<HTMLDivElement>>>(
+    () => ({ transfer: transferRef, shopping: shoppingRef, miles: milesRef, cards: cardsRef }),
+    []
+  )
 
   function handlePillClick(id: BonusCategory | 'all') {
     setActivePill(id)

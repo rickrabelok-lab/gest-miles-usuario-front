@@ -1,21 +1,8 @@
 // src/pages/BonusOfferDetailScreen.tsx
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { BONUS_PROMOTIONS, BonusCategory } from '@/lib/bonusMockData'
-
-const DETAIL_GRADIENT: Record<BonusCategory, string> = {
-  transfer: 'linear-gradient(135deg, #8A05BE, #B56CFF)',
-  shopping: 'linear-gradient(135deg, #e67e22, #f39c12)',
-  miles: 'linear-gradient(135deg, #27ae60, #2ecc71)',
-  cards: 'linear-gradient(135deg, #2c3e50, #3498db)',
-}
-
-const DETAIL_COLOR: Record<BonusCategory, string> = {
-  transfer: '#8A05BE',
-  shopping: '#e67e22',
-  miles: '#27ae60',
-  cards: '#3498db',
-}
+import { BONUS_PROMOTIONS, BonusPromotion } from '@/lib/bonusMockData'
+import { CATEGORY_CONFIG } from '@/lib/bonusUtils'
 
 type ActiveTab = 'promotion' | 'rules'
 
@@ -40,16 +27,17 @@ export default function BonusOfferDetailScreen() {
     )
   }
 
-  const gradient = DETAIL_GRADIENT[promo.category]
-  const color = DETAIL_COLOR[promo.category]
+  const { color, gradient } = CATEGORY_CONFIG[promo.category]
 
-  function formatExpiry(): string | null {
-    if (!promo!.expiresAt) return null
-    const expiry = new Date(promo!.expiresAt)
+  function formatExpiry(p: BonusPromotion): string | null {
+    if (!p.expiresAt) return null
+    const expiry = new Date(p.expiresAt)
     const date = expiry.toLocaleDateString('pt-BR')
     const time = expiry.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     return `⏰ Encerra em ${date} às ${time}`
   }
+
+  const expiryLabel = formatExpiry(promo)
 
   return (
     <div className="min-h-screen bg-[#f7f7f8]">
@@ -154,9 +142,9 @@ export default function BonusOfferDetailScreen() {
             )}
 
             {/* Expiry */}
-            {formatExpiry() && (
+            {expiryLabel && (
               <p className="mb-4 text-center text-[10px] font-semibold text-red-500">
-                {formatExpiry()}
+                {expiryLabel}
               </p>
             )}
 
