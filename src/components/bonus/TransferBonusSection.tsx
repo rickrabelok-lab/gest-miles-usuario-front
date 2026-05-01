@@ -2,17 +2,7 @@
 import { RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
-
-function isExpiringToday(expiresAt?: string): boolean {
-  if (!expiresAt) return false
-  const expiry = new Date(expiresAt)
-  const today = new Date()
-  return (
-    expiry.getFullYear() === today.getFullYear() &&
-    expiry.getMonth() === today.getMonth() &&
-    expiry.getDate() === today.getDate()
-  )
-}
+import { isExpiringToday } from '@/lib/bonusUtils'
 
 interface Props {
   sectionRef?: RefObject<HTMLDivElement>

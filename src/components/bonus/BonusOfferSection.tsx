@@ -1,25 +1,8 @@
 // src/components/bonus/BonusOfferSection.tsx
 import { useNavigate } from 'react-router-dom'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
-import { BonusCategory, BonusPromotion } from '@/lib/bonusMockData'
-
-const CATEGORY_CONFIG: Record<BonusCategory, { emoji: string; color: string; label: string }> = {
-  transfer: { emoji: '🔄', color: '#8A05BE', label: 'Transferência' },
-  shopping: { emoji: '🛍', color: '#e67e22', label: 'Compras' },
-  miles: { emoji: '✈️', color: '#27ae60', label: 'Milhas' },
-  cards: { emoji: '💳', color: '#3498db', label: 'Cartão' },
-}
-
-function isExpiringToday(expiresAt?: string): boolean {
-  if (!expiresAt) return false
-  const expiry = new Date(expiresAt)
-  const today = new Date()
-  return (
-    expiry.getFullYear() === today.getFullYear() &&
-    expiry.getMonth() === today.getMonth() &&
-    expiry.getDate() === today.getDate()
-  )
-}
+import { BonusPromotion } from '@/lib/bonusMockData'
+import { CATEGORY_CONFIG, isExpiringToday } from '@/lib/bonusUtils'
 
 function QuickItem({ promo }: { promo: BonusPromotion }) {
   const navigate = useNavigate()

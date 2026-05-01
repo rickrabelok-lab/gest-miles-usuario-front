@@ -20,7 +20,7 @@ export function ShoppingBonusSection({ sectionRef }: Props) {
 
   if (promotions.length === 0) return null
 
-  const maxStores = Math.max(...promotions.map(p => p.partnerStores ?? 0))
+  const maxStores = Math.max(0, ...promotions.map(p => p.partnerStores ?? 0))
 
   return (
     <div ref={sectionRef} className="mb-6">
