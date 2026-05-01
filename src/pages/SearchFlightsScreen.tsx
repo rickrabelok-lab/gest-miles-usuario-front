@@ -23,10 +23,12 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
+import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
 import { useSearchFlights } from "@/contexts/SearchFlightsContext"
 import BottomNav from "@/components/BottomNav"
 import DestinationCarousel from "@/components/DestinationCarousel"
+import { cn } from "@/lib/utils"
 import {
   AIRPORTS,
   findAirportByCode,
@@ -95,6 +97,13 @@ const SearchFlightsScreen = () => {
     if (airport) setDestination(airport)
   }, [searchParams, setDestination])
 
+  /** Origem por defeito (o contexto começa sem origem → o botão «Pesquisar» ficava sempre desativado). */
+  useEffect(() => {
+    if (origin) return
+    const gru = findAirportByCode("GRU")
+    if (gru) setOrigin(gru)
+  }, [origin, setOrigin])
+
   const filteredAirports = useMemo(() => {
     const q = airportQuery.trim().toLowerCase()
     if (!q) return []
@@ -146,7 +155,10 @@ const SearchFlightsScreen = () => {
   }
 
   const handleSearch = () => {
-    if (!origin || !destination) return
+    if (!origin || !destination) {
+      toast.error("Selecione origem e destino para pesquisar.")
+      return
+    }
     const params = new URLSearchParams({
       from:     origin.code,
       to:       destination.code,
@@ -527,12 +539,16 @@ const SearchFlightsScreen = () => {
       </main>
 
       {/* Fixed CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-nubank-border bg-white/95 backdrop-blur-sm">
+      <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-[100] flex flex-col border-t border-nubank-border bg-white/95 backdrop-blur-sm">
         <div className="mx-auto w-full max-w-md px-4 pt-3 pb-2">
           <Button
-            disabled={!canSearch}
+            type="button"
+            aria-disabled={!canSearch}
             onClick={handleSearch}
-            className="h-13 w-full rounded-[16px] text-[15px] font-semibold text-white shadow-lg disabled:opacity-40"
+            className={cn(
+              "h-13 w-full rounded-[16px] text-[15px] font-semibold text-white shadow-lg",
+              !canSearch && "opacity-40",
+            )}
             style={{ background: canSearch ? "linear-gradient(135deg,#8A05BE,#9E2FD4)" : "#d1c4e0" }}
           >
             <Search size={17} className="mr-2" strokeWidth={2.5} />

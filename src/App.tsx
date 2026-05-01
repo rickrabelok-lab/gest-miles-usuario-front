@@ -87,12 +87,7 @@ const App = () => {
       <AuthProvider>
         <AppBootReadySignal />
         <SearchFlightsProvider>
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
+          <BrowserRouter>
             <Routes>
               <Route path="/" element={<HomeGate />} />
               <Route
