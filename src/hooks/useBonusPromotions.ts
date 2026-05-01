@@ -1,17 +1,7 @@
 // src/hooks/useBonusPromotions.ts
 import { useMemo } from 'react'
 import { BONUS_PROMOTIONS, BonusCategory, BonusPromotion } from '@/lib/bonusMockData'
-
-function isExpiringToday(expiresAt?: string): boolean {
-  if (!expiresAt) return false
-  const expiry = new Date(expiresAt)
-  const today = new Date()
-  return (
-    expiry.getFullYear() === today.getFullYear() &&
-    expiry.getMonth() === today.getMonth() &&
-    expiry.getDate() === today.getDate()
-  )
-}
+import { isExpiringToday } from '@/lib/bonusUtils'
 
 export function useBonusPromotions(category?: BonusCategory): {
   promotions: BonusPromotion[]
