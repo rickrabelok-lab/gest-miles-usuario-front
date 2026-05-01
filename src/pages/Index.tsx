@@ -1934,16 +1934,12 @@ const Index = () => {
                 </>
               ) : (
                 <>
-                  <div
-                    className={`grid w-full items-center gap-2 ${
-                      !managerMode || !!managerClientId ? "grid-cols-3" : "grid-cols-1"
-                    }`}
-                  >
+                  <div className="flex w-full items-center gap-2">
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setIsAddProgramMenuOpen((prev) => !prev)}
-                        className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-[10px] border border-[#8A05BE] bg-white px-2 text-[11px] font-semibold whitespace-nowrap text-[#8A05BE] shadow-nubank transition-colors hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        className="inline-flex h-9 items-center justify-center gap-1 rounded-[10px] border border-[#8A05BE] bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-[#8A05BE] shadow-nubank transition-colors hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                       >
                         <Plus size={12} />
                         <span>Novo</span>
@@ -1995,7 +1991,7 @@ const Index = () => {
                         <button
                           type="button"
                           onClick={() => setIsDemandDialogOpen(true)}
-                          className="inline-flex h-9 w-full items-center justify-center rounded-[10px] border border-transparent bg-primary px-2 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-nubank transition-colors hover:bg-primary/90"
+                          className="inline-flex h-9 flex-1 items-center justify-center rounded-[10px] border border-transparent bg-primary px-2 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-nubank transition-colors hover:bg-primary/90"
                         >
                           Solicitar Cotação
                         </button>
@@ -2006,7 +2002,7 @@ const Index = () => {
                             setIsActionPlanDialogOpen(true);
                           }}
                           disabled={!canEditActionPlan}
-                          className={`inline-flex h-9 w-full items-center justify-center gap-1 rounded-[10px] border border-gray-200 bg-white px-2 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-700 ${
+                          className={`inline-flex h-9 items-center justify-center gap-1 rounded-[10px] border border-gray-200 bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-700 ${
                             !canEditActionPlan ? "cursor-not-allowed opacity-60" : ""
                           }`}
                         >
