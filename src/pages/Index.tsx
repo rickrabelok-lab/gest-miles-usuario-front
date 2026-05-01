@@ -14,7 +14,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import BalanceTabs from "@/components/BalanceTabs";
 import ProgramCard from "@/components/ProgramCard";
 import DestinationCarousel from "@/components/DestinationCarousel";
-import BonusOffersSection from "@/components/bonus/BonusOffersSection";
+import BonusOfferSection from "@/components/bonus/BonusOfferSection";
 import BottomNav from "@/components/BottomNav";
 import SmartRedemptionSuggestions from "@/components/SmartRedemptionSuggestions";
 import NpsClientePrompt from "@/components/nps/NpsClientePrompt";
@@ -2224,7 +2224,7 @@ const Index = () => {
           </div>
 
           <div className="mt-5">
-            <BonusOffersSection />
+            <BonusOfferSection />
           </div>
 
         </>

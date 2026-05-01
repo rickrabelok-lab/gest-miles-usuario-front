@@ -19,6 +19,7 @@ import EmissionDetailsScreen from "./pages/EmissionDetailsScreen";
 import PurchaseOptionsScreen from "./pages/PurchaseOptionsScreen";
 import PriceCalendarScreen from "./pages/PriceCalendarScreen";
 import BonusOffersScreen from "./pages/BonusOffersScreen";
+import BonusOfferDetailScreen from "./pages/BonusOfferDetailScreen";
 import VencimentosPage from "./pages/VencimentosPage";
 import RegistrarEmissaoPage from "./pages/RegistrarEmissaoPage";
 import CriarAlertaPage from "./pages/CriarAlertaPage";
@@ -156,6 +157,14 @@ const App = () => {
                 element={
                   <ClienteOnly>
                     <BonusOffersScreen />
+                  </ClienteOnly>
+                }
+              />
+              <Route
+                path="/bonus-offers/:id"
+                element={
+                  <ClienteOnly>
+                    <BonusOfferDetailScreen />
                   </ClienteOnly>
                 }
               />
