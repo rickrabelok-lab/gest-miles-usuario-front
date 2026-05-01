@@ -220,7 +220,7 @@ const DashboardHeader = () => {
   };
 
   return (
-    <div className="gradient-primary text-header-foreground">
+    <div className="bg-[#8A05BE] text-header-foreground">
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-3.5 pb-3.5">
         <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ const DashboardHeader = () => {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-[16px] bg-white/15 px-3 py-2 text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:bg-white/25"
+                className="flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:bg-white/25"
               >
                 <User size={16} />
                 <span>{user ? getInitials(user.email) : "?"}</span>
@@ -271,7 +271,7 @@ const DashboardHeader = () => {
         <div className="flex flex-1 justify-center">
           <div className="flex items-center gap-2">
             <GestMilesLogo size={26} variant="light" className="shrink-0" />
-            <h1 className="font-display text-xl font-bold tracking-tight">Gest Miles</h1>
+            <h1 className="font-display text-xl font-bold uppercase tracking-widest">Gest Miles</h1>
           </div>
         </div>
         <Sheet>
@@ -485,8 +485,8 @@ const DashboardHeader = () => {
 
       {/* Promo banner */}
       {bannerVisible && (
-        <div className="mx-4 mb-2.5 flex items-center gap-2 rounded-[14px] border border-white/20 bg-white/95 px-3 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.06)] backdrop-blur-sm">
-          <Zap size={18} className="shrink-0 text-warning" />
+        <div className="mx-4 mb-2.5 flex items-center gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2">
+          <Zap size={16} className="shrink-0 text-amber-600" />
           {showDemandOpenBanner ? (
             <button
               type="button"
@@ -508,9 +508,8 @@ const DashboardHeader = () => {
               {demandSummary.lastClientName ? `Última de ${demandSummary.lastClientName}.` : ""}
             </button>
           ) : (
-            <p className="flex-1 text-sm text-nubank-text">
-              Bônus de até <span className="font-bold text-warning">133%</span> na transferência.
-              Confira
+            <p className="flex-1 text-sm text-amber-900">
+              Bônus de até <span className="font-bold text-amber-600">133%</span> na transferência. Confira
             </p>
           )}
           <button onClick={() => setBannerVisible(false)} className="shrink-0 rounded-full p-1 text-nubank-text-secondary opacity-70 hover:bg-black/5 hover:opacity-100" aria-label="Fechar">
