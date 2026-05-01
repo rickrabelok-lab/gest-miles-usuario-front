@@ -56,8 +56,11 @@ export function ShoppingBonusSection({ sectionRef }: Props) {
         ))}
 
         {/* "Ver tudo" placeholder — fase 2 */}
-        <div className="flex-shrink-0 w-[72px] rounded-2xl border border-dashed border-[#d8b4fe] bg-[#faf5ff] p-3 flex items-center justify-center">
-          <span className="text-[10px] font-semibold text-[#8A05BE] leading-tight text-center">
+        <div
+          aria-disabled="true"
+          className="flex-shrink-0 w-[72px] cursor-default pointer-events-none rounded-2xl border border-dashed border-[#d8b4fe] bg-[#faf5ff] p-3 flex items-center justify-center"
+        >
+          <span className="text-[10px] font-semibold text-[#8A05BE] leading-tight text-center opacity-60">
             Ver tudo →
           </span>
         </div>
