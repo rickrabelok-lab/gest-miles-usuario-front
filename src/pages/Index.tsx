@@ -1946,6 +1946,7 @@ const Index = () => {
                         className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-[10px] border border-[#8A05BE] bg-white px-2 text-[11px] font-semibold whitespace-nowrap text-[#8A05BE] shadow-nubank transition-colors hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                       >
                         <Plus size={12} />
+                        <span>Novo</span>
                       </button>
 
                       {isAddProgramMenuOpen && (
