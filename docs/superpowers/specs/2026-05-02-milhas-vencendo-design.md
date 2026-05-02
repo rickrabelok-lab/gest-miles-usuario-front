@@ -38,9 +38,9 @@ Separador `1px #EBEBEB` entre faixas.
 ### Cards
 
 Cada programa dentro de uma faixa renderiza um card com:
-- **Avatar**: quadrado 34×34px, border-radius 10px, iniciais do programa (máx. 2 letras), gradiente de cor fixo por programa
+- **Avatar**: quadrado 34×34px, border-radius 10px, iniciais do programa (máx. 2 letras), gradiente derivado de hash simples do `programName` escolhendo de uma paleta de 6 gradientes fixos (vermelho, roxo, laranja, azul, verde, índigo)
 - **Nome do programa**: 12px bold, truncado com ellipsis se necessário
-- **Linha secundária**: `{quantidade} pts · {data formatada}` — 10px, cinza claro
+- **Linha secundária**: `{quantidade} pts · {data}` onde a data é formatada como "DD mmm YYYY" em pt-BR (ex: "15 mai 2026") — 10px, cinza claro
 - **Dias restantes**: número grande (14px, 900 weight) na cor da faixa + label "dias" abaixo (9px, cinza)
 - Fundo branco, border-radius 12px, sombra `0 1px 4px rgba(0,0,0,0.06)`
 
