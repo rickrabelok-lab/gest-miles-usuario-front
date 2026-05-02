@@ -42,6 +42,32 @@ const urgencyConfig = {
   },
 };
 
+const AVATAR_GRADIENTS: [string, string][] = [
+  ["from-red-600", "to-rose-500"],
+  ["from-purple-700", "to-violet-500"],
+  ["from-orange-500", "to-amber-400"],
+  ["from-blue-700", "to-blue-500"],
+  ["from-green-700", "to-green-500"],
+  ["from-indigo-700", "to-indigo-500"],
+];
+
+const getAvatarGradient = (name: string): string => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  const [from, to] = AVATAR_GRADIENTS[h % AVATAR_GRADIENTS.length];
+  return `bg-gradient-to-br ${from} ${to}`;
+};
+
+const getInitials = (name: string): string =>
+  name.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+
+const formatDataVencimento = (dateStr: string): string => {
+  // dateStr is "DD/MM/YYYY" from toLocaleDateString pt-BR
+  const [d, m, y] = dateStr.split("/");
+  const months = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  return `${d} ${months[parseInt(m, 10) - 1]} ${y}`;
+};
+
 const VencimentosPage = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
@@ -106,24 +132,20 @@ const VencimentosPage = () => {
         });
       });
     });
-    return items.sort((a, b) => a.diasRestantes - b.diasRestantes).slice(0, 200);
+    return items
+      .filter((i) => i.diasRestantes > 0)
+      .sort((a, b) => a.diasRestantes - b.diasRestantes)
+      .slice(0, 200);
   }, [meusProgramas]);
 
-  const meusCounts = useMemo(() => ({
-    critico: meusVencimentos.filter((i) => i.diasRestantes <= 30).length,
-    atencao: meusVencimentos.filter((i) => i.diasRestantes > 30 && i.diasRestantes <= 60).length,
-    ok: meusVencimentos.filter((i) => i.diasRestantes > 60).length,
-  }), [meusVencimentos]);
-
-  const filteredMeus = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return meusVencimentos.filter((item) => {
-      const matchesSearch = !q || item.programName.toLowerCase().includes(q);
-      const matchesFilter =
-        filter === "todos" || getUrgency(item.diasRestantes) === filter;
-      return matchesSearch && matchesFilter;
-    });
-  }, [meusVencimentos, search, filter]);
+  const meusBands = useMemo(
+    () => ({
+      critico: meusVencimentos.filter((i) => i.diasRestantes <= 30),
+      atencao: meusVencimentos.filter((i) => i.diasRestantes > 30 && i.diasRestantes <= 60),
+      ok: meusVencimentos.filter((i) => i.diasRestantes > 60),
+    }),
+    [meusVencimentos],
+  );
 
   // ── Demanda banner ───────────────────────────────────────────
   const demandaPendentes = useMemo(
@@ -142,9 +164,9 @@ const VencimentosPage = () => {
   };
 
   // ── Helpers ──────────────────────────────────────────────────
-  const counts = isGestor ? gestorCounts : meusCounts;
-  const isListEmpty = isGestor ? filteredGestor.length === 0 : filteredMeus.length === 0;
-  const hasAnyData = isGestor ? vencimentosOrdenados.length > 0 : meusVencimentos.length > 0;
+  const counts = gestorCounts;
+  const isListEmpty = filteredGestor.length === 0;
+  const hasAnyData = vencimentosOrdenados.length > 0;
 
   const renderChips = () => (
     <div className="flex flex-wrap gap-1.5">
@@ -228,7 +250,7 @@ const VencimentosPage = () => {
     const urgency = getUrgency(item.diasRestantes);
     const cfg = urgencyConfig[urgency];
     const prevUrgency =
-      idx > 0 ? getUrgency(filteredMeus[idx - 1].diasRestantes) : null;
+      idx > 0 ? getUrgency(meusVencimentos[idx - 1].diasRestantes) : null;
     const showSectionLabel = urgency !== prevUrgency && filter === "todos";
 
     return (
@@ -324,7 +346,7 @@ const VencimentosPage = () => {
           </div>
         ) : (
           <div className="flex flex-col gap-1.5">
-            {filteredMeus.map((item, idx) => renderMeuCard(item, idx))}
+            {meusVencimentos.map((item, idx) => renderMeuCard(item, idx))}
           </div>
         )}
       </main>
