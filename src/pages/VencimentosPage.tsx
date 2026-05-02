@@ -62,10 +62,12 @@ const getInitials = (name: string): string =>
   name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 
 const formatDataVencimento = (dateStr: string): string => {
-  // dateStr is "DD/MM/YYYY" from toLocaleDateString pt-BR
-  const [d, m, y] = dateStr.split("/");
+  const parts = dateStr.split("/");
+  if (parts.length !== 3) return dateStr;
+  const [d, m, y] = parts;
   const months = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-  return `${d} ${months[parseInt(m, 10) - 1]} ${y}`;
+  const month = months[parseInt(m, 10) - 1];
+  return month ? `${d} ${month} ${y}` : dateStr;
 };
 
 const VencimentosPage = () => {
@@ -280,7 +282,7 @@ const VencimentosPage = () => {
         : "text-green-500";
     return (
       <div
-        key={`${item.programName}-${item.data}`}
+        key={`${item.programName}-${item.data}-${item.quantidade}`}
         className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
       >
         <div
