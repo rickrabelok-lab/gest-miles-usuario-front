@@ -1509,8 +1509,19 @@ const Index = () => {
       });
     });
 
-    return items.sort((a, b) => a.diasRestantes - b.diasRestantes);
+    return items
+      .filter((i) => i.diasRestantes > 0)
+      .sort((a, b) => a.diasRestantes - b.diasRestantes);
   }, [allPersistedPrograms]);
+
+  const vencimentosBands = useMemo(
+    () => ({
+      critico: vencimentosGlobais.filter((i) => i.diasRestantes <= 30),
+      atencao: vencimentosGlobais.filter((i) => i.diasRestantes > 30 && i.diasRestantes <= 60),
+      ok: vencimentosGlobais.filter((i) => i.diasRestantes > 60),
+    }),
+    [vencimentosGlobais],
+  );
 
   const extratoGlobal = useMemo(() => {
     const items: ExtratoItem[] = [];
@@ -2249,45 +2260,93 @@ const Index = () => {
           ) : (
             <>
               {vencimentosGlobais.length === 0 ? (
-                <div className="rounded-2xl border border-nubank-border bg-white p-6 text-center text-sm text-nubank-text-secondary shadow-nubank">
-                  Nenhum vencimento encontrado nos programas registrados.
+                <div className="flex flex-col items-center gap-3 py-14 text-center">
+                  <span className="text-5xl opacity-20">🎉</span>
+                  <p className="text-[14px] font-bold text-gray-700">Tudo em dia!</p>
+                  <p className="text-[12px] leading-relaxed text-gray-400">
+                    Nenhuma milha vencendo nos próximos dias.
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                {vencimentosGlobais.map((item) => (
-                  <div
-                    key={`${item.programSlug}-${item.data}-${item.quantidade}`}
-                    className="rounded-2xl border border-nubank-border bg-white p-5 text-nubank-text shadow-nubank"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold ring-1 ring-black/10"
-                          style={{
-                            backgroundColor: `${item.programLogoColor}1f`,
-                            color: item.programLogoColor,
-                          }}
-                        >
-                          {item.programLogo}
-                        </span>
-                        <div>
-                          <p className="text-xs font-semibold text-nubank-text">
-                            {item.programName}
-                          </p>
-                          <p className="text-[11px] text-nubank-text-secondary">{item.data}</p>
-                        </div>
+                <div className="flex flex-col gap-3">
+                  {vencimentosBands.critico.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 px-0.5">
+                        <div className="h-2 w-2 flex-shrink-0 rounded-full bg-red-500" />
+                        <span className="flex-1 text-[11px] font-extrabold uppercase tracking-wide text-red-700">Crítico</span>
+                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700">≤ 30 dias</span>
                       </div>
-                      <p className="text-xs font-semibold text-nubank-text">
-                        {item.quantidade.toLocaleString("pt-BR")} milhas
-                      </p>
+                      <div className="flex flex-col gap-1.5">
+                        {vencimentosBands.critico.map((item, idx) => (
+                          <div key={`${item.programSlug}-${item.data}-${item.quantidade}-${idx}`} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+                            <div className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] text-[11px] font-black text-white" style={{ backgroundColor: item.programLogoColor }}>{item.programLogo}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-[12px] font-bold text-gray-900">{item.programName}</div>
+                              <div className="mt-0.5 text-[10px] text-gray-400">{item.quantidade.toLocaleString("pt-BR")} pts · {item.data}</div>
+                            </div>
+                            <div className="flex-shrink-0 text-right">
+                              <div className="text-[14px] font-black leading-none text-red-500">{item.diasRestantes}</div>
+                              <div className="mt-0.5 text-[9px] font-semibold text-gray-400">dias</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <p className="mt-2 text-[11px] font-medium text-nubank-text-secondary">
-                      {item.diasRestantes < 0
-                        ? `Venceu há ${Math.abs(item.diasRestantes)} dias`
-                        : `Vence em ${item.diasRestantes} dias`}
-                    </p>
-                  </div>
-                ))}
+                  )}
+                  {vencimentosBands.critico.length > 0 && vencimentosBands.atencao.length > 0 && (
+                    <div className="h-px bg-gray-200" />
+                  )}
+                  {vencimentosBands.atencao.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 px-0.5">
+                        <div className="h-2 w-2 flex-shrink-0 rounded-full bg-amber-500" />
+                        <span className="flex-1 text-[11px] font-extrabold uppercase tracking-wide text-amber-800">Atenção</span>
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">31 – 60 dias</span>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        {vencimentosBands.atencao.map((item, idx) => (
+                          <div key={`${item.programSlug}-${item.data}-${item.quantidade}-${idx}`} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+                            <div className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] text-[11px] font-black text-white" style={{ backgroundColor: item.programLogoColor }}>{item.programLogo}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-[12px] font-bold text-gray-900">{item.programName}</div>
+                              <div className="mt-0.5 text-[10px] text-gray-400">{item.quantidade.toLocaleString("pt-BR")} pts · {item.data}</div>
+                            </div>
+                            <div className="flex-shrink-0 text-right">
+                              <div className="text-[14px] font-black leading-none text-amber-500">{item.diasRestantes}</div>
+                              <div className="mt-0.5 text-[9px] font-semibold text-gray-400">dias</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(vencimentosBands.critico.length > 0 || vencimentosBands.atencao.length > 0) && vencimentosBands.ok.length > 0 && (
+                    <div className="h-px bg-gray-200" />
+                  )}
+                  {vencimentosBands.ok.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 px-0.5">
+                        <div className="h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
+                        <span className="flex-1 text-[11px] font-extrabold uppercase tracking-wide text-green-800">Tranquilo</span>
+                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-800">&gt; 60 dias</span>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        {vencimentosBands.ok.map((item, idx) => (
+                          <div key={`${item.programSlug}-${item.data}-${item.quantidade}-${idx}`} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+                            <div className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] text-[11px] font-black text-white" style={{ backgroundColor: item.programLogoColor }}>{item.programLogo}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-[12px] font-bold text-gray-900">{item.programName}</div>
+                              <div className="mt-0.5 text-[10px] text-gray-400">{item.quantidade.toLocaleString("pt-BR")} pts · {item.data}</div>
+                            </div>
+                            <div className="flex-shrink-0 text-right">
+                              <div className="text-[14px] font-black leading-none text-green-500">{item.diasRestantes}</div>
+                              <div className="mt-0.5 text-[9px] font-semibold text-gray-400">dias</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
