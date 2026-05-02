@@ -270,7 +270,7 @@ const VencimentosPage = () => {
     );
   };
 
-  const renderMeuCard2 = (item: VencimentoMeuItem, idx: number = 0) => {
+  const renderMeuCard2 = (item: VencimentoMeuItem) => {
     const urgency = getUrgency(item.diasRestantes);
     const dayColor =
       urgency === "critico"
@@ -280,7 +280,7 @@ const VencimentosPage = () => {
         : "text-green-500";
     return (
       <div
-        key={`${item.programName}-${item.data}-${idx}`}
+        key={`${item.programName}-${item.data}`}
         className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
       >
         <div
