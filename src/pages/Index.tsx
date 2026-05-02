@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDownRight,
   ArrowUpRight,
   ChevronDown,
+  ChevronRight,
   Download,
   Plus,
   Search,
@@ -22,6 +23,8 @@ import CsatClientePrompt from "@/components/csat/CsatClientePrompt";
 import ClientTimelineSection from "@/components/timeline/ClientTimelineSection";
 import ClientInsightsSection from "@/components/insights/ClientInsightsSection";
 import AirlineLogo from "@/components/AirlineLogo";
+import { EmissaoResumoCard } from "@/components/emissao/EmissaoResumoCard";
+import { cn } from "@/lib/utils";
 import { ProgramSelectionSheet } from "@/components/ProgramSelectionSheet";
 import { SolicitarCotacaoWizard, type WizardSubmitParams } from "@/components/SolicitarCotacaoWizard";
 import { Input } from "@/components/ui/input";
@@ -30,6 +33,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -154,9 +158,16 @@ type PersistedProgramState = {
     custoMilheiroBase?: number;
     origem?: string;
     destino?: string;
+    dataIda?: string;
+    dataVolta?: string;
+    dataEmissao?: string;
     classe?: string;
     passageiros?: number;
     entradaTipo?: string;
+    codigoReserva?: string;
+    sobrenomeEmissao?: string;
+    emissaoFornecedor?: boolean;
+    custoFornecedor?: number;
   }>;
   lotes?: Array<{
     validadeLote?: string;
@@ -234,14 +245,33 @@ type VencimentoItem = {
 
 type ExtratoItem = {
   id: string;
+  /** `program_id` no Supabase — alinhado à carteira / APIs. */
+  programId: string;
   programSlug: string;
   programName: string;
   programLogo: string;
   programLogoColor: string;
+  /** Referência para ordenação (geralmente data do voo ou data do lançamento). */
   data: string;
+  /** Valor bruto para exibir como data do voo (saídas). */
+  dataVoo: string;
+  /** Data em que a emissão foi registrada. */
+  dataEmissao: string;
+  dataVolta?: string;
   tipo: MovimentoTipo;
   descricao: string;
   milhas: number;
+  origem?: string;
+  destino?: string;
+  taxas?: number;
+  tarifaPagante?: number;
+  economiaReal?: number;
+  economiaPercent?: number;
+  emissaoFornecedor?: boolean;
+  custoFornecedor?: number;
+  codigoReserva?: string;
+  custoTotalEmissao?: number;
+  sobrenomeEmissao?: string;
 };
 
 type EmissaoEconomiaItem = {
@@ -268,6 +298,13 @@ type CompraPontosItem = {
   custoMilheiro: number;
   descricao: string;
 };
+
+/** Resumo em dialog (clique nos cards de extrato / economia). */
+type ResumoClientePayload = (
+  | { kind: "extrato"; item: ExtratoItem }
+  | { kind: "emissao"; item: EmissaoEconomiaItem }
+  | { kind: "compra"; item: CompraPontosItem }
+) & { gestorResponsavel?: string };
 
 const PROGRAM_META_MAP: Record<string, Omit<ProgramMeta, "slug">> = {
   "latam-pass": { name: "LATAM Pass", logo: "LP", logoColor: "#1a3a6b" },
@@ -320,6 +357,177 @@ const parseBrDate = (value?: string) => {
   const fallback = new Date(value);
   return Number.isNaN(fallback.getTime()) ? null : fallback;
 };
+
+function formatExtratoDate(value?: string): string {
+  if (!value?.trim()) return "—";
+  const d = parseBrDate(value);
+  if (!d) return value.trim();
+  return d.toLocaleDateString("pt-BR");
+}
+
+/** Mesmo id estável usado na lista do extrato quando `mov.id` não veio persistido. */
+function stableExtratoMovimentoId(
+  mov: { id?: string; data?: string; descricao?: string },
+  meta: ProgramMeta,
+): string {
+  return mov.id ?? `${meta.slug}-${mov.data ?? "sem-data"}-${mov.descricao ?? "mov"}`;
+}
+
+function parseIataRouteFromText(text: string): { origem: string; destino: string } {
+  const m = text.match(/([A-Za-z]{3})\s*[–—-]\s*([A-Za-z]{3})/);
+  if (m) return { origem: m[1].toUpperCase(), destino: m[2].toUpperCase() };
+  return { origem: "—", destino: "—" };
+}
+
+function formatGestorResponsavelResumo(
+  resumoClientes: Array<{
+    clienteId: string;
+    gestoresResponsaveis: Array<{ nome: string }>;
+  }>,
+  managerClientId: string | null | undefined,
+): string | undefined {
+  if (!managerClientId?.trim()) return undefined;
+  const c = resumoClientes.find((x) => x.clienteId === managerClientId);
+  const names =
+    c?.gestoresResponsaveis
+      ?.map((g) => String(g.nome ?? "").trim())
+      .filter(Boolean) ?? [];
+  if (names.length === 0) return undefined;
+  return names.join(" · ");
+}
+
+function resumoClienteLinha(label: string, value: ReactNode) {
+  return (
+    <div className="border-b border-border/60 py-2.5 last:border-0">
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+      <div className="mt-0.5 text-sm font-medium text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function ResumoParaClienteBody({
+  payload,
+  equipeNome,
+}: {
+  payload: ResumoClientePayload;
+  equipeNome?: string | null;
+}) {
+  const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  if (payload.kind === "emissao") {
+    const e = payload.item;
+    const route = parseIataRouteFromText(e.descricao);
+    return (
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F0EBF7]/30 py-2 [-webkit-overflow-scrolling:touch]">
+        <div className="flex justify-center px-1 pb-1">
+          <EmissaoResumoCard
+            variant="dialog"
+            equipeNome={equipeNome ?? undefined}
+            gestorResponsavel={payload.gestorResponsavel}
+            programa={e.programName}
+            descricao={e.descricao}
+            tipoPill="Emissão · Saída de Milhas"
+            milhas={-Math.abs(e.milhas)}
+            origem={route.origem}
+            destino={route.destino}
+            companhia={e.programName}
+            dataDocumento={formatExtratoDate(e.data)}
+            dataEmissao="—"
+            dataVooIda="—"
+            dataVooVolta="—"
+            tarifaPagante={e.tarifaPagante}
+            custoReal={e.custoReal}
+            economiaReal={e.economiaReal}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (payload.kind === "extrato" && payload.item.tipo === "saida") {
+    const item = payload.item;
+    return (
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F0EBF7]/30 py-2 [-webkit-overflow-scrolling:touch]">
+        <div className="flex justify-center px-1 pb-1">
+          <EmissaoResumoCard
+            variant="dialog"
+            equipeNome={equipeNome ?? undefined}
+            gestorResponsavel={payload.gestorResponsavel}
+            programa={item.programName}
+            descricao={item.descricao}
+            tipoPill="Emissão · Saída de Milhas"
+            milhas={item.milhas}
+            origem={item.origem?.trim() ? item.origem.toUpperCase() : "—"}
+            destino={item.destino?.trim() ? item.destino.toUpperCase() : "—"}
+            companhia={item.programName}
+            dataDocumento={formatExtratoDate(item.dataEmissao || item.data)}
+            dataEmissao={formatExtratoDate(item.dataEmissao)}
+            dataVooIda={formatExtratoDate(item.dataVoo)}
+            dataVooVolta={item.dataVolta ? formatExtratoDate(item.dataVolta) : "—"}
+            taxas={item.taxas}
+            tarifaPagante={item.tarifaPagante}
+            economiaReal={item.economiaReal}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (payload.kind === "compra") {
+    const c = payload.item;
+    return (
+      <div className="max-h-[min(70dvh,520px)] overflow-y-auto pr-1">
+        {payload.gestorResponsavel
+          ? resumoClienteLinha("Gestor responsável", payload.gestorResponsavel)
+          : null}
+        {resumoClienteLinha("Programa", c.programName)}
+        {resumoClienteLinha("Data", formatExtratoDate(c.data))}
+        {resumoClienteLinha("Descrição", c.descricao)}
+        {resumoClienteLinha(
+          "Milhas",
+          <span className="tabular-nums">{c.milhas.toLocaleString("pt-BR")}</span>,
+        )}
+        {resumoClienteLinha("Valor pago", <span className="tabular-nums">{brl(c.valorPago)}</span>)}
+        {resumoClienteLinha(
+          "Custo por milheiro",
+          <span className="tabular-nums font-semibold text-amber-800">{brl(c.custoMilheiro)}</span>,
+        )}
+      </div>
+    );
+  }
+
+  const item = payload.item;
+  return (
+    <div className="max-h-[min(70dvh,560px)] overflow-y-auto pr-1">
+      {payload.gestorResponsavel
+        ? resumoClienteLinha("Gestor responsável", payload.gestorResponsavel)
+        : null}
+      {resumoClienteLinha("Programa", item.programName)}
+      {resumoClienteLinha("Descrição", item.descricao)}
+      {resumoClienteLinha("Tipo", "Compra / entrada de milhas")}
+      {resumoClienteLinha(
+        "Milhas",
+        <span className="tabular-nums">
+          +
+          {Math.abs(item.milhas).toLocaleString("pt-BR")}
+        </span>,
+      )}
+      {resumoClienteLinha("Data do lançamento", formatExtratoDate(item.data))}
+    </div>
+  );
+}
+
+function resumoClienteDialogTitle(p: ResumoClientePayload): string {
+  if (p.kind === "compra") return "Resumo da compra de pontos";
+  if (p.kind === "emissao") return "Resumo da emissão";
+  return p.item.tipo === "saida" ? "Resumo da emissão" : "Resumo da compra de milhas";
+}
+
+function resumoClienteMostraCardEmissao(p: ResumoClientePayload | null): boolean {
+  if (!p) return false;
+  if (p.kind === "emissao") return true;
+  return p.kind === "extrato" && p.item.tipo === "saida";
+}
 
 const AVAILABLE_PROGRAM_OPTIONS: Array<{
   programId: string;
@@ -556,6 +764,7 @@ const Index = () => {
   const [accessedClientsVersion, setAccessedClientsVersion] = useState(0);
   const [selectedPlanoProgramKey, setSelectedPlanoProgramKey] = useState<ActionPlanProgramKey | null>(null);
   const [showPlanoAcaoPermissionHelp, setShowPlanoAcaoPermissionHelp] = useState(false);
+  const [demandBannerDismissed, setDemandBannerDismissed] = useState(false);
   const economiaReportRef = useRef<HTMLDivElement | null>(null);
   const vencendoSectionRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -602,6 +811,13 @@ const Index = () => {
   const managerClientName = managerClientId
     ? resumoClientes.find((cliente) => cliente.clienteId === managerClientId)?.nome ?? null
     : null;
+
+  const [resumoCliente, setResumoCliente] = useState<ResumoClientePayload | null>(null);
+
+  const gestorResumoClienteLabel = useMemo(
+    () => formatGestorResponsavelResumo(resumoClientes, managerClientId),
+    [resumoClientes, managerClientId],
+  );
   const { vincular, desvincular, isVincularLoading, isDesvincularLoading, getErrorMessage } =
     useVincularCliente(
       role === "gestor" || role === "admin" ? user?.id : undefined,
@@ -1527,20 +1743,94 @@ const Index = () => {
     const items: ExtratoItem[] = [];
 
     allPersistedPrograms.forEach(({ meta, state }) => {
+      const programId = meta.slug;
+      const custoMilheiroPrograma = Number(state.custoMedioMilheiro ?? 0);
       (state.movimentos ?? []).forEach((mov) => {
         const tipo: MovimentoTipo = mov.tipo === "saida" ? "saida" : "entrada";
+        const milhasVal = Number(mov.milhas ?? 0);
+        const milhasAbs = Math.abs(milhasVal);
+
+        let taxas: number | undefined;
+        let tarifaPagante: number | undefined;
+        let economiaReal: number | undefined;
+        let economiaPercent: number | undefined;
+        let custoTotalEmissao: number | undefined;
+
+        if (tipo === "saida") {
+          taxas = Number(mov.taxas ?? 0);
+          tarifaPagante = Number(mov.tarifaPagante ?? 0);
+
+          if (mov.emissaoFornecedor && typeof mov.custoFornecedor === "number") {
+            const custoReal = mov.custoFornecedor + taxas;
+            custoTotalEmissao = custoReal;
+            const er =
+              typeof mov.economiaReal === "number"
+                ? mov.economiaReal
+                : tarifaPagante > 0
+                  ? tarifaPagante - custoReal
+                  : undefined;
+            economiaReal = er;
+            economiaPercent =
+              tarifaPagante > 0 && typeof er === "number" && !Number.isNaN(er)
+                ? (er / tarifaPagante) * 100
+                : undefined;
+          } else if (milhasAbs > 0) {
+            const custoMilheiroBase = Number(
+              mov.custoMilheiroBase ?? custoMilheiroPrograma ?? 0,
+            );
+            const custoMilhas = (milhasAbs / 1000) * custoMilheiroBase;
+            const custoReal = custoMilhas + taxas;
+            custoTotalEmissao = custoReal;
+            const er =
+              typeof mov.economiaReal === "number"
+                ? mov.economiaReal
+                : tarifaPagante > 0
+                  ? tarifaPagante - custoReal
+                  : undefined;
+            economiaReal = er;
+            economiaPercent =
+              tarifaPagante > 0 && typeof er === "number" && !Number.isNaN(er)
+                ? (er / tarifaPagante) * 100
+                : undefined;
+          }
+        }
+
+        const dataRef = mov.data ?? "-";
+        const dataVoo =
+          tipo === "saida"
+            ? (mov.dataIda?.trim() || mov.data?.trim() || "")
+            : "";
+        const dataEmissaoStr = mov.dataEmissao?.trim() || mov.data?.trim() || "";
+
+        const baseLineId = stableExtratoMovimentoId(mov, meta);
+
         items.push({
-          id: mov.id ?? `${meta.slug}-${mov.data ?? "sem-data"}-${mov.descricao ?? "mov"}`,
+          id: baseLineId,
+          programId,
           programSlug: meta.slug,
           programName: meta.name,
           programLogo: meta.logo,
           programLogoColor: meta.logoColor,
-          data: mov.data ?? "-",
+          data: dataRef,
+          dataVoo,
+          dataEmissao: dataEmissaoStr,
+          dataVolta: mov.dataVolta,
           tipo,
           descricao:
             mov.descricao ??
             (tipo === "entrada" ? "Entrada de milhas" : "Saída de milhas"),
-          milhas: Number(mov.milhas ?? 0),
+          milhas: milhasVal,
+          origem: mov.origem,
+          destino: mov.destino,
+          taxas,
+          tarifaPagante,
+          economiaReal,
+          economiaPercent,
+          emissaoFornecedor: mov.emissaoFornecedor,
+          custoFornecedor: mov.custoFornecedor,
+          codigoReserva: mov.codigoReserva,
+          sobrenomeEmissao: mov.sobrenomeEmissao,
+          custoTotalEmissao,
         });
       });
     });
@@ -1734,6 +2024,36 @@ const Index = () => {
   return (
     <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
       <DashboardHeader />
+
+      {managerMode && !managerClientId && !demandBannerDismissed && (
+        <div className="mx-4 mb-1 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+          <span className="shrink-0">⚡</span>
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                role === "cs" || role === "admin_equipe"
+                  ? "/cs?tab=demandas&status=pendente"
+                  : "/gestor?tab=demandas&status=pendente",
+              )
+            }
+            className="flex-1 text-left text-[11px] text-amber-800 hover:opacity-90"
+          >
+            <b>Demandas abertas:</b> {demandasPendentes + demandasEmAndamento}{" "}
+            {demandasPendentes + demandasEmAndamento > 0
+              ? `(pendentes: ${demandasPendentes} · andamento: ${demandasEmAndamento})`
+              : "no momento."}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDemandBannerDismissed(true)}
+            className="shrink-0 text-amber-500 opacity-60 hover:opacity-100"
+            aria-label="Fechar aviso de demandas"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <BalanceTabs
         activeTab={activeTab}
@@ -2361,43 +2681,295 @@ const Index = () => {
               Nenhuma entrada ou saída registrada ainda.
             </div>
           )}
-          {extratoGlobal.map((item) => (
-            <div
-              key={`${item.programSlug}-${item.id}`}
-              className="flex items-center gap-4 rounded-2xl border border-nubank-border bg-white p-5 shadow-nubank"
-            >
-              <span
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ring-1 ring-black/10"
-                style={{
-                  backgroundColor: `${item.programLogoColor}1f`,
-                  color: item.programLogoColor,
+          {extratoGlobal.map((item) => {
+            const routeTitle =
+              item.origem?.trim() && item.destino?.trim()
+                ? `${item.origem.toUpperCase()} → ${item.destino.toUpperCase()}`
+                : item.descricao;
+            const isFornecedor =
+              item.tipo === "saida" && Boolean(item.emissaoFornecedor);
+            const fornecedorHeroValor =
+              typeof item.custoFornecedor === "number"
+                ? item.custoFornecedor
+                : typeof item.custoTotalEmissao === "number"
+                  ? item.custoTotalEmissao
+                  : null;
+            const lucrativa =
+              item.tipo === "saida" &&
+              typeof item.economiaReal === "number" &&
+              !Number.isNaN(item.economiaReal) &&
+              item.economiaReal >= 0;
+
+            return (
+              <div
+                key={`${item.programSlug}-${item.id}`}
+                role="button"
+                tabIndex={0}
+                className="flex cursor-pointer overflow-hidden rounded-2xl border border-nubank-border bg-white shadow-nubank transition-all hover:-translate-y-px hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nubank-primary/40 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700/80"
+                onClick={() =>
+                  setResumoCliente({
+                    kind: "extrato",
+                    item,
+                    ...(gestorResumoClienteLabel
+                      ? { gestorResponsavel: gestorResumoClienteLabel }
+                      : {}),
+                  })
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setResumoCliente({
+                      kind: "extrato",
+                      item,
+                      ...(gestorResumoClienteLabel
+                        ? { gestorResponsavel: gestorResumoClienteLabel }
+                        : {}),
+                    });
+                  }
                 }}
               >
-                {item.programLogo}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-nubank-text">
-                  {item.descricao}
-                </p>
-                <p className="text-[11px] text-nubank-text-secondary">
-                  {item.programName} • {item.data}
-                </p>
-              </div>
-              <div className="text-right">
-                <p
-                  className={`text-xs font-semibold ${
-                    item.tipo === "entrada" ? "text-emerald-600" : "text-red-600"
+                <div
+                  className={`w-1 shrink-0 ${
+                    item.tipo === "saida" ? "bg-red-500" : "bg-emerald-500"
                   }`}
-                >
-                  {item.tipo === "entrada" ? "+" : "-"}
-                  {Math.abs(item.milhas).toLocaleString("pt-BR")}
-                </p>
-                <p className="text-[10px] text-nubank-text-secondary">
-                  {item.tipo === "entrada" ? "Entrada" : "Saída"}
-                </p>
+                />
+
+                <div className="min-w-0 flex-1 p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                        <p className="text-[15px] font-black tracking-tight text-slate-900 dark:text-slate-100">
+                          {routeTitle}
+                        </p>
+                        {item.tipo === "saida" ? (
+                          <span className="rounded-full bg-rose-100 px-2 py-px text-[10px] font-semibold text-rose-800 ring-1 ring-rose-200/80 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800">
+                            Saída
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-emerald-100 px-2 py-px text-[10px] font-semibold text-emerald-800 ring-1 ring-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-200 dark:ring-emerald-800">
+                            Entrada
+                          </span>
+                        )}
+                        {isFornecedor && (
+                          <span className="rounded-full bg-amber-100 px-2 py-px text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200/90 dark:bg-amber-950/40 dark:text-amber-100 dark:ring-amber-800">
+                            Fornecedor
+                          </span>
+                        )}
+                        {lucrativa && (
+                          <span className="rounded-full bg-emerald-100 px-2 py-px text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-800">
+                            ✓ Lucrativa
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span>{item.programName}</span>
+                        {item.tipo === "saida" && item.codigoReserva?.trim() && (
+                          <>
+                            <span className="text-slate-300 dark:text-slate-600">·</span>
+                            <span>
+                              Reserva{" "}
+                              <span className="font-mono font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-200">
+                                {item.codigoReserva.trim()}
+                              </span>
+                            </span>
+                          </>
+                        )}
+                        {item.tipo === "saida" && item.sobrenomeEmissao?.trim() && (
+                          <>
+                            <span className="text-slate-300 dark:text-slate-600">·</span>
+                            <span className="text-slate-600 dark:text-slate-300">
+                              {item.sobrenomeEmissao.trim()}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 flex-col items-end gap-0.5">
+                      {isFornecedor && fornecedorHeroValor !== null ? (
+                        <>
+                          <p className="text-[19px] font-black tabular-nums text-[#A86E3D] dark:text-amber-200">
+                            {fornecedorHeroValor.toLocaleString("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            })}
+                          </p>
+                          <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                            fornecedor
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p
+                            className={`text-[19px] font-black tabular-nums ${
+                              item.tipo === "entrada"
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-red-600 dark:text-red-400"
+                            }`}
+                          >
+                            {item.tipo === "entrada" ? "+" : "−"}
+                            {Math.abs(item.milhas).toLocaleString("pt-BR")}
+                          </p>
+                          <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                            milhas
+                          </p>
+                        </>
+                      )}
+                      <ChevronRight
+                        className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 dark:text-slate-500"
+                        aria-hidden
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-3 h-px bg-slate-100 dark:bg-slate-700" />
+
+                  {item.tipo === "saida" && (
+                    <>
+                      <div className="mb-2 grid grid-cols-2 gap-2">
+                        {item.dataVolta?.trim() ? (
+                          <div className="col-span-2 flex items-center rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2 dark:border-indigo-900 dark:bg-indigo-950/30">
+                            <div className="flex-1">
+                              <p className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-indigo-400">
+                                ✈ Ida
+                              </p>
+                              <p className="text-[12px] font-bold text-slate-900 dark:text-slate-100">
+                                {item.dataVoo ? formatExtratoDate(item.dataVoo) : "—"}
+                              </p>
+                            </div>
+                            <div className="flex shrink-0 flex-col items-center px-3 text-lg leading-none text-indigo-300">
+                              →
+                              <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-widest text-indigo-200">
+                                retorno
+                              </span>
+                            </div>
+                            <div className="flex-1 text-right">
+                              <p className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-indigo-400">
+                                Volta ✈
+                              </p>
+                              <p className="text-[12px] font-bold text-slate-900 dark:text-slate-100">
+                                {formatExtratoDate(item.dataVolta)}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="mb-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                              ✈ Data do voo
+                            </p>
+                            <p className="text-[12px] font-semibold text-slate-900 dark:text-slate-100">
+                              {item.dataVoo ? formatExtratoDate(item.dataVoo) : "—"}
+                            </p>
+                          </div>
+                        )}
+
+                        <div>
+                          <p className="mb-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                            Data da emissão
+                          </p>
+                          <p className="text-[12px] font-semibold text-slate-900 dark:text-slate-100">
+                            {item.dataEmissao ? formatExtratoDate(item.dataEmissao) : "—"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="mb-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                            Taxas
+                          </p>
+                          <p className="text-[12px] font-semibold text-slate-900 dark:text-slate-100">
+                            {typeof item.taxas === "number"
+                              ? item.taxas.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })
+                              : "—"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="mb-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                            Tarifa pagante
+                          </p>
+                          <p className="text-[12px] font-semibold text-slate-900 dark:text-slate-100">
+                            {typeof item.tarifaPagante === "number" && item.tarifaPagante > 0
+                              ? item.tarifaPagante.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })
+                              : "—"}
+                          </p>
+                        </div>
+
+                        <div className={item.dataVolta?.trim() ? "" : "col-span-2"}>
+                          <p className="mb-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                            {isFornecedor ? "Custo (fornecedor)" : "Custo total"}
+                          </p>
+                          <p className="text-[12px] font-bold text-indigo-800 dark:text-indigo-300">
+                            {typeof item.custoTotalEmissao === "number"
+                              ? item.custoTotalEmissao.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })
+                              : "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {typeof item.economiaReal === "number" &&
+                        !Number.isNaN(item.economiaReal) && (
+                          <div className="mt-1 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-700">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                              Economia gerada
+                            </p>
+                            <div className="text-right">
+                              <p
+                                className={`text-[14px] font-black ${
+                                  item.economiaReal >= 0
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-red-600 dark:text-red-400"
+                                }`}
+                              >
+                                {item.economiaReal.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                              </p>
+                              {typeof item.economiaPercent === "number" &&
+                                !Number.isNaN(item.economiaPercent) && (
+                                  <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                                    {Math.abs(item.economiaPercent).toFixed(1)}% da tarifa pagante
+                                  </p>
+                                )}
+                            </div>
+                          </div>
+                        )}
+                    </>
+                  )}
+
+                  {item.tipo === "entrada" && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="mb-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                          Data
+                        </p>
+                        <p className="text-[12px] font-semibold text-slate-900 dark:text-slate-100">
+                          {formatExtratoDate(item.data)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="mb-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                          Milhas
+                        </p>
+                        <p className="text-[12px] font-bold tabular-nums text-emerald-600">
+                          +{Math.abs(item.milhas).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -2819,6 +3391,50 @@ const Index = () => {
           clientId={managerClientId ?? user?.id ?? null}
         />
       )}
+
+      <Dialog
+        open={!!resumoCliente}
+        onOpenChange={(open) => {
+          if (!open) setResumoCliente(null);
+        }}
+      >
+        <DialogContent
+          className={cn(
+            "w-[calc(100vw-1.5rem)]",
+            resumoClienteMostraCardEmissao(resumoCliente)
+              ? "flex max-h-[min(92dvh,680px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(100vw-1.5rem,360px)]"
+              : "max-w-md",
+          )}
+        >
+          <DialogHeader
+            className={cn(
+              "shrink-0",
+              resumoClienteMostraCardEmissao(resumoCliente) && "sr-only",
+            )}
+          >
+            <DialogTitle>
+              {resumoCliente ? resumoClienteDialogTitle(resumoCliente) : "Resumo"}
+            </DialogTitle>
+            <DialogDescription>
+              Informações organizadas para apresentar ao cliente.
+            </DialogDescription>
+          </DialogHeader>
+          {resumoCliente ? (
+            <ResumoParaClienteBody payload={resumoCliente} equipeNome={undefined} />
+          ) : null}
+          <DialogFooter
+            className={cn(
+              "gap-2 sm:gap-0",
+              resumoClienteMostraCardEmissao(resumoCliente) &&
+                "shrink-0 border-t border-border/60 px-4 pb-4 pt-3",
+            )}
+          >
+            <Button type="button" variant="default" onClick={() => setResumoCliente(null)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isDemandDialogOpen} onOpenChange={setIsDemandDialogOpen}>
         <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-4 pt-10 sm:p-5 sm:pt-11">

@@ -1,0 +1,316 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; background: #F7F7F8; }
+
+  .page-title { text-align: center; padding: 28px 20px 6px; font-size: 18px; font-weight: 700; color: #1F1F1F; }
+  .page-sub   { text-align: center; font-size: 13px; color: #6B6B6B; padding-bottom: 24px; }
+
+  /* Layout: 3 cenários lado a lado */
+  .scenarios { display: flex; gap: 20px; padding: 0 24px 32px; justify-content: center; flex-wrap: wrap; }
+
+  .scenario-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .scenario-label {
+    font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 4px 12px; border-radius: 20px;
+  }
+  .label-intl { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+  .label-nac  { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+  .label-other { background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE; }
+
+  /* Phone */
+  .phone { width: 280px; background: white; border-radius: 28px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); overflow: hidden; border: 1px solid #E8E8E8; display: flex; flex-direction: column; }
+  .phone-notch { background: linear-gradient(135deg, #6A00A3, #8A05BE); padding: 12px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+  .notch-title { color: white; font-size: 13px; font-weight: 700; }
+  .notch-close { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
+
+  /* Progress */
+  .progress-wrap { padding: 12px 16px 0; }
+  .progress-steps { display: flex; align-items: center; }
+  .pstep { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .pstep-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
+  .done   { background: #22C55E; color: white; }
+  .active { background: #8A05BE; color: white; box-shadow: 0 0 0 3px #8A05BE22; }
+  .next   { background: #F0F0F0; color: #BDBDBD; }
+  .pstep-label { font-size: 8px; font-weight: 700; white-space: nowrap; color: #8A05BE; }
+  .pstep-label.muted { color: #BDBDBD; }
+  .pstep-label.green { color: #22C55E; }
+  .pline { flex: 1; height: 3px; margin: 0 3px; margin-bottom: 11px; border-radius: 2px; }
+  .pline-done { background: #22C55E; }
+  .pline-next { background: #E8E8E8; }
+
+  .phone-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+  .step-pill { display: inline-flex; align-items: center; gap: 4px; background: linear-gradient(135deg,#8A05BE15,#B56CFF25); border: 1px solid #8A05BE30; color: #8A05BE; font-size: 9px; font-weight: 800; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.3px; }
+  .step-headline { font-size: 14px; font-weight: 800; color: #1F1F1F; }
+  .step-sub      { font-size: 10px; color: #6B6B6B; }
+
+  /* Category grid */
+  .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .cat-item {
+    border: 1.5px solid #E0E0E0; border-radius: 12px;
+    padding: 9px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .cat-item.selected { border-color: #8A05BE; background: linear-gradient(135deg,#8A05BE08,#B56CFF15); }
+  .cat-item.selected-intl { border-color: #1D4ED8; background: #EFF6FF; }
+  .cat-item.dimmed { opacity: 0.35; }
+  .cat-icon { font-size: 20px; }
+  .cat-name { font-size: 9px; font-weight: 700; color: #333; text-align: center; line-height: 1.3; }
+  .cat-item.selected .cat-name { color: #8A05BE; }
+  .cat-item.selected-intl .cat-name { color: #1D4ED8; }
+  .cat-badge {
+    font-size: 7px; font-weight: 800; padding: 1px 5px; border-radius: 10px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .badge-intl { background: #DBEAFE; color: #1D4ED8; }
+  .badge-nac  { background: #DCFCE7; color: #166534; }
+
+  /* Scope toggle (só aparece para voo) */
+  .scope-toggle {
+    background: #F3E8FF; border: 1.5px solid #8A05BE30; border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .scope-lbl { font-size: 9px; font-weight: 800; color: #8A05BE; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+  .scope-row { display: flex; gap: 6px; }
+  .scope-btn { flex: 1; height: 30px; border-radius: 8px; border: 1.5px solid #D8B4FE; font-size: 10px; font-weight: 700; color: #7C3AED; display: flex; align-items: center; justify-content: center; gap: 3px; }
+  .scope-btn.active-intl { background: #1D4ED8; border-color: #1D4ED8; color: white; }
+  .scope-btn.active-nac  { background: #22C55E; border-color: #22C55E; color: white; }
+
+  /* Gestor chip */
+  .gestor-chip { display: flex; align-items: center; gap: 8px; border-radius: 12px; padding: 8px 10px; }
+  .gc-intl { background: #EFF6FF; border: 1px solid #BFDBFE; }
+  .gc-nac  { background: #F0FDF4; border: 1px solid #BBF7D0; }
+  .gestor-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 800; flex-shrink: 0; }
+  .av-intl { background: linear-gradient(135deg, #1D4ED8, #3B82F6); }
+  .av-nac  { background: linear-gradient(135deg, #16A34A, #22C55E); }
+  .gc-lbl  { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .gc-intl .gc-lbl { color: #1D4ED8; }
+  .gc-nac  .gc-lbl { color: #166534; }
+  .gc-name { font-size: 11px; font-weight: 700; color: #1F1F1F; }
+  .gc-why  { font-size: 9px; color: #6B6B6B; margin-top: 1px; }
+
+  /* Textarea */
+  .textarea-wrap { background: #FAFAFA; border: 1.5px solid #E0E0E0; border-radius: 12px; padding: 10px; min-height: 60px; }
+  .ta-label { font-size: 9px; font-weight: 700; color: #8A05BE; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .ta-text  { font-size: 11px; color: #999; line-height: 1.4; }
+  .ta-text.typed { color: #1F1F1F; }
+
+  /* Footer */
+  .phone-footer { padding: 0 14px 14px; display: flex; gap: 8px; }
+  .btn-back { height: 40px; padding: 0 12px; border-radius: 12px; border: 1.5px solid #E0E0E0; font-size: 12px; font-weight: 700; color: #666; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .btn-next { flex: 1; height: 40px; border-radius: 12px; background: linear-gradient(135deg,#8A05BE,#A020D0); color: white; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 14px rgba(138,5,190,0.35); }
+  .btn-send-intl { flex: 1; height: 40px; border-radius: 12px; background: linear-gradient(135deg,#1D4ED8,#3B82F6); color: white; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 14px rgba(29,78,216,0.35); }
+  .btn-send-nac  { flex: 1; height: 40px; border-radius: 12px; background: linear-gradient(135deg,#16A34A,#22C55E); color: white; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 14px rgba(22,163,74,0.3); }
+
+  /* Routing legend */
+  .legend { max-width: 680px; margin: 0 auto 40px; padding: 0 24px; }
+  .legend-box { background: white; border-radius: 16px; border: 1px solid #E8E8E8; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .legend-title { padding: 14px 20px 10px; font-size: 13px; font-weight: 800; color: #1F1F1F; border-bottom: 1px solid #F0F0F0; display: flex; align-items: center; gap: 6px; }
+  .legend-row { display: flex; gap: 0; }
+  .legend-col { flex: 1; padding: 12px 16px; border-right: 1px solid #F0F0F0; }
+  .legend-col:last-child { border-right: none; }
+  .lc-title { font-size: 10px; font-weight: 800; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+  .lc-intl { color: #1D4ED8; }
+  .lc-nac  { color: #166534; }
+  .lc-item { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .lc-icon { font-size: 13px; width: 20px; text-align: center; flex-shrink: 0; }
+  .lc-text { font-size: 10px; color: #444; }
+  .lc-note { font-size: 9px; color: #999; margin-top: 2px; font-style: italic; }
+</style>
+
+<h2 class="page-title">Outros — Roteamento Inteligente</h2>
+<p class="page-sub">A categoria escolhida determina automaticamente qual gestor recebe a solicitação</p>
+
+<div class="scenarios">
+
+  <!-- CENÁRIO 1: Voo Internacional → Gestor Internacional -->
+  <div class="scenario-wrap">
+    <div class="scenario-label label-intl">✈ Voo internacional → Gestor Internacional</div>
+    <div class="phone">
+      <div class="phone-notch">
+        <div class="notch-title">Outra solicitação</div>
+        <div class="notch-close">×</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-steps">
+          <div class="pstep"><div class="pstep-dot done">✓</div><div class="pstep-label green">Tipo</div></div>
+          <div class="pline pline-done"></div>
+          <div class="pstep"><div class="pstep-dot active">2</div><div class="pstep-label">Categoria</div></div>
+          <div class="pline pline-next"></div>
+          <div class="pstep"><div class="pstep-dot next">3</div><div class="pstep-label muted">Detalhe</div></div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="step-pill">🗂 Etapa 2 — O que precisa?</div>
+        <div class="step-headline">Selecione a categoria</div>
+
+        <div class="cat-grid">
+          <div class="cat-item selected-intl">
+            <div class="cat-icon">✈</div>
+            <div class="cat-name">Upgrade / Alteração de voo</div>
+          </div>
+          <div class="cat-item dimmed"><div class="cat-icon">🚗</div><div class="cat-name">Aluguel de carro</div></div>
+          <div class="cat-item dimmed"><div class="cat-icon">🏨</div><div class="cat-name">Hotel</div></div>
+          <div class="cat-item dimmed"><div class="cat-icon">🛡</div><div class="cat-name">Seguro viagem</div></div>
+          <div class="cat-item dimmed"><div class="cat-icon">🔄</div><div class="cat-name">Transferência de pontos</div></div>
+          <div class="cat-item dimmed"><div class="cat-icon">🛍</div><div class="cat-name">Compra de produtos</div></div>
+        </div>
+
+        <!-- Pergunta de escopo aparece só para voo -->
+        <div class="scope-toggle">
+          <div class="scope-lbl">⚡ O voo é nacional ou internacional?</div>
+          <div class="scope-row">
+            <div class="scope-btn active-intl">🌍 Internacional</div>
+            <div class="scope-btn">🇧🇷 Nacional</div>
+          </div>
+        </div>
+
+        <div class="gestor-chip gc-intl">
+          <div class="gestor-avatar av-intl">MR</div>
+          <div>
+            <div class="gc-lbl">Gestor Internacional</div>
+            <div class="gc-name">Maria Ribeiro</div>
+            <div class="gc-why">Alterações em voos internacionais</div>
+          </div>
+          <span style="margin-left:auto;color:#1D4ED8;font-size:14px;">✓</span>
+        </div>
+      </div>
+      <div class="phone-footer">
+        <button class="btn-back">← Voltar</button>
+        <button class="btn-next" style="background:linear-gradient(135deg,#1D4ED8,#3B82F6);box-shadow:0 4px 14px rgba(29,78,216,0.35)">Próximo →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENÁRIO 2: Voo Nacional → Gestor Nacional -->
+  <div class="scenario-wrap">
+    <div class="scenario-label label-nac">✈ Voo nacional → Gestor Nacional</div>
+    <div class="phone">
+      <div class="phone-notch">
+        <div class="notch-title">Outra solicitação</div>
+        <div class="notch-close">×</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-steps">
+          <div class="pstep"><div class="pstep-dot done">✓</div><div class="pstep-label green">Tipo</div></div>
+          <div class="pline pline-done"></div>
+          <div class="pstep"><div class="pstep-dot active">2</div><div class="pstep-label">Categoria</div></div>
+          <div class="pline pline-next"></div>
+          <div class="pstep"><div class="pstep-dot next">3</div><div class="pstep-label muted">Detalhe</div></div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="step-pill">🗂 Etapa 2 — O que precisa?</div>
+        <div class="step-headline">Selecione a categoria</div>
+
+        <div class="cat-grid">
+          <div class="cat-item selected">
+            <div class="cat-icon">✈</div>
+            <div class="cat-name">Upgrade / Alteração de voo</div>
+          </div>
+          <div class="cat-item dimmed"><div class="cat-icon">🚗</div><div class="cat-name">Aluguel de carro</div></div>
+          <div class="cat-item dimmed"><div class="cat-icon">🏨</div><div class="cat-name">Hotel</div></div>
+          <div class="cat-item dimmed"><div class="cat-icon">🛡</div><div class="cat-name">Seguro viagem</div></div>
+          <div class="cat-item dimmed"><div class="cat-icon">🔄</div><div class="cat-name">Transferência de pontos</div></div>
+          <div class="cat-item dimmed"><div class="cat-icon">🛍</div><div class="cat-name">Compra de produtos</div></div>
+        </div>
+
+        <div class="scope-toggle">
+          <div class="scope-lbl">⚡ O voo é nacional ou internacional?</div>
+          <div class="scope-row">
+            <div class="scope-btn">🌍 Internacional</div>
+            <div class="scope-btn active-nac">🇧🇷 Nacional</div>
+          </div>
+        </div>
+
+        <div class="gestor-chip gc-nac">
+          <div class="gestor-avatar av-nac">CM</div>
+          <div>
+            <div class="gc-lbl">Gestor Nacional</div>
+            <div class="gc-name">Carlos Mendes</div>
+            <div class="gc-why">Alterações em voos nacionais</div>
+          </div>
+          <span style="margin-left:auto;color:#16A34A;font-size:14px;">✓</span>
+        </div>
+      </div>
+      <div class="phone-footer">
+        <button class="btn-back">← Voltar</button>
+        <button class="btn-next" style="background:linear-gradient(135deg,#16A34A,#22C55E);box-shadow:0 4px 14px rgba(22,163,74,0.3)">Próximo →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENÁRIO 3: Hotel/Carro/etc → sempre Nacional -->
+  <div class="scenario-wrap">
+    <div class="scenario-label label-other">🏨 Hotel, carro, seguro… → sempre Nacional</div>
+    <div class="phone">
+      <div class="phone-notch">
+        <div class="notch-title">Outra solicitação</div>
+        <div class="notch-close">×</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-steps">
+          <div class="pstep"><div class="pstep-dot done">✓</div><div class="pstep-label green">Tipo</div></div>
+          <div class="pline pline-done"></div>
+          <div class="pstep"><div class="pstep-dot done">✓</div><div class="pstep-label green">Categoria</div></div>
+          <div class="pline pline-done"></div>
+          <div class="pstep"><div class="pstep-dot active">3</div><div class="pstep-label">Detalhe</div></div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="step-pill">📝 Etapa 3 — Descreva</div>
+        <div class="step-headline">Descreva sua solicitação</div>
+        <div class="step-sub">Categoria: <strong>Hotel</strong> — Gestor Nacional atenderá</div>
+
+        <div class="gestor-chip gc-nac">
+          <div class="gestor-avatar av-nac">CM</div>
+          <div>
+            <div class="gc-lbl">Gestor Nacional — automático</div>
+            <div class="gc-name">Carlos Mendes</div>
+            <div class="gc-why">Hotel, carro, seguro, pontos e produtos são sempre Nacional</div>
+          </div>
+        </div>
+
+        <div class="textarea-wrap">
+          <div class="ta-label">✍ Sua mensagem</div>
+          <div class="ta-text typed">Preciso de hotel em Lisboa para 3 noites (14 a 17 jun). Casal, 2 adultos…</div>
+        </div>
+
+        <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:8px 10px;font-size:9px;color:#166534;font-weight:500;line-height:1.4;display:flex;gap:6px;align-items:flex-start;">
+          <span style="font-size:12px;flex-shrink:0">✅</span>
+          Sem perguntas extras — hotel, carro, seguro e produtos sempre vão para o Gestor Nacional, independente do destino.
+        </div>
+      </div>
+      <div class="phone-footer">
+        <button class="btn-back">← Voltar</button>
+        <div class="btn-send-nac">🚀 Enviar</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Routing legend -->
+<div class="legend">
+  <div class="legend-box">
+    <div class="legend-title">🗺 Regras de roteamento</div>
+    <div class="legend-row">
+      <div class="legend-col">
+        <div class="lc-title lc-intl">🌍 Gestor Internacional</div>
+        <div class="lc-item"><div class="lc-icon">✈</div><div class="lc-text">Upgrade de voo <strong>internacional</strong></div></div>
+        <div class="lc-item"><div class="lc-icon">✏</div><div class="lc-text">Alteração de passagem <strong>internacional</strong></div></div>
+        <div class="lc-note">Só quando usuário seleciona "Internacional" no toggle de escopo</div>
+      </div>
+      <div class="legend-col">
+        <div class="lc-title lc-nac">🇧🇷 Gestor Nacional (todos os demais)</div>
+        <div class="lc-item"><div class="lc-icon">✈</div><div class="lc-text">Upgrade / alteração de voo <strong>nacional</strong></div></div>
+        <div class="lc-item"><div class="lc-icon">🚗</div><div class="lc-text">Aluguel de carro</div></div>
+        <div class="lc-item"><div class="lc-icon">🏨</div><div class="lc-text">Hotel</div></div>
+        <div class="lc-item"><div class="lc-icon">🛡</div><div class="lc-text">Seguro viagem</div></div>
+        <div class="lc-item"><div class="lc-icon">🔄</div><div class="lc-text">Transferência de pontos</div></div>
+        <div class="lc-item"><div class="lc-icon">🛍</div><div class="lc-text">Compra de produtos</div></div>
+        <div class="lc-item"><div class="lc-icon">📋</div><div class="lc-text">Outros</div></div>
+      </div>
+    </div>
+  </div>
+</div>

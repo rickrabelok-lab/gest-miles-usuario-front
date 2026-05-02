@@ -1,0 +1,576 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; background: #F7F7F8; }
+
+  .page-title {
+    text-align: center;
+    padding: 28px 20px 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1F1F1F;
+  }
+  .page-sub {
+    text-align: center;
+    font-size: 13px;
+    color: #6B6B6B;
+    padding-bottom: 24px;
+  }
+
+  .approaches {
+    display: flex;
+    gap: 20px;
+    padding: 0 24px 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .approach-card {
+    background: white;
+    border-radius: 20px;
+    width: 320px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .approach-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(138,5,190,0.15);
+    border-color: #8A05BE;
+  }
+  .approach-card.selected {
+    border-color: #8A05BE;
+    box-shadow: 0 12px 32px rgba(138,5,190,0.2);
+  }
+
+  .card-header {
+    padding: 16px 20px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #F0F0F0;
+  }
+  .card-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+    color: white;
+    background: linear-gradient(135deg, #8A05BE, #B56CFF);
+    flex-shrink: 0;
+  }
+  .card-title { font-size: 14px; font-weight: 700; color: #1F1F1F; }
+  .card-subtitle { font-size: 11px; color: #6B6B6B; margin-top: 1px; }
+
+  /* ── APPROACH A: Wizard ── */
+  .mockup-wizard { padding: 16px; }
+  .wizard-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 16px;
+  }
+  .wstep {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .wstep-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+  .wstep-dot.active { background: #8A05BE; color: white; }
+  .wstep-dot.done { background: #22C55E; color: white; }
+  .wstep-dot.inactive { background: #E8E8E8; color: #999; }
+  .wstep-label { font-size: 9px; color: #6B6B6B; font-weight: 600; }
+  .wstep-line { flex: 1; height: 2px; background: #E8E8E8; margin: 0 4px; margin-bottom: 16px; }
+  .wstep-line.done { background: #22C55E; }
+
+  .wizard-body {
+    background: #FAFAFA;
+    border-radius: 14px;
+    padding: 14px;
+    border: 1px solid #EFEFEF;
+    min-height: 120px;
+  }
+  .wbody-label { font-size: 10px; font-weight: 700; color: #8A05BE; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px; }
+
+  .type-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1.5px solid #E0E0E0;
+    color: #555;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .chip.active { background: #8A05BE; border-color: #8A05BE; color: white; }
+  .chip-icon { font-size: 14px; }
+
+  .route-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .fake-input {
+    flex: 1; height: 36px; border-radius: 10px;
+    border: 1.5px solid #E0E0E0; background: white;
+    display: flex; align-items: center; padding: 0 10px;
+    font-size: 12px; color: #999;
+  }
+  .fake-input.filled { color: #1F1F1F; font-weight: 500; }
+  .swap-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #F3E8FF; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+
+  .wizard-nav { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-back {
+    height: 36px; padding: 0 14px; border-radius: 10px;
+    border: 1.5px solid #E0E0E0; font-size: 12px; font-weight: 600; color: #666;
+    background: white; flex-shrink: 0;
+  }
+  .btn-next {
+    flex: 1; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, #8A05BE, #A020D0);
+    color: white; font-size: 12px; font-weight: 700;
+    border: none;
+  }
+
+  /* ── APPROACH B: Card Sections ── */
+  .mockup-cards { padding: 0 0 12px; }
+  .modal-topbar {
+    padding: 14px 16px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-topbar-title { font-size: 15px; font-weight: 800; color: #1F1F1F; }
+  .close-x {
+    width: 26px; height: 26px; border-radius: 50%; background: #F0F0F0;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; color: #666;
+  }
+
+  .section-card {
+    margin: 0 12px 8px;
+    background: #FAFAFA;
+    border: 1px solid #EFEFEF;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .sc-header {
+    padding: 10px 14px 8px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #F0F0F0;
+  }
+  .sc-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #8A05BE20, #B56CFF30);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .sc-title { font-size: 11px; font-weight: 700; color: #8A05BE; text-transform: uppercase; letter-spacing: 0.4px; }
+  .sc-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+
+  .seg-row { display: flex; gap: 6px; }
+  .seg-btn {
+    flex: 1; height: 30px; border-radius: 8px;
+    border: 1.5px solid #E0E0E0; font-size: 11px; font-weight: 600; color: #666;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .seg-btn.active { background: #8A05BE; border-color: #8A05BE; color: white; }
+
+  .route-fields { display: flex; gap: 6px; align-items: center; }
+  .mini-input {
+    flex: 1; height: 32px; border-radius: 8px;
+    border: 1.5px solid #E0E0E0; background: white;
+    display: flex; align-items: center; padding: 0 8px;
+    font-size: 11px; color: #999;
+  }
+  .mini-input.filled { color: #1F1F1F; font-weight: 500; }
+  .arrow-btn {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #F3E8FF; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+  }
+
+  .date-row { display: flex; gap: 6px; }
+  .date-field {
+    flex: 1; height: 32px; border-radius: 8px;
+    border: 1.5px solid #E0E0E0; background: white;
+    display: flex; align-items: center; padding: 0 8px; gap: 5px;
+    font-size: 10px; color: #999;
+  }
+  .date-field.filled { color: #1F1F1F; font-size: 10px; }
+
+  .pax-class-row { display: flex; gap: 6px; }
+  .pax-counter {
+    height: 32px; border-radius: 8px;
+    border: 1.5px solid #E0E0E0; background: white;
+    display: flex; align-items: center; padding: 0 8px; gap: 8px;
+    font-size: 11px; font-weight: 600; color: #1F1F1F;
+  }
+  .pax-btn { color: #8A05BE; font-size: 14px; font-weight: 800; }
+
+  .send-btn-wrap { padding: 0 12px 12px; }
+  .send-btn {
+    width: 100%; height: 44px; border-radius: 14px;
+    background: linear-gradient(135deg, #8A05BE, #A020D0);
+    color: white; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(138,5,190,0.35);
+  }
+
+  /* ── APPROACH C: Bottom Sheet ── */
+  .mockup-sheet {
+    background: #1A1A2E;
+    min-height: 260px;
+    position: relative;
+    display: flex; align-items: flex-end;
+    overflow: hidden;
+  }
+  .phone-bg {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding-bottom: 80px;
+  }
+  .phone-bg-icon { font-size: 32px; opacity: 0.15; }
+  .phone-bg-txt { font-size: 11px; color: rgba(255,255,255,0.2); font-weight: 600; }
+
+  .bottom-sheet {
+    width: 100%; background: white;
+    border-radius: 24px 24px 0 0;
+    padding: 0 0 16px;
+    position: relative;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.25);
+  }
+  .sheet-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: #E0E0E0; margin: 10px auto 0;
+  }
+  .sheet-title-row {
+    padding: 12px 16px 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sheet-icon-wrap {
+    width: 36px; height: 36px; border-radius: 12px;
+    background: linear-gradient(135deg, #8A05BE, #B56CFF);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .sheet-title { font-size: 16px; font-weight: 800; color: #1F1F1F; }
+  .sheet-desc { font-size: 11px; color: #6B6B6B; margin-top: 1px; }
+
+  .sheet-tabs {
+    display: flex; padding: 0 16px; gap: 6px; margin-bottom: 10px;
+  }
+  .stab {
+    flex: 1; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    font-size: 11px; font-weight: 700;
+    border: 1.5px solid #E0E0E0; color: #666;
+  }
+  .stab.active {
+    background: linear-gradient(135deg, #8A05BE15, #B56CFF20);
+    border-color: #8A05BE; color: #8A05BE;
+  }
+
+  .sheet-fields { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  .field-group { display: flex; gap: 8px; }
+  .sfield {
+    flex: 1; background: #F7F7F8; border-radius: 12px;
+    border: 1.5px solid #EFEFEF;
+    padding: 8px 10px;
+  }
+  .sfield-label { font-size: 9px; font-weight: 700; color: #8A05BE; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
+  .sfield-val { font-size: 12px; font-weight: 600; color: #1F1F1F; }
+  .sfield-placeholder { font-size: 12px; color: #BDBDBD; }
+
+  .ssheet-send {
+    margin: 10px 16px 0;
+    height: 44px; border-radius: 14px;
+    background: linear-gradient(135deg, #8A05BE, #A020D0);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 13px; font-weight: 700;
+    box-shadow: 0 4px 16px rgba(138,5,190,0.4);
+    gap: 6px;
+  }
+
+  /* Tags */
+  .approach-tag {
+    position: absolute; top: 10px; right: 10px;
+    background: linear-gradient(135deg, #8A05BE, #B56CFF);
+    color: white; font-size: 9px; font-weight: 800;
+    padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .approach-tag.tag-b { background: linear-gradient(135deg, #0F4C75, #1B85CC); }
+  .approach-tag.tag-c { background: linear-gradient(135deg, #1A1A2E, #4A1D6B); }
+
+  .pros-list { padding: 12px 16px; border-top: 1px solid #F5F5F5; }
+  .pros-list ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .pros-list li {
+    font-size: 10px; color: #555;
+    display: flex; align-items: flex-start; gap: 5px;
+  }
+  .pros-list li::before { content: '✓'; color: #8A05BE; font-weight: 800; flex-shrink: 0; }
+
+  .selected-check {
+    position: absolute; top: 10px; left: 10px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #8A05BE; display: none; align-items: center; justify-content: center;
+    font-size: 12px; color: white;
+  }
+  .approach-card.selected .selected-check { display: flex; }
+
+  @media (max-width: 700px) {
+    .approaches { flex-direction: column; align-items: center; }
+  }
+</style>
+
+<h2 class="page-title">Redesign: Solicitar Cotação</h2>
+<p class="page-sub">3 abordagens para o formulário — clique na que preferir (pode selecionar mais de uma)</p>
+
+<div class="approaches">
+
+  <!-- APPROACH A: Multi-step Wizard -->
+  <div class="approach-card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="selected-check">✓</div>
+    <span class="approach-tag">A</span>
+    <div class="card-header">
+      <div class="card-badge">A</div>
+      <div>
+        <div class="card-title">Wizard Multi-etapas</div>
+        <div class="card-subtitle">Passo a passo guiado, menos sobrecarga cognitiva</div>
+      </div>
+    </div>
+
+    <div class="mockup-wizard">
+      <!-- Steps indicator -->
+      <div class="wizard-steps">
+        <div class="wstep">
+          <div class="wstep-dot done">✓</div>
+          <div class="wstep-label">Tipo</div>
+        </div>
+        <div class="wstep-line done"></div>
+        <div class="wstep">
+          <div class="wstep-dot active">2</div>
+          <div class="wstep-label">Rota</div>
+        </div>
+        <div class="wstep-line"></div>
+        <div class="wstep">
+          <div class="wstep-dot inactive">3</div>
+          <div class="wstep-label">Extras</div>
+        </div>
+      </div>
+
+      <div class="wizard-body">
+        <div class="wbody-label">✈ Etapa 2 — Rota da viagem</div>
+
+        <div class="type-chips">
+          <div class="chip active"><span class="chip-icon">🌍</span> Internacional</div>
+          <div class="chip"><span class="chip-icon">🇧🇷</span> Nacional</div>
+        </div>
+
+        <div class="route-row">
+          <div class="fake-input filled">GRU – São Paulo</div>
+          <div class="swap-btn">⇄</div>
+          <div class="fake-input">Destino</div>
+        </div>
+
+        <div class="route-row" style="gap:6px">
+          <div class="fake-input" style="font-size:11px;">📅 Ida: — —</div>
+          <div class="fake-input" style="font-size:11px;">📅 Volta: — —</div>
+        </div>
+      </div>
+
+      <div class="wizard-nav">
+        <button class="btn-back">← Voltar</button>
+        <button class="btn-next">Próximo: Extras →</button>
+      </div>
+    </div>
+
+    <div class="pros-list">
+      <ul>
+        <li>Não intimida — mostra só o necessário</li>
+        <li>Progresso claro, usuário sabe onde está</li>
+        <li>Ideal para fluxo de emissão complexo</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- APPROACH B: Card Sections (redesigned modal) -->
+  <div class="approach-card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="selected-check">✓</div>
+    <span class="approach-tag tag-b">B</span>
+    <div class="card-header">
+      <div class="card-badge" style="background: linear-gradient(135deg, #0F4C75, #1B85CC);">B</div>
+      <div>
+        <div class="card-title">Seções em Cards</div>
+        <div class="card-subtitle">Modal redesenhado com hierarquia visual clara</div>
+      </div>
+    </div>
+
+    <div class="mockup-cards">
+      <div class="modal-topbar">
+        <div>
+          <div class="modal-topbar-title">Solicitar Cotação ✈</div>
+          <div style="font-size:10px;color:#6B6B6B;">Emissão de passagem com milhas</div>
+        </div>
+        <div class="close-x">×</div>
+      </div>
+
+      <!-- Tipo card -->
+      <div class="section-card">
+        <div class="sc-header">
+          <div class="sc-icon">✈</div>
+          <div class="sc-title">Tipo de voo</div>
+        </div>
+        <div class="sc-body">
+          <div class="seg-row">
+            <div class="seg-btn active">🌍 Internacional</div>
+            <div class="seg-btn">🇧🇷 Nacional</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rota card -->
+      <div class="section-card">
+        <div class="sc-header">
+          <div class="sc-icon">📍</div>
+          <div class="sc-title">Rota</div>
+        </div>
+        <div class="sc-body">
+          <div class="route-fields">
+            <div class="mini-input filled">GRU</div>
+            <div class="arrow-btn">→</div>
+            <div class="mini-input">Destino</div>
+          </div>
+          <div class="date-row">
+            <div class="date-field">📅 Ida</div>
+            <div class="date-field">↩ Volta (opcional)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Passageiros card -->
+      <div class="section-card">
+        <div class="sc-header">
+          <div class="sc-icon">👤</div>
+          <div class="sc-title">Passageiros e classe</div>
+        </div>
+        <div class="sc-body">
+          <div class="pax-class-row">
+            <div class="pax-counter">
+              <span class="pax-btn">−</span>
+              1
+              <span class="pax-btn">+</span>
+            </div>
+            <div class="seg-row" style="flex:1">
+              <div class="seg-btn active" style="font-size:10px;">Executiva</div>
+              <div class="seg-btn" style="font-size:10px;">Econômica</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="send-btn-wrap">
+        <div class="send-btn">🚀 Enviar Solicitação</div>
+      </div>
+    </div>
+
+    <div class="pros-list">
+      <ul>
+        <li>Visual elegante sem mudar o fluxo</li>
+        <li>Seções agrupadas facilita leitura</li>
+        <li>Transição mínima, menor risco</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- APPROACH C: Full-screen mobile bottom sheet -->
+  <div class="approach-card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="selected-check">✓</div>
+    <span class="approach-tag tag-c">C</span>
+    <div class="card-header">
+      <div class="card-badge" style="background: linear-gradient(135deg, #1A1A2E, #6A00A3);">C</div>
+      <div>
+        <div class="card-title">Bottom Sheet Full Mobile</div>
+        <div class="card-subtitle">Sheet deslizante, experiência nativa mobile</div>
+      </div>
+    </div>
+
+    <div class="mockup-sheet">
+      <div class="phone-bg">
+        <div class="phone-bg-icon">✈</div>
+        <div class="phone-bg-txt">Dashboard</div>
+      </div>
+      <div class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row">
+          <div class="sheet-icon-wrap">✈</div>
+          <div>
+            <div class="sheet-title">Solicitar Cotação</div>
+            <div class="sheet-desc">Emissão de milhas</div>
+          </div>
+        </div>
+        <div class="sheet-tabs">
+          <div class="stab active">✈ Emissão</div>
+          <div class="stab">📋 Outros</div>
+        </div>
+        <div class="sheet-fields">
+          <div class="field-group">
+            <div class="sfield">
+              <div class="sfield-label">Origem</div>
+              <div class="sfield-val">GRU</div>
+            </div>
+            <div class="sfield" style="display:flex;align-items:center;justify-content:center;flex:0 0 32px;padding:0;background:transparent;border:none;">
+              <span style="font-size:16px;color:#8A05BE;">→</span>
+            </div>
+            <div class="sfield">
+              <div class="sfield-label">Destino</div>
+              <div class="sfield-placeholder">Ex: LIS</div>
+            </div>
+          </div>
+          <div class="field-group">
+            <div class="sfield">
+              <div class="sfield-label">📅 Data de ida</div>
+              <div class="sfield-placeholder">Escolher</div>
+            </div>
+            <div class="sfield">
+              <div class="sfield-label">↩ Volta</div>
+              <div class="sfield-placeholder">Opcional</div>
+            </div>
+          </div>
+          <div class="field-group">
+            <div class="sfield" style="flex:0 0 80px">
+              <div class="sfield-label">👤 Pax</div>
+              <div class="sfield-val" style="display:flex;align-items:center;gap:6px">
+                <span style="color:#8A05BE;font-weight:800">−</span> 1 <span style="color:#8A05BE;font-weight:800">+</span>
+              </div>
+            </div>
+            <div class="sfield">
+              <div class="sfield-label">Classe</div>
+              <div class="sfield-val">Executiva ▾</div>
+            </div>
+          </div>
+        </div>
+        <div class="ssheet-send">🚀 Enviar Solicitação</div>
+      </div>
+    </div>
+
+    <div class="pros-list">
+      <ul>
+        <li>Experiência 100% nativa mobile</li>
+        <li>Gestos de swipe para fechar</li>
+        <li>Tela toda disponível para o form</li>
+      </ul>
+    </div>
+  </div>
+
+</div>

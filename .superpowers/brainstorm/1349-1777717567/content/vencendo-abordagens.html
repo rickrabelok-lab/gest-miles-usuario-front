@@ -1,0 +1,518 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; background: #F0F0F4; }
+
+  .page-title { text-align: center; padding: 28px 20px 6px; font-size: 18px; font-weight: 700; color: #1F1F1F; }
+  .page-sub   { text-align: center; font-size: 13px; color: #6B6B6B; padding-bottom: 24px; }
+
+  .phones { display: flex; gap: 20px; padding: 0 20px 40px; justify-content: center; flex-wrap: wrap; }
+
+  /* Phone shell */
+  .phone { width: 300px; background: #F4F4F8; border-radius: 32px; box-shadow: 0 16px 48px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #E0E0E8; display: flex; flex-direction: column; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+  .phone:hover { transform: translateY(-4px); box-shadow: 0 24px 60px rgba(138,5,190,0.18), 0 8px 20px rgba(0,0,0,0.1); }
+  .phone.selected { outline: 3px solid #8A05BE; outline-offset: 3px; }
+  .selected-badge { position: absolute; top: 10px; right: 10px; background: #8A05BE; color: white; font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 20px; display: none; z-index: 10; }
+  .phone.selected .selected-badge { display: block; }
+
+  /* Label */
+  .approach-label { text-align: center; font-size: 11px; font-weight: 800; color: #6B6B6B; padding: 12px 0 8px; letter-spacing: 0.3px; text-transform: uppercase; }
+
+  /* Header */
+  .ph { background: white; border-bottom: 1px solid #EBEBEB; padding: 12px 14px 10px; display: flex; align-items: center; gap: 8px; }
+  .ph-back { width: 30px; height: 30px; border-radius: 50%; background: #F5F5F5; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #666; flex-shrink: 0; }
+  .ph-title { font-size: 14px; font-weight: 800; color: #1F1F1F; flex: 1; }
+
+  .pm { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── APPROACH A: Summary Hero + Progress Cards ── */
+
+  .hero-box {
+    background: linear-gradient(135deg, #1A1A2E 0%, #4A1D6B 60%, #8A05BE 100%);
+    border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .hero-label { font-size: 9px; font-weight: 800; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; }
+  .hero-total { font-size: 26px; font-weight: 900; color: white; line-height: 1; }
+  .hero-sub { font-size: 10px; color: rgba(255,255,255,0.65); }
+  .hero-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .hchip { padding: 3px 8px; border-radius: 20px; font-size: 9px; font-weight: 800; }
+  .hchip-red { background: rgba(239,68,68,0.25); color: #FCA5A5; }
+  .hchip-amber { background: rgba(245,158,11,0.25); color: #FCD34D; }
+  .hchip-green { background: rgba(34,197,94,0.2); color: #86EFAC; }
+
+  .prog-card {
+    background: white; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .pc-top { padding: 10px 12px 8px; display: flex; align-items: center; gap: 8px; }
+  .pc-avatar { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: white; flex-shrink: 0; }
+  .av-latam { background: linear-gradient(135deg, #C8102E, #E63950); }
+  .av-livelo { background: linear-gradient(135deg, #7B2FBE, #9B59B6); }
+  .av-smiles { background: linear-gradient(135deg, #FF6B00, #FF8C00); }
+  .pc-info { flex: 1; min-width: 0; }
+  .pc-name { font-size: 12px; font-weight: 700; color: #1F1F1F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pc-date { font-size: 9px; color: #9B9B9B; margin-top: 1px; }
+  .pc-right { text-align: right; }
+  .pc-pts { font-size: 13px; font-weight: 800; color: #1F1F1F; white-space: nowrap; }
+  .pc-unit { font-size: 9px; color: #9B9B9B; }
+
+  .pc-bar-wrap { padding: 0 12px 10px; }
+  .pc-bar-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .pc-bar-label { font-size: 9px; font-weight: 700; }
+  .pc-bar-days { font-size: 10px; font-weight: 800; }
+  .pc-bar { height: 5px; border-radius: 3px; background: #F0F0F0; overflow: hidden; }
+  .pc-fill { height: 100%; border-radius: 3px; }
+
+  /* urgency colors */
+  .urg-crit .pc-bar-label { color: #EF4444; }
+  .urg-crit .pc-bar-days { color: #EF4444; }
+  .urg-crit .pc-fill { background: linear-gradient(90deg, #EF4444, #F87171); width: 8%; }
+  .urg-crit .pc-avatar-ring { box-shadow: 0 0 0 2px #FEE2E2; }
+  .urg-warn .pc-bar-label { color: #F59E0B; }
+  .urg-warn .pc-bar-days { color: #F59E0B; }
+  .urg-warn .pc-fill { background: linear-gradient(90deg, #F59E0B, #FCD34D); width: 25%; }
+  .urg-ok .pc-bar-label { color: #22C55E; }
+  .urg-ok .pc-bar-days { color: #22C55E; }
+  .urg-ok .pc-fill { background: linear-gradient(90deg, #22C55E, #86EFAC); width: 72%; }
+
+  .crit-action { margin: 0 12px 10px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 10px; padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; }
+  .ca-text { font-size: 9px; color: #B91C1C; font-weight: 600; }
+  .ca-btn { font-size: 9px; font-weight: 800; color: #EF4444; background: white; border: 1px solid #FECACA; border-radius: 6px; padding: 3px 8px; }
+
+  /* ── APPROACH B: Urgency Bands ── */
+
+  .band-summary { background: white; border-radius: 14px; padding: 12px; display: flex; gap: 0; }
+  .bs-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; position: relative; }
+  .bs-item:not(:last-child)::after { content: ''; position: absolute; right: 0; top: 20%; height: 60%; width: 1px; background: #F0F0F0; }
+  .bs-num { font-size: 20px; font-weight: 900; }
+  .bs-num.red { color: #EF4444; }
+  .bs-num.amber { color: #F59E0B; }
+  .bs-num.green { color: #22C55E; }
+  .bs-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: #9B9B9B; }
+  .bs-sub { font-size: 7px; color: #BDBDBD; }
+
+  .band { border-radius: 14px; overflow: hidden; }
+  .band-header { padding: 8px 12px; display: flex; align-items: center; gap: 6px; }
+  .band-header.crit { background: linear-gradient(135deg, #FEF2F2, #FEE2E2); border: 1px solid #FECACA; border-bottom: none; border-radius: 14px 14px 0 0; }
+  .band-header.warn { background: linear-gradient(135deg, #FFFBEB, #FEF3C7); border: 1px solid #FDE68A; border-bottom: none; border-radius: 14px 14px 0 0; }
+  .bh-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .bh-dot.red { background: #EF4444; }
+  .bh-dot.amber { background: #F59E0B; }
+  .bh-title { font-size: 10px; font-weight: 800; }
+  .bh-title.red { color: #B91C1C; }
+  .bh-title.amber { color: #92400E; }
+  .bh-count { margin-left: auto; font-size: 9px; font-weight: 700; color: #6B6B6B; }
+
+  .band-rows { border: 1px solid #F0F0F0; border-top: none; border-radius: 0 0 14px 14px; overflow: hidden; background: white; }
+  .band-row { padding: 9px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #F7F7F7; }
+  .band-row:last-child { border-bottom: none; }
+  .br-avatar { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: white; flex-shrink: 0; }
+  .br-info { flex: 1; min-width: 0; }
+  .br-name { font-size: 11px; font-weight: 700; color: #1F1F1F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .br-pts  { font-size: 9px; color: #9B9B9B; }
+  .br-right { text-align: right; }
+  .br-badge { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 8px; }
+  .badge-red   { background: #FEF2F2; color: #EF4444; }
+  .badge-amber { background: #FFFBEB; color: #D97706; }
+  .badge-green { background: #F0FDF4; color: #16A34A; }
+  .br-date { font-size: 8px; color: #BDBDBD; margin-top: 1px; }
+
+  /* ── APPROACH C: Premium Countdown Cards ── */
+
+  .premium-header { background: white; border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+  .ph-icon { width: 36px; height: 36px; border-radius: 12px; background: linear-gradient(135deg, #8A05BE, #B56CFF); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .ph-texts { flex: 1; }
+  .ph-t1 { font-size: 13px; font-weight: 800; color: #1F1F1F; }
+  .ph-t2 { font-size: 10px; color: #6B6B6B; margin-top: 1px; }
+  .ph-pts { text-align: right; }
+  .ph-p1 { font-size: 16px; font-weight: 900; color: #1F1F1F; }
+  .ph-p2 { font-size: 9px; color: #9B9B9B; }
+
+  .prem-card {
+    background: white; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .prem-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  }
+  .prem-crit::before { background: linear-gradient(180deg, #EF4444, #F87171); }
+  .prem-warn::before { background: linear-gradient(180deg, #F59E0B, #FCD34D); }
+  .prem-ok::before   { background: linear-gradient(180deg, #22C55E, #86EFAC); }
+
+  .prem-inner { padding: 12px 12px 12px 16px; }
+  .prem-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .prem-av { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: white; flex-shrink: 0; }
+  .prem-meta { flex: 1; min-width: 0; }
+  .prem-name { font-size: 13px; font-weight: 700; color: #1F1F1F; }
+  .prem-date { font-size: 9px; color: #9B9B9B; margin-top: 1px; }
+  .prem-countdown { text-align: right; }
+  .prem-days { font-size: 22px; font-weight: 900; line-height: 1; }
+  .prem-days-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+
+  .prem-crit .prem-days { color: #EF4444; }
+  .prem-crit .prem-days-lbl { color: #EF4444; }
+  .prem-warn .prem-days { color: #F59E0B; }
+  .prem-warn .prem-days-lbl { color: #F59E0B; }
+  .prem-ok   .prem-days { color: #22C55E; }
+  .prem-ok   .prem-days-lbl { color: #22C55E; }
+
+  .prem-bottom { display: flex; align-items: center; justify-content: space-between; }
+  .prem-milhas { font-size: 14px; font-weight: 800; color: #1F1F1F; }
+  .prem-milhas-lbl { font-size: 9px; color: #9B9B9B; }
+
+  .prem-tag { font-size: 8px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-crit  { background: #FEF2F2; color: #EF4444; }
+  .tag-warn  { background: #FFFBEB; color: #D97706; }
+  .tag-ok    { background: #F0FDF4; color: #16A34A; }
+
+  .prem-crit .prem-inner { background: linear-gradient(135deg, white 70%, #FFF5F5); }
+  .prem-warn .prem-inner { background: linear-gradient(135deg, white 70%, #FFFDF5); }
+
+  /* section divider */
+  .sec-divider { display: flex; align-items: center; gap-6px; gap: 6px; }
+  .sd-line { flex: 1; height: 1px; background: #E8E8E8; }
+  .sd-label { font-size: 8px; font-weight: 800; color: #BDBDBD; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+
+  /* Pros */
+  .pros { padding: 10px 14px 14px; border-top: 1px solid #F0F0F0; }
+  .pros-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  .pros-list li { font-size: 9px; color: #555; display: flex; align-items: flex-start; gap: 5px; line-height: 1.4; }
+  .pros-list li::before { content: '✓'; color: #8A05BE; font-weight: 800; flex-shrink: 0; }
+</style>
+
+<h2 class="page-title">Milhas Vencendo — 3 Abordagens</h2>
+<p class="page-sub">Clique na que mais gostar (pode escolher mais de uma)</p>
+
+<div class="phones">
+
+  <!-- ── APPROACH A: Hero Summary + Progress Bars ── -->
+  <div>
+    <div class="approach-label">A — Resumo Hero + Barra de Progresso</div>
+    <div class="phone" data-choice="a" onclick="toggleSelect(this)">
+      <div class="selected-badge">✓ Selecionado</div>
+      <div class="ph">
+        <div class="ph-back">←</div>
+        <div class="ph-title">Milhas Vencendo</div>
+      </div>
+      <div class="pm">
+        <!-- Hero summary -->
+        <div class="hero-box">
+          <div class="hero-label">Total em risco de vencer</div>
+          <div class="hero-total">802.000</div>
+          <div class="hero-sub">milhas · 3 programas</div>
+          <div class="hero-chips">
+            <div class="hchip hchip-red">🔴 1 crítico</div>
+            <div class="hchip hchip-amber">🟡 1 atenção</div>
+            <div class="hchip hchip-green">🟢 1 tranquilo</div>
+          </div>
+        </div>
+
+        <!-- Card crítico -->
+        <div class="prog-card urg-crit">
+          <div class="pc-top">
+            <div class="pc-avatar av-smiles">SM</div>
+            <div class="pc-info">
+              <div class="pc-name">Smiles</div>
+              <div class="pc-date">Vence em 15/01/2025</div>
+            </div>
+            <div class="pc-right">
+              <div class="pc-pts">2.000</div>
+              <div class="pc-unit">milhas</div>
+            </div>
+          </div>
+          <div class="pc-bar-wrap">
+            <div class="pc-bar-row">
+              <div class="pc-bar-label">Urgente — expira logo</div>
+              <div class="pc-bar-days">🔴 13 dias</div>
+            </div>
+            <div class="pc-bar"><div class="pc-fill"></div></div>
+          </div>
+          <div class="crit-action">
+            <div class="ca-text">⚠ Aja agora antes que expire!</div>
+            <div class="ca-btn">Usar agora</div>
+          </div>
+        </div>
+
+        <!-- Card atenção -->
+        <div class="prog-card urg-warn">
+          <div class="pc-top">
+            <div class="pc-avatar av-latam">LP</div>
+            <div class="pc-info">
+              <div class="pc-name">Latam Pass</div>
+              <div class="pc-date">Vence em 05/03/2025</div>
+            </div>
+            <div class="pc-right">
+              <div class="pc-pts">500.000</div>
+              <div class="pc-unit">milhas</div>
+            </div>
+          </div>
+          <div class="pc-bar-wrap">
+            <div class="pc-bar-row">
+              <div class="pc-bar-label">Atenção — fique atento</div>
+              <div class="pc-bar-days">🟡 47 dias</div>
+            </div>
+            <div class="pc-bar"><div class="pc-fill"></div></div>
+          </div>
+        </div>
+
+        <!-- Card ok -->
+        <div class="prog-card urg-ok">
+          <div class="pc-top">
+            <div class="pc-avatar av-livelo">Lv</div>
+            <div class="pc-info">
+              <div class="pc-name">Livelo</div>
+              <div class="pc-date">Vence em 05/03/2027</div>
+            </div>
+            <div class="pc-right">
+              <div class="pc-pts">300.000</div>
+              <div class="pc-unit">pontos</div>
+            </div>
+          </div>
+          <div class="pc-bar-wrap">
+            <div class="pc-bar-row">
+              <div class="pc-bar-label">Tranquilo — sem urgência</div>
+              <div class="pc-bar-days">🟢 307 dias</div>
+            </div>
+            <div class="pc-bar"><div class="pc-fill"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="pros">
+        <ul class="pros-list">
+          <li>Resumo total visível de imediato no topo</li>
+          <li>Barra de progresso dá senso de urgência visual</li>
+          <li>CTA "Usar agora" para críticos</li>
+          <li>Chips coloridos no hero mostram distribuição rápida</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── APPROACH B: Urgency Bands ── -->
+  <div>
+    <div class="approach-label">B — Bandas por Urgência</div>
+    <div class="phone" data-choice="b" onclick="toggleSelect(this)">
+      <div class="selected-badge">✓ Selecionado</div>
+      <div class="ph">
+        <div class="ph-back">←</div>
+        <div class="ph-title">Milhas Vencendo</div>
+      </div>
+      <div class="pm">
+        <!-- Summary chips -->
+        <div class="band-summary">
+          <div class="bs-item">
+            <div class="bs-num red">1</div>
+            <div class="bs-label">Crítico</div>
+            <div class="bs-sub">≤ 30 dias</div>
+          </div>
+          <div class="bs-item">
+            <div class="bs-num amber">1</div>
+            <div class="bs-label">Atenção</div>
+            <div class="bs-sub">31–60 dias</div>
+          </div>
+          <div class="bs-item">
+            <div class="bs-num green">1</div>
+            <div class="bs-label">Tranquilo</div>
+            <div class="bs-sub">&gt; 60 dias</div>
+          </div>
+        </div>
+
+        <!-- Banda crítica -->
+        <div class="band">
+          <div class="band-header crit">
+            <div class="bh-dot red"></div>
+            <div class="bh-title red">🔴 Crítico — vence em até 30 dias</div>
+            <div class="bh-count">1 item</div>
+          </div>
+          <div class="band-rows">
+            <div class="band-row">
+              <div class="br-avatar av-smiles">SM</div>
+              <div class="br-info">
+                <div class="br-name">Smiles</div>
+                <div class="br-pts">2.000 milhas</div>
+              </div>
+              <div class="br-right">
+                <div class="br-badge badge-red">13 dias</div>
+                <div class="br-date">15/01/2025</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banda atenção -->
+        <div class="band">
+          <div class="band-header warn">
+            <div class="bh-dot amber"></div>
+            <div class="bh-title amber">🟡 Atenção — 31 a 60 dias</div>
+            <div class="bh-count">1 item</div>
+          </div>
+          <div class="band-rows">
+            <div class="band-row">
+              <div class="br-avatar av-latam">LP</div>
+              <div class="br-info">
+                <div class="br-name">Latam Pass</div>
+                <div class="br-pts">500.000 milhas</div>
+              </div>
+              <div class="br-right">
+                <div class="br-badge badge-amber">47 dias</div>
+                <div class="br-date">05/03/2025</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tranquilo colapsado -->
+        <div class="band">
+          <div class="band-rows" style="border-radius:14px;border:1px solid #F0F0F0">
+            <div class="band-row">
+              <div class="br-avatar av-livelo">Lv</div>
+              <div class="br-info">
+                <div class="br-name">Livelo</div>
+                <div class="br-pts">300.000 pontos</div>
+              </div>
+              <div class="br-right">
+                <div class="br-badge badge-green">307 dias</div>
+                <div class="br-date">05/03/2027</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pros">
+        <ul class="pros-list">
+          <li>Agrupamento visual por nível de urgência</li>
+          <li>Contadores numéricos por categoria no topo</li>
+          <li>Fácil de escanear: críticos sempre primeiro</li>
+          <li>Compacto — cabe muito conteúdo na tela</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── APPROACH C: Premium Countdown ── -->
+  <div>
+    <div class="approach-label">C — Countdown Premium</div>
+    <div class="phone" data-choice="c" onclick="toggleSelect(this)">
+      <div class="selected-badge">✓ Selecionado</div>
+      <div class="ph">
+        <div class="ph-back">←</div>
+        <div class="ph-title">Milhas Vencendo</div>
+      </div>
+      <div class="pm">
+
+        <!-- Total header card -->
+        <div class="premium-header">
+          <div class="ph-icon">⏳</div>
+          <div class="ph-texts">
+            <div class="ph-t1">Atenção necessária</div>
+            <div class="ph-t2">2 programas precisam de ação</div>
+          </div>
+          <div class="ph-pts">
+            <div class="ph-p1">802K</div>
+            <div class="ph-p2">em risco</div>
+          </div>
+        </div>
+
+        <!-- Section: crítico -->
+        <div class="sec-divider">
+          <div class="sd-line"></div>
+          <div class="sd-label">🔴 Crítico</div>
+          <div class="sd-line"></div>
+        </div>
+
+        <div class="prem-card prem-crit">
+          <div class="prem-inner">
+            <div class="prem-top">
+              <div class="prem-av av-smiles">SM</div>
+              <div class="prem-meta">
+                <div class="prem-name">Smiles</div>
+                <div class="prem-date">Expira em 15 jan 2025</div>
+              </div>
+              <div class="prem-countdown">
+                <div class="prem-days">13</div>
+                <div class="prem-days-lbl">dias</div>
+              </div>
+            </div>
+            <div class="prem-bottom">
+              <div>
+                <div class="prem-milhas">2.000</div>
+                <div class="prem-milhas-lbl">milhas em risco</div>
+              </div>
+              <div class="prem-tag tag-crit">⚠ Aja agora</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: atenção -->
+        <div class="sec-divider">
+          <div class="sd-line"></div>
+          <div class="sd-label">🟡 Atenção</div>
+          <div class="sd-line"></div>
+        </div>
+
+        <div class="prem-card prem-warn">
+          <div class="prem-inner">
+            <div class="prem-top">
+              <div class="prem-av av-latam">LP</div>
+              <div class="prem-meta">
+                <div class="prem-name">Latam Pass</div>
+                <div class="prem-date">Expira em 05 mar 2025</div>
+              </div>
+              <div class="prem-countdown">
+                <div class="prem-days">47</div>
+                <div class="prem-days-lbl">dias</div>
+              </div>
+            </div>
+            <div class="prem-bottom">
+              <div>
+                <div class="prem-milhas">500.000</div>
+                <div class="prem-milhas-lbl">milhas em risco</div>
+              </div>
+              <div class="prem-tag tag-warn">Fique atento</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: ok -->
+        <div class="sec-divider">
+          <div class="sd-line"></div>
+          <div class="sd-label">🟢 Tranquilo</div>
+          <div class="sd-line"></div>
+        </div>
+
+        <div class="prem-card prem-ok">
+          <div class="prem-inner">
+            <div class="prem-top">
+              <div class="prem-av av-livelo">Lv</div>
+              <div class="prem-meta">
+                <div class="prem-name">Livelo</div>
+                <div class="prem-date">Expira em 05 mar 2027</div>
+              </div>
+              <div class="prem-countdown">
+                <div class="prem-days">307</div>
+                <div class="prem-days-lbl">dias</div>
+              </div>
+            </div>
+            <div class="prem-bottom">
+              <div>
+                <div class="prem-milhas">300.000</div>
+                <div class="prem-milhas-lbl">pontos</div>
+              </div>
+              <div class="prem-tag tag-ok">Sem urgência</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="pros">
+        <ul class="pros-list">
+          <li>Número de dias em destaque — leitura instantânea</li>
+          <li>Divisores de seção elegantes entre urgências</li>
+          <li>Borda lateral colorida por urgência (sutil mas eficaz)</li>
+          <li>Card de resumo total no topo com contexto</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>

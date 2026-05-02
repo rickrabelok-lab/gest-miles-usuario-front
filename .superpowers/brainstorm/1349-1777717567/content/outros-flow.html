@@ -1,0 +1,245 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; background: #F7F7F8; }
+
+  .page-title { text-align: center; padding: 28px 20px 6px; font-size: 18px; font-weight: 700; color: #1F1F1F; }
+  .page-sub   { text-align: center; font-size: 13px; color: #6B6B6B; padding-bottom: 24px; }
+
+  .row { display: flex; gap: 20px; padding: 0 24px 16px; justify-content: center; flex-wrap: wrap; }
+  .arrow-divider {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #8A05BE; padding-top: 80px;
+  }
+
+  /* Phone */
+  .phone {
+    width: 290px; background: white; border-radius: 28px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12); overflow: hidden;
+    border: 1px solid #E8E8E8; display: flex; flex-direction: column;
+  }
+  .phone-notch {
+    background: linear-gradient(135deg, #6A00A3, #8A05BE);
+    padding: 12px 16px 10px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .notch-title { color: white; font-size: 13px; font-weight: 700; }
+  .notch-close { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
+
+  /* Progress */
+  .progress-wrap { padding: 14px 16px 0; }
+  .progress-steps { display: flex; align-items: center; }
+  .pstep { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .pstep-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+  .pstep-dot.done   { background: #22C55E; color: white; }
+  .pstep-dot.active { background: #8A05BE; color: white; box-shadow: 0 0 0 4px #8A05BE22; }
+  .pstep-dot.next   { background: #F0F0F0; color: #BDBDBD; }
+  .pstep-label { font-size: 9px; font-weight: 700; white-space: nowrap; color: #8A05BE; }
+  .pstep-label.muted { color: #BDBDBD; }
+  .pstep-label.green { color: #22C55E; }
+  .pline { flex: 1; height: 3px; margin: 0 4px; margin-bottom: 14px; border-radius: 2px; }
+  .pline.done { background: #22C55E; }
+  .pline.next { background: #E8E8E8; }
+
+  .phone-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+  .step-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: linear-gradient(135deg, #8A05BE15, #B56CFF25);
+    border: 1px solid #8A05BE30; color: #8A05BE;
+    font-size: 10px; font-weight: 800; padding: 3px 10px;
+    border-radius: 20px; letter-spacing: 0.3px;
+  }
+  .step-headline { font-size: 15px; font-weight: 800; color: #1F1F1F; }
+  .step-sub      { font-size: 11px; color: #6B6B6B; }
+
+  /* Type cards */
+  .type-card {
+    border: 2px solid #E0E0E0; border-radius: 14px;
+    padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+  }
+  .type-card.active { border-color: #8A05BE; background: linear-gradient(135deg, #8A05BE08, #B56CFF12); }
+  .type-card.dimmed { opacity: 0.45; }
+  .tc-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: #F3E8FF; flex-shrink: 0; }
+  .type-card.active .tc-icon { background: linear-gradient(135deg, #8A05BE, #B56CFF); }
+  .tc-title { font-size: 12px; font-weight: 700; color: #1F1F1F; }
+  .tc-desc  { font-size: 10px; color: #6B6B6B; margin-top: 1px; }
+  .tc-check { margin-left: auto; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; flex-shrink: 0; }
+  .type-card.active .tc-check { border-color: #8A05BE; background: #8A05BE; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 800; }
+
+  /* Gestor info chip */
+  .gestor-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: #F3E8FF; border: 1px solid #8A05BE30; border-radius: 12px;
+    padding: 8px 12px;
+  }
+  .gestor-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #8A05BE, #B56CFF); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+  .gestor-txt { flex: 1; }
+  .gestor-lbl  { font-size: 9px; font-weight: 700; color: #8A05BE; text-transform: uppercase; letter-spacing: 0.3px; }
+  .gestor-name { font-size: 11px; font-weight: 700; color: #1F1F1F; }
+
+  /* Textarea mockup */
+  .textarea-wrap {
+    background: #FAFAFA; border: 2px solid #E0E0E0; border-radius: 14px;
+    padding: 12px; min-height: 100px; display: flex; flex-direction: column; gap: 8px;
+    position: relative;
+  }
+  .textarea-wrap.focused { border-color: #8A05BE30; background: white; }
+  .textarea-label { font-size: 9px; font-weight: 700; color: #8A05BE; text-transform: uppercase; letter-spacing: 0.4px; }
+  .textarea-text { font-size: 12px; color: #BDBDBD; line-height: 1.5; }
+  .textarea-text.typed { color: #1F1F1F; }
+  .char-count { font-size: 9px; color: #BDBDBD; text-align: right; margin-top: auto; }
+
+  /* Category chips */
+  .category-label { font-size: 10px; font-weight: 700; color: #6B6B6B; text-transform: uppercase; letter-spacing: 0.4px; }
+  .cat-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cat-chip {
+    padding: 5px 10px; border-radius: 20px; border: 1.5px solid #E0E0E0;
+    font-size: 10px; font-weight: 600; color: #555;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .cat-chip.active { background: #8A05BE; border-color: #8A05BE; color: white; }
+
+  /* Info box */
+  .info-box {
+    background: #FFF7ED; border: 1.5px solid #FED7AA; border-radius: 12px;
+    padding: 10px 12px; display: flex; gap: 8px; align-items: flex-start;
+  }
+  .info-text { font-size: 10px; color: #92400E; font-weight: 500; line-height: 1.4; }
+
+  /* Footer */
+  .phone-footer { padding: 0 16px 16px; display: flex; gap: 8px; }
+  .btn-back { height: 44px; padding: 0 16px; border-radius: 14px; border: 1.5px solid #E0E0E0; font-size: 13px; font-weight: 700; color: #666; display: flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; }
+  .btn-next { flex: 1; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #8A05BE, #A020D0); color: white; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 16px rgba(138,5,190,0.35); }
+  .btn-send { flex: 1; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #22C55E, #16A34A); color: white; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 16px rgba(34,197,94,0.35); }
+
+  /* Note */
+  .note-box {
+    background: white; border-radius: 16px; border: 1px solid #E8E8E8;
+    padding: 16px 20px; max-width: 640px; margin: 0 auto 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .note-title { font-size: 13px; font-weight: 800; color: #1F1F1F; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .note-items { display: flex; flex-direction: column; gap: 6px; }
+  .note-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #444; line-height: 1.4; }
+  .note-dot { width: 6px; height: 6px; border-radius: 50%; background: #8A05BE; margin-top: 5px; flex-shrink: 0; }
+</style>
+
+<h2 class="page-title">Fluxo: "Outra Solicitação"</h2>
+<p class="page-sub">Fluxo simplificado — apenas 2 etapas (sem rota nem datas)</p>
+
+<div class="row">
+
+  <!-- ETAPA 1 -->
+  <div class="phone">
+    <div class="phone-notch">
+      <div class="notch-title">Solicitar Cotação</div>
+      <div class="notch-close">×</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-steps">
+        <div class="pstep">
+          <div class="pstep-dot active">1</div>
+          <div class="pstep-label">Tipo</div>
+        </div>
+        <div class="pline next"></div>
+        <div class="pstep">
+          <div class="pstep-dot next">2</div>
+          <div class="pstep-label muted">Detalhe</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-body">
+      <div class="step-pill">📋 Etapa 1 de 2</div>
+      <div class="step-headline">Qual o tipo de solicitação?</div>
+      <div class="step-sub">Selecione o que você precisa</div>
+
+      <div class="type-card dimmed">
+        <div class="tc-icon">✈</div>
+        <div><div class="tc-title">Emissão de passagem</div><div class="tc-desc">Cotação e emissão com milhas</div></div>
+        <div class="tc-check"></div>
+      </div>
+      <div class="type-card active">
+        <div class="tc-icon">📋</div>
+        <div><div class="tc-title">Outra solicitação</div><div class="tc-desc">Dúvidas, upgrades, transferências…</div></div>
+        <div class="tc-check">✓</div>
+      </div>
+
+      <div class="gestor-chip">
+        <div class="gestor-avatar">CM</div>
+        <div class="gestor-txt">
+          <div class="gestor-lbl">Gestor Nacional automático</div>
+          <div class="gestor-name">Carlos Mendes irá receber</div>
+        </div>
+        <span style="color:#8A05BE;font-size:13px;">✓</span>
+      </div>
+    </div>
+    <div class="phone-footer">
+      <button class="btn-next">Próximo: Detalhar →</button>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow-divider">→</div>
+
+  <!-- ETAPA 2 -->
+  <div class="phone">
+    <div class="phone-notch">
+      <div class="notch-title">Solicitar Cotação</div>
+      <div class="notch-close">×</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-steps">
+        <div class="pstep">
+          <div class="pstep-dot done">✓</div>
+          <div class="pstep-label green">Tipo</div>
+        </div>
+        <div class="pline done"></div>
+        <div class="pstep">
+          <div class="pstep-dot active">2</div>
+          <div class="pstep-label">Detalhe</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-body">
+      <div class="step-pill">📝 Etapa 2 de 2 — quase lá!</div>
+      <div class="step-headline">Descreva sua solicitação</div>
+      <div class="step-sub">Conte o que precisa — seu gestor vai responder em breve</div>
+
+      <div>
+        <div class="category-label" style="margin-bottom:6px;">Categoria (opcional)</div>
+        <div class="cat-chips">
+          <div class="cat-chip active">⬆ Upgrade</div>
+          <div class="cat-chip">🔄 Transferência</div>
+          <div class="cat-chip">❓ Dúvida</div>
+          <div class="cat-chip">✏ Outro</div>
+        </div>
+      </div>
+
+      <div class="textarea-wrap focused">
+        <div class="textarea-label">✍ Sua mensagem</div>
+        <div class="textarea-text typed">Gostaria de verificar possibilidade de upgrade na minha próxima viagem para Lisboa em junho…</div>
+        <div class="char-count">87 / 500</div>
+      </div>
+
+      <div class="info-box">
+        <span style="font-size:14px;flex-shrink:0">💡</span>
+        <span class="info-text">Quanto mais detalhes você der, mais rápido seu gestor pode te ajudar.</span>
+      </div>
+    </div>
+    <div class="phone-footer">
+      <button class="btn-back">← Voltar</button>
+      <button class="btn-send">🚀 Enviar</button>
+    </div>
+  </div>
+
+</div>
+
+<div style="padding: 0 24px 8px; display:flex; justify-content:center;">
+  <div class="note-box">
+    <div class="note-title">💡 Por que apenas 2 etapas?</div>
+    <div class="note-items">
+      <div class="note-item"><div class="note-dot"></div>Fluxo de emissão tem 3 etapas — rota e extras são específicos de voos</div>
+      <div class="note-item"><div class="note-dot"></div>"Outra solicitação" vai direto para o gestor Nacional sem precisar de escopo</div>
+      <div class="note-item"><div class="note-dot"></div>Categorias opcionais ajudam o gestor a priorizar sem adicionar fricção</div>
+    </div>
+  </div>
+</div>

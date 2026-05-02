@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Milhas Vencendo — Design B</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; background: #F0F0F4; padding: 28px 20px 60px; }
+
+  .page-title { text-align: center; font-size: 18px; font-weight: 800; color: #1F1F1F; margin-bottom: 4px; }
+  .page-sub   { text-align: center; font-size: 13px; color: #6B7280; margin-bottom: 28px; }
+
+  .phones { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; }
+
+  .phone { width: 310px; background: #F4F4F8; border-radius: 36px; box-shadow: 0 20px 56px rgba(0,0,0,0.13), 0 4px 12px rgba(0,0,0,0.07); overflow: hidden; border: 1px solid #E0E0E8; display: flex; flex-direction: column; }
+
+  .statusbar { background: white; padding: 8px 16px 4px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: #1F1F1F; }
+
+  .ph { background: white; border-bottom: 1px solid #EBEBEB; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
+  .ph-back { width: 28px; height: 28px; border-radius: 50%; background: #F5F5F5; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #555; flex-shrink: 0; }
+  .ph-title { font-size: 14px; font-weight: 800; color: #1F1F1F; flex: 1; }
+  .ph-count { font-size: 10px; font-weight: 700; color: #9CA3AF; background: #F3F4F6; border-radius: 20px; padding: 2px 8px; }
+
+  .pm { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── BAND HEADER ── */
+  .band-header { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
+  .band-dot    { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .band-title  { font-size: 11px; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; flex: 1; }
+  .band-pill   { font-size: 10px; font-weight: 700; border-radius: 20px; padding: 2px 8px; }
+
+  .band-critico .band-dot   { background: #EF4444; }
+  .band-critico .band-title { color: #B91C1C; }
+  .band-critico .band-pill  { background: #FEE2E2; color: #B91C1C; }
+
+  .band-atencao .band-dot   { background: #F59E0B; }
+  .band-atencao .band-title { color: #92400E; }
+  .band-atencao .band-pill  { background: #FEF3C7; color: #92400E; }
+
+  .band-ok      .band-dot   { background: #22C55E; }
+  .band-ok      .band-title { color: #166534; }
+  .band-ok      .band-pill  { background: #DCFCE7; color: #166534; }
+
+  /* ── CARDS ── */
+  .band-cards { display: flex; flex-direction: column; gap: 6px; }
+
+  .bcard {
+    background: white;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .bcard-avatar { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: white; flex-shrink: 0; }
+  .av-latam  { background: linear-gradient(135deg, #C8102E, #E63950); }
+  .av-livelo { background: linear-gradient(135deg, #7B2FBE, #9B59B6); }
+  .av-smiles { background: linear-gradient(135deg, #FF6B00, #FF8C00); }
+  .av-azul   { background: linear-gradient(135deg, #005CA9, #007ACC); }
+  .av-itau   { background: linear-gradient(135deg, #EC7000, #F5891A); }
+
+  .bcard-body { flex: 1; min-width: 0; }
+  .bcard-name { font-size: 12px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bcard-sub  { font-size: 10px; color: #9CA3AF; margin-top: 2px; }
+
+  .bcard-right      { text-align: right; flex-shrink: 0; }
+  .bcard-days       { font-size: 14px; font-weight: 900; }
+  .bcard-dias-label { font-size: 9px; font-weight: 600; color: #9CA3AF; }
+
+  .critico-days { color: #EF4444; }
+  .atencao-days { color: #F59E0B; }
+  .ok-days      { color: #22C55E; }
+
+  .band-divider { height: 1px; background: #EBEBEB; }
+
+  .phone-label { text-align: center; font-size: 12px; font-weight: 700; color: #6B7280; padding: 14px 0 0; }
+  .phone-desc  { text-align: center; font-size: 11px; color: #9CA3AF; padding: 3px 12px 0; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<p class="page-title">Milhas Vencendo — Design B</p>
+<p class="page-sub">Faixas de urgência agrupadas, sem destaque individual</p>
+
+<div class="phones">
+
+  <!-- PHONE 1: critical + attention + ok -->
+  <div>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+    <div class="ph">
+      <div class="ph-back">←</div>
+      <div class="ph-title">Milhas Vencendo</div>
+      <div class="ph-count">5 programas</div>
+    </div>
+    <div class="pm">
+
+      <div class="band-header band-critico">
+        <div class="band-dot"></div>
+        <div class="band-title">Crítico</div>
+        <div class="band-pill">≤ 30 dias</div>
+      </div>
+      <div class="band-cards">
+        <div class="bcard">
+          <div class="bcard-avatar av-latam">LA</div>
+          <div class="bcard-body">
+            <div class="bcard-name">LATAM Pass</div>
+            <div class="bcard-sub">18.500 pts · 15 mai 2026</div>
+          </div>
+          <div class="bcard-right">
+            <div class="bcard-days critico-days">12</div>
+            <div class="bcard-dias-label">dias</div>
+          </div>
+        </div>
+        <div class="bcard">
+          <div class="bcard-avatar av-smiles">SM</div>
+          <div class="bcard-body">
+            <div class="bcard-name">Smiles</div>
+            <div class="bcard-sub">42.000 pts · 25 mai 2026</div>
+          </div>
+          <div class="bcard-right">
+            <div class="bcard-days critico-days">22</div>
+            <div class="bcard-dias-label">dias</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="band-divider"></div>
+
+      <div class="band-header band-atencao">
+        <div class="band-dot"></div>
+        <div class="band-title">Atenção</div>
+        <div class="band-pill">31 – 60 dias</div>
+      </div>
+      <div class="band-cards">
+        <div class="bcard">
+          <div class="bcard-avatar av-livelo">LV</div>
+          <div class="bcard-body">
+            <div class="bcard-name">Livelo</div>
+            <div class="bcard-sub">95.000 pts · 10 jun 2026</div>
+          </div>
+          <div class="bcard-right">
+            <div class="bcard-days atencao-days">39</div>
+            <div class="bcard-dias-label">dias</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="band-divider"></div>
+
+      <div class="band-header band-ok">
+        <div class="band-dot"></div>
+        <div class="band-title">Tranquilo</div>
+        <div class="band-pill">> 60 dias</div>
+      </div>
+      <div class="band-cards">
+        <div class="bcard">
+          <div class="bcard-avatar av-azul">AZ</div>
+          <div class="bcard-body">
+            <div class="bcard-name">TudoAzul</div>
+            <div class="bcard-sub">28.000 pts · 20 jul 2026</div>
+          </div>
+          <div class="bcard-right">
+            <div class="bcard-days ok-days">79</div>
+            <div class="bcard-dias-label">dias</div>
+          </div>
+        </div>
+        <div class="bcard">
+          <div class="bcard-avatar av-itau">IU</div>
+          <div class="bcard-body">
+            <div class="bcard-name">Itaucard Pass</div>
+            <div class="bcard-sub">12.000 pts · 15 ago 2026</div>
+          </div>
+          <div class="bcard-right">
+            <div class="bcard-days ok-days">105</div>
+            <div class="bcard-dias-label">dias</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <p class="phone-label">Com programas críticos</p>
+  <p class="phone-desc">3 faixas visíveis, cards limpos</p>
+  </div>
+
+  <!-- PHONE 2: only ok -->
+  <div>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+    <div class="ph">
+      <div class="ph-back">←</div>
+      <div class="ph-title">Milhas Vencendo</div>
+      <div class="ph-count">3 programas</div>
+    </div>
+    <div class="pm">
+
+      <div class="band-header band-ok">
+        <div class="band-dot"></div>
+        <div class="band-title">Tranquilo</div>
+        <div class="band-pill">> 60 dias</div>
+      </div>
+      <div class="band-cards">
+        <div class="bcard">
+          <div class="bcard-avatar av-azul">AZ</div>
+          <div class="bcard-body">
+            <div class="bcard-name">TudoAzul</div>
+            <div class="bcard-sub">28.000 pts · 20 jul 2026</div>
+          </div>
+          <div class="bcard-right">
+            <div class="bcard-days ok-days">79</div>
+            <div class="bcard-dias-label">dias</div>
+          </div>
+        </div>
+        <div class="bcard">
+          <div class="bcard-avatar av-livelo">LV</div>
+          <div class="bcard-body">
+            <div class="bcard-name">Livelo</div>
+            <div class="bcard-sub">95.000 pts · 10 ago 2026</div>
+          </div>
+          <div class="bcard-right">
+            <div class="bcard-days ok-days">100</div>
+            <div class="bcard-dias-label">dias</div>
+          </div>
+        </div>
+        <div class="bcard">
+          <div class="bcard-avatar av-itau">IU</div>
+          <div class="bcard-body">
+            <div class="bcard-name">Itaucard Pass</div>
+            <div class="bcard-sub">12.000 pts · 15 set 2026</div>
+          </div>
+          <div class="bcard-right">
+            <div class="bcard-days ok-days">136</div>
+            <div class="bcard-dias-label">dias</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <p class="phone-label">Tudo tranquilo</p>
+  <p class="phone-desc">Apenas faixa "Tranquilo" — sem alarme</p>
+  </div>
+
+  <!-- PHONE 3: empty -->
+  <div>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+    <div class="ph">
+      <div class="ph-back">←</div>
+      <div class="ph-title">Milhas Vencendo</div>
+    </div>
+    <div class="pm" style="align-items: center; padding-top: 56px; gap: 10px; text-align: center;">
+      <div style="font-size: 44px; opacity: 0.2;">🎉</div>
+      <div style="font-size: 14px; font-weight: 800; color: #374151;">Tudo em dia!</div>
+      <div style="font-size: 12px; color: #9CA3AF; line-height: 1.5; max-width: 200px;">Nenhuma milha vencendo nos próximos dias.</div>
+    </div>
+  </div>
+  <p class="phone-label">Estado vazio</p>
+  <p class="phone-desc">Nenhum programa cadastrado ou todos vencidos</p>
+  </div>
+
+</div>
+</body>
+</html>
