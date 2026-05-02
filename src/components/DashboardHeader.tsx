@@ -1,7 +1,6 @@
 import {
   User,
   Menu,
-  X,
   Zap,
   LogIn,
   LogOut,
@@ -19,8 +18,8 @@ import {
   CreditCard,
 } from "lucide-react";
 import GestMilesLogo from "@/components/GestMilesLogo";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   DropdownMenu,
@@ -30,6 +29,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { resolveOptionalHeaderWordmarkImageUrl } from "@/lib/gestMilesBranding";
+import { useBrandingConfig } from "@/hooks/useBrandingConfig";
 import { useCsGestores } from "@/hooks/useCsGestores";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -40,6 +41,17 @@ const getInitials = (email: string | undefined) => {
   const part = email.split("@")[0] ?? "";
   const letters = part.replace(/[^a-z]/gi, "").slice(0, 2);
   return (letters || "?").toUpperCase();
+};
+
+const getDisplayName = (user: { email?: string; user_metadata?: Record<string, unknown> } | null) => {
+  if (!user) return "";
+  const meta = user.user_metadata?.full_name;
+  if (typeof meta === "string" && meta.trim()) return meta.trim();
+  const prefix = user.email?.split("@")[0] ?? "";
+  return prefix
+    .split(/[._-]/)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
 };
 
 const DashboardHeader = () => {
@@ -54,14 +66,26 @@ const DashboardHeader = () => {
     lastClientName: null as string | null,
   });
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, role, signOut } = useAuth();
   const isGestorView = role === "gestor" || role === "admin";
-  const { data: csDashboard } = useCsGestores(role === "cs");
+  const activeClientId = searchParams.get("clientId");
+  const canOpenClientProfile =
+    Boolean(activeClientId) &&
+    (role === "gestor" || role === "admin" || role === "cs" || role === "admin_equipe");
+
+  const { data: csDashboard } = useCsGestores(role === "cs" || role === "admin_equipe");
   const csTeam = csDashboard?.flat ?? [];
-  const showDemandOpenBanner = isGestorView || role === "cs";
+  const showDemandOpenBanner = isGestorView || role === "cs" || role === "admin_equipe";
+
+  const { data: brandingData } = useBrandingConfig();
+  const optionalHeaderWordmarkImageUrl = useMemo(
+    () => resolveOptionalHeaderWordmarkImageUrl(brandingData.brandAssets),
+    [brandingData.brandAssets],
+  );
 
   useEffect(() => {
-    if (role === "cs") {
+    if (role === "cs" || role === "admin_equipe") {
       const ids = new Set<string>();
       csTeam.forEach((g) => {
         g.clientes.forEach((c) => {
@@ -181,7 +205,13 @@ const DashboardHeader = () => {
     void loadDemandSummary();
 
     const channel = supabase
-      .channel(`header-demandas-open-${Date.now()}`)
+      .channel(
+        `header-demandas-open-${
+          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+        }`,
+      )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "demandas_cliente" },
@@ -201,13 +231,29 @@ const DashboardHeader = () => {
     };
   }, [showDemandOpenBanner, managedClientIds, managedClientNames]);
 
+  const isViewingClient = Boolean(activeClientId) && canOpenClientProfile;
+  const displayedAccountId = isViewingClient ? (activeClientId as string) : (user?.id ?? "");
+  const displayedAccountLabel = isViewingClient
+    ? "ID do cliente em visualização"
+    : "ID da sua conta";
+  const displayedClientName = isViewingClient
+    ? managedClientNames[activeClientId as string] ?? null
+    : null;
+
   const copyAccountId = () => {
-    if (!user?.id) return;
-    navigator.clipboard.writeText(user.id).then(() => {
-      setIdCopied(true);
-      toast.success("ID da conta copiado. Envie ao gestor para solicitar acesso.");
-      setTimeout(() => setIdCopied(false), 2000);
-    }).catch(() => toast.error("Não foi possível copiar."));
+    if (!displayedAccountId) return;
+    navigator.clipboard
+      .writeText(displayedAccountId)
+      .then(() => {
+        setIdCopied(true);
+        toast.success(
+          isViewingClient
+            ? "ID do cliente copiado."
+            : "ID da conta copiado. Envie ao gestor para solicitar acesso.",
+        );
+        setTimeout(() => setIdCopied(false), 2000);
+      })
+      .catch(() => toast.error("Não foi possível copiar."));
   };
 
   const handleLogout = async () => {
@@ -219,48 +265,79 @@ const DashboardHeader = () => {
     }
   };
 
+  const goDemandasPendentes = () => {
+    if (role === "cs" || role === "admin_equipe") {
+      navigate("/cs?tab=demandas&status=pendente");
+    } else {
+      navigate("/gestor?tab=demandas&status=pendente");
+    }
+  };
+
   return (
-    <div className="bg-[#8A05BE] text-header-foreground">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-3.5 pb-3.5">
+    <div className="border-b border-border/20 bg-transparent text-foreground">
+      <div className="flex items-center justify-between px-4 py-2.5">
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:bg-white/25"
+                className="relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border-2 border-background bg-gradient-to-br from-[#8A05BE] to-[#a855f7] text-[13px] font-extrabold text-white shadow-[0_2px_12px_rgba(138,5,190,0.40)] transition-all duration-200 hover:scale-105 hover:shadow-[0_4px_20px_rgba(138,5,190,0.55)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-label="Menu do usuário"
               >
-                <User size={16} />
-                <span>{user ? getInitials(user.email) : "?"}</span>
+                {user ? getInitials(user.email) : "?"}
+                {user && (
+                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-green-500" />
+                )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-44">
+            <DropdownMenuContent
+              align="start"
+              className="w-[220px] overflow-hidden rounded-2xl border border-primary/[0.12] p-0 shadow-[0_16px_40px_rgba(138,5,190,0.14),0_4px_12px_rgba(0,0,0,0.06)]"
+            >
               {user ? (
                 <>
-                  <DropdownMenuItem disabled className="text-muted-foreground">
-                    <span className="truncate">{user.email}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => navigate("/perfil")}>
-                    Meu perfil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => navigate("/assinatura")}>
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Planos
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => void handleLogout()}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sair
-                  </DropdownMenuItem>
+                  <div className="flex items-center gap-2.5 border-b border-primary/10 bg-gradient-to-br from-primary/[0.06] to-primary/[0.02] px-4 py-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8A05BE] to-[#a855f7] text-[12px] font-extrabold text-white shadow-[0_2px_8px_rgba(138,5,190,0.30)]">
+                      {getInitials(user.email)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-bold leading-tight text-foreground">
+                        {getDisplayName(user)}
+                      </p>
+                      <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
+                  <div className="p-1.5">
+                    <DropdownMenuItem
+                      className="cursor-pointer gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors hover:bg-primary/[0.06] hover:text-primary focus:bg-primary/[0.06] focus:text-primary"
+                      onClick={() => navigate("/perfil")}
+                    >
+                      <User className="h-4 w-4 opacity-80" />
+                      Meu perfil
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors hover:bg-primary/[0.06] hover:text-primary focus:bg-primary/[0.06] focus:text-primary"
+                      onClick={() => navigate("/assinatura")}
+                    >
+                      <CreditCard className="h-4 w-4 opacity-80" />
+                      Planos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive"
+                      onClick={() => void handleLogout()}
+                    >
+                      <LogOut className="h-4 w-4 opacity-80" />
+                      Sair
+                    </DropdownMenuItem>
+                  </div>
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem onSelect={() => navigate("/auth")}>
+                  <DropdownMenuItem onClick={() => navigate("/auth")}>
                     <LogIn className="mr-2 h-4 w-4" />
                     Entrar
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => navigate("/auth")}>
-                    Criar conta
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/auth")}>Criar conta</DropdownMenuItem>
                 </>
               )}
             </DropdownMenuContent>
@@ -269,16 +346,28 @@ const DashboardHeader = () => {
           <NotificationsDropdown />
         </div>
         <div className="flex flex-1 justify-center">
-          <div className="flex items-center gap-2">
-            <GestMilesLogo size={26} variant="light" className="shrink-0" />
-            <h1 className="font-display text-xl font-bold uppercase tracking-widest">Gest Miles</h1>
-          </div>
+          <h1 className="m-0 flex min-h-[2rem] items-center justify-center">
+            {optionalHeaderWordmarkImageUrl ? (
+              <img
+                src={optionalHeaderWordmarkImageUrl}
+                alt="GestMiles"
+                className="h-8 w-auto max-w-[min(160px,42vw)] object-contain object-center sm:h-9 sm:max-w-[180px]"
+                loading="eager"
+                decoding="async"
+              />
+            ) : (
+              <span className="font-display text-[22px] font-bold leading-none tracking-tight sm:text-2xl">
+                <span className="text-foreground">Gest</span>
+                <span className="text-[#8A05BE]">Miles</span>
+              </span>
+            )}
+          </h1>
         </div>
         <Sheet>
           <SheetTrigger asChild>
             <button
               type="button"
-              className="rounded-[16px] p-2 transition-all duration-200 hover:bg-white/20"
+              className="rounded-xl p-2 text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground"
               aria-label="Abrir menu"
             >
               <Menu size={22} />
@@ -288,7 +377,6 @@ const DashboardHeader = () => {
             side="right"
             className="flex h-full w-3/4 flex-col overflow-hidden p-0 sm:max-w-xs [&>button]:right-4 [&>button]:top-4 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:hover:text-white"
           >
-            {/* Header estilo Oktoplus – faixa roxa Gest Miles */}
             <div className="flex shrink-0 items-center justify-between bg-[#8A05BE] px-4 py-4 pr-12">
               <div className="flex items-center gap-2">
                 <GestMilesLogo size={24} variant="light" className="shrink-0" />
@@ -298,7 +386,6 @@ const DashboardHeader = () => {
               </div>
             </div>
 
-            {/* Área de conteúdo – fundo claro, seções com títulos roxos e itens com ícone */}
             <div className="flex flex-1 flex-col overflow-y-auto bg-white px-4 py-5 dark:bg-gray-50">
               {user ? (
                 <>
@@ -308,16 +395,21 @@ const DashboardHeader = () => {
                     </p>
                     <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 dark:border-gray-200 dark:bg-gray-100/80">
                       <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600">
-                        ID da sua conta
+                        {displayedAccountLabel}
                       </p>
+                      {displayedClientName && (
+                        <p className="mt-0.5 text-[12px] font-semibold text-gray-800 dark:text-gray-900">
+                          {displayedClientName}
+                        </p>
+                      )}
                       <SheetClose asChild>
                         <button
                           type="button"
                           onClick={copyAccountId}
                           className="mt-1 flex w-full items-center justify-between gap-2 text-left text-xs font-mono text-gray-900 dark:text-gray-900"
                         >
-                          <span className="truncate" title={user.id}>
-                            {user.id}
+                          <span className="truncate" title={displayedAccountId}>
+                            {displayedAccountId}
                           </span>
                           {idCopied ? (
                             <Check className="h-4 w-4 shrink-0 text-emerald-600" />
@@ -327,6 +419,11 @@ const DashboardHeader = () => {
                         </button>
                       </SheetClose>
                     </div>
+                    {isViewingClient && user?.id && (
+                      <p className="mt-1.5 text-[10px] text-gray-500">
+                        Sua conta: <span className="font-mono">{user.id.slice(0, 8)}…</span>
+                      </p>
+                    )}
                   </section>
 
                   <section className="mb-5">
@@ -334,6 +431,20 @@ const DashboardHeader = () => {
                       Ações rápidas
                     </p>
                     <div className="space-y-0.5">
+                      {canOpenClientProfile && (
+                        <SheetClose asChild>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                            onClick={() =>
+                              navigate(`/perfil?clientId=${encodeURIComponent(activeClientId ?? "")}`)
+                            }
+                          >
+                            <User className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                            <span>Perfil do cliente</span>
+                          </button>
+                        </SheetClose>
+                      )}
                       <SheetClose asChild>
                         <button
                           type="button"
@@ -375,6 +486,18 @@ const DashboardHeader = () => {
                           >
                             <Users className="h-5 w-5 shrink-0 text-[#8A05BE]" />
                             <span>Painel CS</span>
+                          </button>
+                        </SheetClose>
+                      )}
+                      {(role === "admin_equipe" || role === "cs") && (
+                        <SheetClose asChild>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                            onClick={() => navigate("/cs/adicionar-clientes")}
+                          >
+                            <UserPlus className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                            <span>Adicionar clientes</span>
                           </button>
                         </SheetClose>
                       )}
@@ -483,37 +606,33 @@ const DashboardHeader = () => {
         </Sheet>
       </div>
 
-      {/* Promo banner */}
       {bannerVisible && (
-        <div className="mx-4 mb-2.5 flex items-center gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2">
-          <Zap size={16} className="shrink-0 text-amber-600" />
+        <div className="mx-4 mb-2.5 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+          <Zap size={14} className="shrink-0 text-amber-600" aria-hidden />
           {showDemandOpenBanner ? (
             <button
               type="button"
-              onClick={() =>
-                navigate(
-                  role === "cs"
-                    ? "/cs?tab=demandas&status=pendente"
-                    : "/gestor?tab=demandas&status=pendente",
-                )
-              }
-              className="flex-1 text-left text-sm text-amber-900 hover:opacity-90"
+              onClick={goDemandasPendentes}
+              className="flex-1 text-left text-[11px] text-amber-800 hover:opacity-90"
             >
-              <span className="font-semibold text-amber-600">Demandas abertas:</span>{" "}
-              {demandSummary.openCount}{" "}
+              <b>Demandas abertas:</b> {demandSummary.openCount}{" "}
               {demandSummary.openCount === 1 ? "demanda" : "demandas"}{" "}
               {demandSummary.openCount > 0
-                ? `(pendentes: ${demandSummary.pendingCount} • em andamento: ${demandSummary.inProgressCount})`
-                : "no momento."}{" "}
-              {demandSummary.lastClientName ? `Última de ${demandSummary.lastClientName}.` : ""}
+                ? `(pendentes: ${demandSummary.pendingCount} · andamento: ${demandSummary.inProgressCount})`
+                : "no momento."}
             </button>
           ) : (
-            <p className="flex-1 text-sm text-amber-900">
-              Bônus de até <span className="font-bold text-amber-600">133%</span> na transferência. Confira
+            <p className="flex-1 text-[11px] leading-snug text-amber-800">
+              Bônus de até <span className="font-bold text-amber-700">133%</span> na transferência. Confira
             </p>
           )}
-          <button onClick={() => setBannerVisible(false)} className="shrink-0 rounded-full p-1 text-nubank-text-secondary opacity-70 hover:bg-black/5 hover:opacity-100" aria-label="Fechar">
-            <X size={16} />
+          <button
+            onClick={() => setBannerVisible(false)}
+            className="shrink-0 text-amber-500 opacity-60 hover:opacity-100"
+            aria-label="Fechar"
+            type="button"
+          >
+            ✕
           </button>
         </div>
       )}

@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
@@ -102,6 +101,24 @@ export function useNotificacoesMarkRead(enabled: boolean, usuarioId: string | nu
         }
         return;
       }
+    },
+  });
+}
+
+export function useNotificacoesMarkAllRead(enabled: boolean, usuarioId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!usuarioId) return;
+      const { error } = await supabase
+        .from("notificacoes")
+        .update({ lida: true })
+        .eq("usuario_id", usuarioId)
+        .eq("lida", false);
+      if (error) throw toQueryError(error, "Não foi possível marcar todas como lidas.");
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["notificacoes_own", usuarioId] });
     },
   });
 }

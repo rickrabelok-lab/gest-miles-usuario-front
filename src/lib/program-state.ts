@@ -12,6 +12,11 @@ export type Movimento = {
   validadeLote?: string;
   origem?: string;
   destino?: string;
+  /** Data do voo / ida (YYYY-MM-DD ou dd/mm/aaaa conforme gravado). */
+  dataIda?: string;
+  dataVolta?: string;
+  /** Data em que a emissão foi registrada (YYYY-MM-DD recomendado). */
+  dataEmissao?: string;
   classe?: string;
   passageiros?: number;
   taxas?: number;
@@ -22,6 +27,12 @@ export type Movimento = {
   codigoReserva?: string;
   /** Sobrenome como na emissão (bilheteira), para cruzar com o localizador. */
   sobrenomeEmissao?: string;
+  /** Quem registrou a operação no app (gestor / usuário logado). */
+  operadoPorNome?: string;
+  /** true quando a emissão foi feita via fornecedor externo (não debita milhas do saldo). */
+  emissaoFornecedor?: boolean;
+  /** Valor pago ao fornecedor (R$), usado para calcular economia em emissões por fornecedor. */
+  custoFornecedor?: number;
 };
 
 export type LoteMilhas = {
