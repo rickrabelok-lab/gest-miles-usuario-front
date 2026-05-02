@@ -59,7 +59,7 @@ const getAvatarGradient = (name: string): string => {
 };
 
 const getInitials = (name: string): string =>
-  name.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+  name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 
 const formatDataVencimento = (dateStr: string): string => {
   // dateStr is "DD/MM/YYYY" from toLocaleDateString pt-BR
