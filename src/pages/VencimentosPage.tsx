@@ -279,6 +279,64 @@ const VencimentosPage = () => {
     );
   };
 
+  const renderMeuBandHeader = (
+    variant: "critico" | "atencao" | "ok",
+    label: string,
+    pill: string,
+  ) => {
+    const colors =
+      variant === "critico"
+        ? { dot: "bg-red-500", title: "text-red-700", pill: "bg-red-50 text-red-700" }
+        : variant === "atencao"
+        ? { dot: "bg-amber-500", title: "text-amber-800", pill: "bg-amber-50 text-amber-800" }
+        : { dot: "bg-green-500", title: "text-green-800", pill: "bg-green-50 text-green-800" };
+    return (
+      <div className="flex items-center gap-2 px-0.5">
+        <div className={`h-2 w-2 flex-shrink-0 rounded-full ${colors.dot}`} />
+        <span className={`flex-1 text-[11px] font-extrabold uppercase tracking-wide ${colors.title}`}>
+          {label}
+        </span>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${colors.pill}`}>
+          {pill}
+        </span>
+      </div>
+    );
+  };
+
+  const renderMeuCard2 = (item: VencimentoMeuItem) => {
+    const urgency = getUrgency(item.diasRestantes);
+    const dayColor =
+      urgency === "critico"
+        ? "text-red-500"
+        : urgency === "atencao"
+        ? "text-amber-500"
+        : "text-green-500";
+    return (
+      <div
+        key={`${item.programName}-${item.data}`}
+        className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+      >
+        <div
+          className={`flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] text-[11px] font-black text-white ${getAvatarGradient(item.programName)}`}
+        >
+          {getInitials(item.programName)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[12px] font-bold text-gray-900">{item.programName}</div>
+          <div className="mt-0.5 text-[10px] text-gray-400">
+            {item.quantidade.toLocaleString("pt-BR")} pts · {formatDataVencimento(item.data)}
+          </div>
+        </div>
+        <div className="flex-shrink-0 text-right">
+          <div className={`text-[14px] font-black leading-none ${dayColor}`}>
+            {item.diasRestantes}
+          </div>
+          <div className="mt-0.5 text-[9px] font-semibold text-gray-400">dias</div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="mx-auto min-h-screen max-w-md bg-[#f4f4f8] pb-24">
       {/* Header */}
