@@ -23,10 +23,9 @@ import ClientTimelineSection from "@/components/timeline/ClientTimelineSection";
 import ClientInsightsSection from "@/components/insights/ClientInsightsSection";
 import AirlineLogo from "@/components/AirlineLogo";
 import { ProgramSelectionSheet } from "@/components/ProgramSelectionSheet";
+import { SolicitarCotacaoWizard, type WizardSubmitParams } from "@/components/SolicitarCotacaoWizard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { DatePickerField } from "@/components/ui/date-picker-field";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -43,7 +42,6 @@ import { useReunioesNotificacoes } from "@/hooks/useReunioesNotificacoes";
 import { supabase } from "@/lib/supabase";
 import { homePathForRole } from "@/lib/homeRoute";
 import { CARD_DESTINATION_TO_AIRPORT_CODE } from "@/lib/airports";
-import { parseYmdToLocalDate } from "@/lib/dateYmd";
 import airlineLatamLogo from "@/assets/airline-latam.png";
 import airlineAzulLogo from "@/assets/airline-azul.png";
 import airlineGolLogo from "@/assets/airline-gol.png";
@@ -540,21 +538,8 @@ const Index = () => {
   const [isAddProgramMenuOpen, setIsAddProgramMenuOpen] = useState(false);
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
   const [isDemandDialogOpen, setIsDemandDialogOpen] = useState(false);
-  const [demandType, setDemandType] = useState<"emissao" | "outros">("emissao");
   const [demandSubmitting, setDemandSubmitting] = useState(false);
-  const [demandaOrigem, setDemandaOrigem] = useState("");
-  const [demandaDestino, setDemandaDestino] = useState("");
-  const [demandaDataIda, setDemandaDataIda] = useState("");
-  const [demandaDataVolta, setDemandaDataVolta] = useState("");
-  const [demandaPassageiros, setDemandaPassageiros] = useState(1);
-  const [demandaClasse, setDemandaClasse] = useState("");
-  const [demandaBagagemDescricao, setDemandaBagagemDescricao] = useState("");
-  const [demandaAssentoDescricao, setDemandaAssentoDescricao] = useState("");
-  const [demandaFlexDatas, setDemandaFlexDatas] = useState<"sim" | "nao">("nao");
-  const [demandaOutrosDetalhes, setDemandaOutrosDetalhes] = useState("");
-  const [demandaEscopo, setDemandaEscopo] = useState<"nacional" | "internacional">("nacional");
   const [demandaGestores, setDemandaGestores] = useState<DemandGestorOption[]>([]);
-  const [demandaGestorId, setDemandaGestorId] = useState("");
   const [isClientesAtivosOpen, setIsClientesAtivosOpen] = useState(false);
   const [isClientesVencendoOpen, setIsClientesVencendoOpen] = useState(false);
   const [vencendoSearch, setVencendoSearch] = useState("");
@@ -1005,67 +990,51 @@ const Index = () => {
     setShowAll(true);
   };
 
-  const handleSubmitDemand = async () => {
+  const handleSubmitDemand = async (params: WizardSubmitParams) => {
     if (!user?.id || !demandTargetClientId) {
       toast.error("Faça login para solicitar uma demanda.");
       return;
     }
-
-    if (demandType === "emissao") {
-      if (!demandaOrigem.trim() || !demandaDestino.trim() || demandaPassageiros <= 0) {
-        toast.error("Preencha origem, destino e quantidade de pessoas.");
-        return;
-      }
-      if (demandaDataIda && demandaDataVolta && demandaDataVolta < demandaDataIda) {
-        toast.error("A data de volta deve ser igual ou posterior à data de ida.");
-        return;
-      }
-      if (!demandaGestorId) {
-        toast.error("Selecione o gestor responsável por essa demanda.");
-        return;
-      }
-    } else if (!demandaOutrosDetalhes.trim()) {
-      toast.error("Descreva a solicitação em 'Outros'.");
-      return;
-    }
-
-    const gestorNacional = gestoresNacionais[0];
-    const targetGestorId =
-      demandType === "outros"
-        ? (gestorNacional?.id ?? "")
-        : demandaGestorId;
-    if (!targetGestorId) {
-      toast.error("Não foi possível identificar o gestor Nacional para esta demanda.");
+    if (!params.gestorId) {
+      toast.error("Não foi possível identificar o gestor para esta demanda.");
       return;
     }
 
     setDemandSubmitting(true);
     try {
       const payload =
-        demandType === "emissao"
+        params.tipo === "emissao"
           ? {
-              origem: demandaOrigem.trim(),
-              destino: demandaDestino.trim(),
-              dataIda: demandaDataIda || null,
-              dataVolta: demandaDataVolta || null,
-              diasViagem: demandaDiasViagem,
-              passageiros: demandaPassageiros,
-              classeVoo: demandaClasse.trim(),
-              bagagemDespachadaDescricao: demandaBagagemDescricao.trim(),
-              selecaoAssentoDescricao: demandaAssentoDescricao.trim(),
-              flexibilidadeDatas: demandaFlexDatas,
-              escopo: demandaEscopo,
-              targetGestorId,
+              origem: params.origem,
+              destino: params.destino,
+              dataIda: params.dataIda || null,
+              dataVolta: params.dataVolta || null,
+              diasViagem: (() => {
+                if (!params.dataIda || !params.dataVolta) return null;
+                const [ai, mi, di] = params.dataIda.split("-").map(Number);
+                const [av, mv, dv] = params.dataVolta.split("-").map(Number);
+                const ms = Date.UTC(av, mv - 1, dv) - Date.UTC(ai, mi - 1, di);
+                return isNaN(ms) || ms < 0 ? null : Math.round(ms / 86400000);
+              })(),
+              passageiros: params.passageiros,
+              classeVoo: params.classeVoo,
+              bagagemDespachadaDescricao: params.bagagemDescricao,
+              selecaoAssentoDescricao: params.assentoDescricao,
+              flexibilidadeDatas: params.flexDatas,
+              escopo: params.escopo,
+              targetGestorId: params.gestorId,
             }
           : {
-              detalhes: demandaOutrosDetalhes.trim(),
-              escopo: "nacional",
-              targetGestorId,
+              categoria: params.categoria,
+              escopoVoo: params.escopoVoo,
+              detalhes: params.detalhes,
+              escopo: params.escopo,
+              targetGestorId: params.gestorId,
             };
 
       const { error } = await supabase.from("demandas_cliente").insert({
         cliente_id: demandTargetClientId,
-        tipo: demandType,
+        tipo: params.tipo,
         status: "pendente",
         payload,
       });
@@ -1073,19 +1042,6 @@ const Index = () => {
 
       toast.success("Demanda enviada para o gestor com sucesso.");
       setIsDemandDialogOpen(false);
-      setDemandType("emissao");
-      setDemandaOrigem("");
-      setDemandaDestino("");
-      setDemandaDataIda("");
-      setDemandaDataVolta("");
-      setDemandaPassageiros(1);
-      setDemandaClasse("");
-      setDemandaBagagemDescricao("");
-      setDemandaAssentoDescricao("");
-      setDemandaFlexDatas("nao");
-      setDemandaOutrosDetalhes("");
-      setDemandaEscopo("nacional");
-      setDemandaGestorId("");
     } catch (err) {
       const rawMsg = err instanceof Error ? err.message : "Erro ao enviar demanda.";
       const msg = /row-level security|permission denied|new row violates/i.test(rawMsg)
@@ -1105,28 +1061,6 @@ const Index = () => {
   };
 
   const visiblePrograms = showAll ? programs : programs.slice(0, 4);
-  const demandaDiasViagem = useMemo(() => {
-    if (!demandaDataIda || !demandaDataVolta) return null;
-    const [anoIda, mesIda, diaIda] = demandaDataIda.split("-").map(Number);
-    const [anoVolta, mesVolta, diaVolta] = demandaDataVolta.split("-").map(Number);
-    const idaUtc = Date.UTC(anoIda, mesIda - 1, diaIda);
-    const voltaUtc = Date.UTC(anoVolta, mesVolta - 1, diaVolta);
-    const ms = voltaUtc - idaUtc;
-    if (Number.isNaN(ms) || ms < 0) return null;
-    return Math.round(ms / (1000 * 60 * 60 * 24));
-  }, [demandaDataIda, demandaDataVolta]);
-  const gestoresNacionais = useMemo(
-    () => demandaGestores.filter((g) => g.perfil === "nacional"),
-    [demandaGestores],
-  );
-  const gestoresInternacionais = useMemo(
-    () => demandaGestores.filter((g) => g.perfil === "internacional"),
-    [demandaGestores],
-  );
-  const gestoresDisponiveisEmissao = useMemo(
-    () => (demandaEscopo === "nacional" ? gestoresNacionais : gestoresInternacionais),
-    [demandaEscopo, gestoresNacionais, gestoresInternacionais],
-  );
 
   useEffect(() => {
     const inferPerfil = (nome: string, tema: Record<string, unknown>) => {
@@ -1186,21 +1120,6 @@ const Index = () => {
     void loadDemandGestores();
   }, [isDemandDialogOpen, demandTargetClientId]);
 
-  useEffect(() => {
-    if (!isDemandDialogOpen) return;
-    if (demandType === "outros") {
-      setDemandaGestorId(gestoresNacionais[0]?.id ?? "");
-      return;
-    }
-    const first = gestoresDisponiveisEmissao[0];
-    if (!first) {
-      setDemandaGestorId("");
-      return;
-    }
-    setDemandaGestorId((prev) =>
-      gestoresDisponiveisEmissao.some((g) => g.id === prev) ? prev : first.id,
-    );
-  }, [isDemandDialogOpen, demandType, demandaEscopo, gestoresNacionais, gestoresDisponiveisEmissao]);
   const gestorClientOptions = useMemo(
     () =>
       resumoClientes.map((client) => ({
@@ -2843,209 +2762,18 @@ const Index = () => {
       )}
 
       <Dialog open={isDemandDialogOpen} onOpenChange={setIsDemandDialogOpen}>
-        <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-4 pt-11 sm:p-5 sm:pt-12">
-          <DialogHeader className="shrink-0 space-y-1.5 pr-6 text-left">
-            <DialogTitle>Solicitar demanda</DialogTitle>
-            <DialogDescription>
-              Envie uma solicitação para o seu gestor.
+        <DialogContent className="flex max-h-[85dvh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-4 pt-10 sm:p-5 sm:pt-11">
+          <DialogHeader className="shrink-0 space-y-0.5 pr-6 text-left">
+            <DialogTitle>Solicitar Cotação</DialogTitle>
+            <DialogDescription className="sr-only">
+              Formulário para solicitar cotação ou emissão de passagem ao seu gestor.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="mt-3 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch]">
-            <div className="space-y-3 pb-1">
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={demandType === "emissao" ? "default" : "outline"}
-                onClick={() => setDemandType("emissao")}
-              >
-                Emissão
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={demandType === "outros" ? "default" : "outline"}
-                onClick={() => setDemandType("outros")}
-              >
-                Outros
-              </Button>
-            </div>
-
-            {demandType === "emissao" ? (
-              <div className="space-y-2">
-                <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Tipo de emissão</p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={demandaEscopo === "nacional" ? "default" : "outline"}
-                      onClick={() => setDemandaEscopo("nacional")}
-                    >
-                      Nacional
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={demandaEscopo === "internacional" ? "default" : "outline"}
-                      onClick={() => setDemandaEscopo("internacional")}
-                    >
-                      Internacional
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Gestor responsável</p>
-                  <select
-                    value={demandaGestorId}
-                    onChange={(event) => setDemandaGestorId(event.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">Selecione</option>
-                    {gestoresDisponiveisEmissao.map((gestor) => (
-                      <option key={gestor.id} value={gestor.id}>
-                        {gestor.nome} ({gestor.perfil === "nacional" ? "Nacional" : "Internacional"})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    placeholder="Origem"
-                    value={demandaOrigem}
-                    onChange={(event) => setDemandaOrigem(event.target.value)}
-                  />
-                  <Input
-                    placeholder="Destino"
-                    value={demandaDestino}
-                    onChange={(event) => setDemandaDestino(event.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Data de ida</p>
-                    <DatePickerField
-                      value={demandaDataIda}
-                      onChange={(ymd) => {
-                        setDemandaDataIda(ymd);
-                        if (demandaDataVolta && demandaDataVolta < ymd) setDemandaDataVolta("");
-                      }}
-                      placeholder="Escolher data"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">
-                      (Opcional) Data de volta
-                    </p>
-                    <DatePickerField
-                      value={demandaDataVolta}
-                      onChange={setDemandaDataVolta}
-                      placeholder="Escolher data"
-                      disabled={
-                        demandaDataIda
-                          ? { before: parseYmdToLocalDate(demandaDataIda)! }
-                          : undefined
-                      }
-                    />
-                  </div>
-                </div>
-                {demandaDiasViagem !== null && (
-                  <p className="text-[11px] font-medium text-muted-foreground">
-                    Duração estimada da viagem:{" "}
-                    <span className="text-foreground">
-                      {demandaDiasViagem} {demandaDiasViagem === 1 ? "dia" : "dias"}
-                    </span>
-                  </p>
-                )}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Número de passageiros</p>
-                    <select
-                      value={demandaPassageiros}
-                      onChange={(event) => setDemandaPassageiros(Number(event.target.value))}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      {Array.from({ length: 9 }, (_, idx) => idx + 1).map((value) => (
-                        <option key={`pax-${value}`} value={value}>
-                          {value}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Classe do voo</p>
-                    <select
-                      value={demandaClasse}
-                      onChange={(event) => setDemandaClasse(event.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Selecione</option>
-                      <option value="economica">Econômica</option>
-                      <option value="premium-economy">Premium Economy</option>
-                      <option value="executiva">Executiva</option>
-                      <option value="primeira-classe">Primeira Classe</option>
-                    </select>
-                  </div>
-                </div>
-                <Input
-                  placeholder="Bagagem despachada (quantidade / detalhes)"
-                  value={demandaBagagemDescricao}
-                  onChange={(event) => setDemandaBagagemDescricao(event.target.value)}
-                />
-                <Input
-                  placeholder="Seleção de assento (quantidade / detalhes)"
-                  value={demandaAssentoDescricao}
-                  onChange={(event) => setDemandaAssentoDescricao(event.target.value)}
-                />
-                <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Flexibilidade de datas</p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={demandaFlexDatas === "sim" ? "default" : "outline"}
-                      onClick={() => setDemandaFlexDatas("sim")}
-                    >
-                      Sim
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={demandaFlexDatas === "nao" ? "default" : "outline"}
-                      onClick={() => setDemandaFlexDatas("nao")}
-                    >
-                      Não
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-[11px] text-muted-foreground">
-                  Essa demanda será direcionada ao gestor Nacional.
-                  {gestoresNacionais[0] ? ` (${gestoresNacionais[0].nome})` : ""}
-                </p>
-                <Textarea
-                  placeholder="Descreva sua demanda..."
-                  value={demandaOutrosDetalhes}
-                  onChange={(event) => setDemandaOutrosDetalhes(event.target.value)}
-                />
-              </div>
-            )}
-            </div>
-          </div>
-
-          <div className="mt-3 shrink-0 border-t border-nubank-border pt-3">
-            <Button
-              type="button"
-              className="w-full"
-              onClick={handleSubmitDemand}
-              disabled={demandSubmitting}
-            >
-              {demandSubmitting ? "Enviando..." : "Enviar demanda"}
-            </Button>
-          </div>
+          <SolicitarCotacaoWizard
+            gestores={demandaGestores}
+            submitting={demandSubmitting}
+            onSubmit={handleSubmitDemand}
+          />
         </DialogContent>
       </Dialog>
 
