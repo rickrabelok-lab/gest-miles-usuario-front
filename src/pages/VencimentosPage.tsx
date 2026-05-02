@@ -246,39 +246,6 @@ const VencimentosPage = () => {
     );
   };
 
-  const renderMeuCard = (item: VencimentoMeuItem, idx: number) => {
-    const urgency = getUrgency(item.diasRestantes);
-    const cfg = urgencyConfig[urgency];
-    const prevUrgency =
-      idx > 0 ? getUrgency(meusVencimentos[idx - 1].diasRestantes) : null;
-    const showSectionLabel = urgency !== prevUrgency && filter === "todos";
-
-    return (
-      <Fragment key={`${item.programName}-${item.data}-${idx}`}>
-        {showSectionLabel && (
-          <p className={`px-0.5 pt-1 text-[10px] font-bold uppercase tracking-widest ${cfg.sectionColor}`}>
-            {cfg.sectionLabel}
-          </p>
-        )}
-        <div className={`flex w-full overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)] ${cfg.cardBorder}`}>
-          <div className="flex-1 px-3 py-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-[13px] font-semibold text-gray-900">
-                {item.programName}
-              </span>
-              <span className={`flex-shrink-0 rounded-lg px-2.5 py-0.5 text-[11px] font-extrabold ${cfg.badge}`}>
-                {item.diasRestantes} dias
-              </span>
-            </div>
-            <div className="mt-1 text-[11px] text-gray-400">
-              {item.quantidade.toLocaleString("pt-BR")} pts · {item.data}
-            </div>
-          </div>
-        </div>
-      </Fragment>
-    );
-  };
-
   const renderMeuBandHeader = (
     variant: "critico" | "atencao" | "ok",
     label: string,
@@ -349,7 +316,16 @@ const VencimentosPage = () => {
           >
             <ArrowLeft size={20} strokeWidth={1.5} />
           </button>
-          <h1 className="text-[15px] font-bold tracking-tight text-gray-900">Vencendo</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-[15px] font-bold tracking-tight text-gray-900">
+              Milhas Vencendo
+            </h1>
+            {!isGestor && meusVencimentos.length > 0 && (
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
+                {meusVencimentos.length} {meusVencimentos.length === 1 ? "programa" : "programas"}
+              </span>
+            )}
+          </div>
           <div className="w-9" />
         </div>
       </header>
@@ -373,38 +349,78 @@ const VencimentosPage = () => {
         )}
 
         {/* Search */}
-        <div className="relative">
-          <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            strokeWidth={2}
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={isGestor ? "Buscar cliente..." : "Buscar programa..."}
-            className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-[13px] text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10"
-          />
-        </div>
+        {isGestor && (
+          <div className="relative">
+            <Search
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              strokeWidth={2}
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar cliente..."
+              className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-[13px] text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10"
+            />
+          </div>
+        )}
 
         {/* Filter chips */}
-        {hasAnyData && renderChips()}
+        {isGestor && hasAnyData && renderChips()}
 
         {/* List */}
-        {isListEmpty ? (
-          <p className="py-10 text-center text-[13px] text-gray-400">
-            {search || filter !== "todos"
-              ? "Nenhum cliente encontrado para o filtro selecionado."
-              : "Nenhum vencimento nos próximos dias na carteira."}
-          </p>
-        ) : isGestor ? (
-          <div className="flex flex-col gap-1.5">
-            {filteredGestor.map((item, idx) => renderGestorCard(item, idx))}
+        {isGestor ? (
+          isListEmpty ? (
+            <p className="py-10 text-center text-[13px] text-gray-400">
+              {search || filter !== "todos"
+                ? "Nenhum cliente encontrado para o filtro selecionado."
+                : "Nenhum vencimento nos próximos dias na carteira."}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {filteredGestor.map((item, idx) => renderGestorCard(item, idx))}
+            </div>
+          )
+        ) : meusVencimentos.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-14 text-center">
+            <span className="text-5xl opacity-20">🎉</span>
+            <p className="text-[14px] font-bold text-gray-700">Tudo em dia!</p>
+            <p className="text-[12px] leading-relaxed text-gray-400">
+              Nenhuma milha vencendo nos próximos dias.
+            </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-1.5">
-            {meusVencimentos.map((item, idx) => renderMeuCard(item, idx))}
+          <div className="flex flex-col gap-3">
+            {meusBands.critico.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {renderMeuBandHeader("critico", "Crítico", "≤ 30 dias")}
+                <div className="flex flex-col gap-1.5">
+                  {meusBands.critico.map(renderMeuCard2)}
+                </div>
+              </div>
+            )}
+            {meusBands.critico.length > 0 && meusBands.atencao.length > 0 && (
+              <div className="h-px bg-gray-200" />
+            )}
+            {meusBands.atencao.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {renderMeuBandHeader("atencao", "Atenção", "31 – 60 dias")}
+                <div className="flex flex-col gap-1.5">
+                  {meusBands.atencao.map(renderMeuCard2)}
+                </div>
+              </div>
+            )}
+            {(meusBands.critico.length > 0 || meusBands.atencao.length > 0) &&
+              meusBands.ok.length > 0 && <div className="h-px bg-gray-200" />}
+            {meusBands.ok.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {renderMeuBandHeader("ok", "Tranquilo", "> 60 dias")}
+                <div className="flex flex-col gap-1.5">
+                  {meusBands.ok.map(renderMeuCard2)}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
