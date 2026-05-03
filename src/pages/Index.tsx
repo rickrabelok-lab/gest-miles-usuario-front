@@ -40,6 +40,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProgramasCliente } from "@/hooks/useProgramasCliente";
+import { useBrandingConfig } from "@/hooks/useBrandingConfig";
 import { useGestor } from "@/hooks/useGestor";
 import { useVincularCliente } from "@/hooks/useVincularCliente";
 import { useReunioesNotificacoes } from "@/hooks/useReunioesNotificacoes";
@@ -679,6 +680,7 @@ const Index = () => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { role, user } = useAuth();
+  const brandingConfig = useBrandingConfig();
   const { resumo: reunioesResumoDia } = useReunioesNotificacoes(
     role === "gestor" || role === "cs" || role === "admin",
   );
@@ -897,6 +899,15 @@ const Index = () => {
         .sort((a, b) => b.pontosVencendo90d - a.pontosVencendo90d),
     [resumoClientes],
   );
+
+  /** Logos no seletor: globais (admin_master / «Marca e imagens») + eventual override local legacy. */
+  const programLogoImagesForSheet = useMemo(() => {
+    const out: Record<string, string> = { ...brandingConfig.data.programCardLogos };
+    for (const [k, v] of Object.entries(optionLogoImages)) {
+      if (typeof v === "string" && v.trim()) out[k] = v.trim();
+    }
+    return out;
+  }, [brandingConfig.data.programCardLogos, optionLogoImages]);
   const demandasPendentes = useMemo(
     () => demandasGestor.filter((d) => d.status === "pendente").length,
     [demandasGestor],
@@ -995,6 +1006,14 @@ const Index = () => {
         const storedLogoImage = window.localStorage.getItem(
           `${LOGO_STORAGE_PREFIX}${dataOwnerId}:${slug}`,
         );
+        const globalProgramLogo = brandingConfig.data.programCardLogos[slug]?.trim();
+        const resolveCardLogo = () => {
+          const r = remoteRow?.logo_image_url?.trim();
+          if (r) return r;
+          if (storedLogoImage?.trim()) return storedLogoImage;
+          if (globalProgramLogo) return globalProgramLogo;
+          return undefined;
+        };
         const storageKey = `${STORAGE_PREFIX}${dataOwnerId}:${slug}:${nameSlug}`;
         const raw = window.localStorage.getItem(storageKey);
         const remoteRaw = remoteRow?.state
@@ -1005,8 +1024,7 @@ const Index = () => {
         if (!sourceRaw) {
           return {
             ...program,
-            logoImageUrl:
-              remoteRow?.logo_image_url ?? storedLogoImage ?? undefined,
+            logoImageUrl: resolveCardLogo(),
           };
         }
 
@@ -1054,8 +1072,7 @@ const Index = () => {
 
           return {
             ...program,
-            logoImageUrl:
-              remoteRow?.logo_image_url ?? storedLogoImage ?? undefined,
+            logoImageUrl: resolveCardLogo(),
             balance: saldo.toLocaleString("pt-BR"),
             // Exibe no card o custo médio por milheiro informado na tela interna.
             valueInBRL: custoMedio.toLocaleString("pt-BR", {
@@ -1083,7 +1100,7 @@ const Index = () => {
       window.removeEventListener("focus", hydrateProgramsFromStorage);
       window.removeEventListener("storage", hydrateProgramsFromStorage);
     };
-  }, [programDefs, remoteByProgramId, dataOwnerId, managerMode]);
+  }, [programDefs, remoteByProgramId, dataOwnerId, managerMode, brandingConfig.data]);
 
   useEffect(() => {
     if (!user?.id || managerClientId) return;
@@ -1141,37 +1158,6 @@ const Index = () => {
 
     void runMigration();
   }, [user?.id, managerClientId, programDefs, saveProgramState]);
-
-  const handleProgramLogoChange = (programName: string, imageDataUrl: string) => {
-    if (!dataOwnerId) return;
-    const slug = programName;
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(
-        `${LOGO_STORAGE_PREFIX}${dataOwnerId}:${slug}`,
-        imageDataUrl,
-      );
-    }
-    setOptionLogoImages((prev) => ({ ...prev, [slug]: imageDataUrl }));
-
-    const syncLogo = (cards: ProgramCardData[]) =>
-      cards.map((program) =>
-        program.programId === slug
-          ? { ...program, logoImageUrl: imageDataUrl }
-          : program,
-      );
-
-    setPrograms((prev) => syncLogo(prev));
-    setProgramDefs((prev) => {
-      const next = syncLogo(prev);
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          PROGRAM_CARDS_STORAGE_KEY + dataOwnerId,
-          JSON.stringify(next),
-        );
-      }
-      return next;
-    });
-  };
 
   const handleToggleProgramCard = (
     option: (typeof AVAILABLE_PROGRAM_OPTIONS)[number],
@@ -2207,7 +2193,7 @@ const Index = () => {
                       }))}
                       onToggle={handleToggleProgramCard}
                       availableOptions={AVAILABLE_PROGRAM_OPTIONS}
-                      logoImages={optionLogoImages}
+                      logoImages={programLogoImagesForSheet}
                     />
 
                     {(!managerMode || !!managerClientId) && (
@@ -2425,9 +2411,6 @@ const Index = () => {
                     {...prog}
                     managerClientId={managerClientId}
                     managerClientName={managerClientName}
-                    onLogoImageChange={(imageDataUrl) =>
-                      handleProgramLogoChange(prog.programId, imageDataUrl)
-                    }
                   />
                 ))}
               </div>
