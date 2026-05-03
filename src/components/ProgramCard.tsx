@@ -1,6 +1,19 @@
-import { AlertCircle, ImagePlus } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useRef } from "react";
+import AirlineLogo from "@/components/AirlineLogo";
+
+/**
+ * Programas que mapeam diretamente para um asset curado (`AirlineLogo`):
+ *  - garantem ratio/qualidade consistentes;
+ *  - sobrepõem a logo subida no Admin SE essa for genérica/com fundo;
+ *  - se preferires usar a logo subida pelo admin, basta o admin definir uma
+ *    logo dedicada nesse programa (ex.: wordmark «Smiles» da própria marca).
+ */
+const PROGRAM_TO_AIRLINE: Record<string, string> = {
+  "latam-pass": "LATAM",
+  smiles: "GOL",
+  "tudo-azul": "AZUL",
+};
 
 interface ProgramCardProps {
   programId?: string;
@@ -17,7 +30,6 @@ interface ProgramCardProps {
   managerClientId?: string | null;
   managerClientName?: string | null;
   logoImageUrl?: string;
-  onLogoImageChange?: (imageDataUrl: string) => void;
 }
 
 const ProgramCard = (props: ProgramCardProps) => {
@@ -36,11 +48,8 @@ const ProgramCard = (props: ProgramCardProps) => {
     managerClientId,
     managerClientName,
     logoImageUrl,
-    onLogoImageChange,
-  } =
-    props;
+  } = props;
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleOpenDetails = () => {
     const slug = programId ?? name.toLowerCase().replace(/\s+/g, "-");
@@ -73,30 +82,9 @@ const ProgramCard = (props: ProgramCardProps) => {
     }
   };
 
-  const handleOpenLogoPicker: React.MouseEventHandler<HTMLButtonElement> = (
-    event,
-  ) => {
-    event.stopPropagation();
-    fileInputRef.current?.click();
-  };
-
-  const handleLogoFileChange: React.ChangeEventHandler<HTMLInputElement> = (
-    event,
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") {
-        onLogoImageChange?.(result);
-      }
-    };
-    reader.readAsDataURL(file);
-    event.currentTarget.value = "";
-  };
+  const curatedAirline = programId ? PROGRAM_TO_AIRLINE[programId] : undefined;
+  const useCuratedAirline = !logoImageUrl && Boolean(curatedAirline);
+  const hasBrandImage = Boolean(logoImageUrl) || useCuratedAirline;
 
   return (
     <div
@@ -106,41 +94,38 @@ const ProgramCard = (props: ProgramCardProps) => {
       onClick={handleOpenDetails}
       onKeyDown={handleKeyDown}
     >
-      {/* Expiring badge */}
       {expiring && (
         <div className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-white shadow-sm" />
       )}
 
-      {/* Top row: avatar + variation badge */}
       <div className="mb-1.5 flex items-start justify-between">
-        <button
-          type="button"
-          onClick={handleOpenLogoPicker}
-          className="group relative flex h-[22px] w-[22px] shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-100 text-[7px] font-bold text-gray-500 transition-all hover:brightness-95"
-          title="Alterar imagem do programa"
-          aria-label={`Alterar imagem do programa ${name}`}
+        <div
+          className={
+            hasBrandImage
+              ? "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5 ring-1 ring-black/[0.06]"
+              : "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[11px] font-bold ring-1 ring-black/[0.04]"
+          }
+          style={
+            hasBrandImage
+              ? undefined
+              : { backgroundColor: logoColor + "1A", color: logoColor }
+          }
+          aria-hidden
         >
           {logoImageUrl ? (
             <img
               src={logoImageUrl}
               alt={`Logo ${name}`}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain mix-blend-multiply"
+              loading="lazy"
+              decoding="async"
             />
+          ) : useCuratedAirline ? (
+            <AirlineLogo airline={curatedAirline as string} size={30} />
           ) : (
-            logo
+            <span>{logo}</span>
           )}
-          <span className="absolute inset-0 hidden items-center justify-center bg-black/35 text-white group-hover:flex">
-            <ImagePlus size={10} />
-          </span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleLogoFileChange}
-            onClick={(event) => event.stopPropagation()}
-          />
-        </button>
+        </div>
 
         {variation === "up" && (
           <span className="rounded bg-green-50 px-1.5 py-0.5 text-[8px] font-bold text-green-700">↑</span>
@@ -153,12 +138,10 @@ const ProgramCard = (props: ProgramCardProps) => {
         )}
       </div>
 
-      {/* Balance number */}
       <div className="mb-1 font-extrabold tabular-nums leading-tight tracking-tight text-gray-900" style={{ fontSize: "15px" }}>
         {balance}
       </div>
 
-      {/* Value + last update */}
       <div className="leading-tight text-gray-400" style={{ fontSize: "9px" }}>
         R$ {valueInBRL} · {lastUpdate}
       </div>
