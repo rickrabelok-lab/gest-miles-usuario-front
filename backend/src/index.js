@@ -12,11 +12,33 @@ import calendarPricesRoutes from "./routes/calendarPrices.js";
 import demoFlightsRoutes from "./routes/demoFlights.js";
 import stripeBillingRoutes from "./routes/stripeBilling.js";
 import auditLogsRoutes from "./routes/auditLogs.js";
+import programAccessRoutes from "./routes/programAccess.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: true, credentials: true }));
+const allowedCorsOrigins = (process.env.CORS_ORIGINS || process.env.PUBLIC_APP_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const isProduction = process.env.NODE_ENV === 'production';
+
+const corsOptions = allowedCorsOrigins.length
+  ? {
+      origin(origin, callback) {
+        if (!origin || allowedCorsOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error("Origin not allowed by CORS."));
+      },
+      credentials: true,
+    }
+  : isProduction
+    ? { origin: false, credentials: true }
+    : { origin: true, credentials: true };
+
+app.use(cors(corsOptions));
 
 /** Raiz — evita 404 ao abrir o URL do deploy na Vercel */
 app.get("/", (_req, res) => {
@@ -42,6 +64,7 @@ routes.use("/api/calendar-prices", calendarPricesRoutes);
 routes.use("/api/demo-flights", demoFlightsRoutes);
 routes.use("/api/stripe", stripeBillingRoutes);
 routes.use("/api/audit-logs", auditLogsRoutes);
+routes.use("/api/program-access", programAccessRoutes);
 
 routes.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
