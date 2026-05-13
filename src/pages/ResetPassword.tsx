@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-import { getApiUrl, hasApiUrl } from "@/services/api";
+import { getApiUrl, hasAbsoluteApiUrl } from "@/services/api";
 
 function hashLooksLikeSupabaseRecovery(): boolean {
   if (typeof window === "undefined") return false;
@@ -77,8 +77,8 @@ const ResetPassword = () => {
     setPending(true);
     try {
       if (token) {
-        if (!hasApiUrl()) {
-          setMessage("Configure VITE_API_URL para concluir a recuperação (fluxo Brevo).");
+        if (!hasAbsoluteApiUrl()) {
+          setMessage("Backend externo não configurado. Solicite um novo link de recuperação.");
           return;
         }
         const res = await fetch(getApiUrl("/api/auth/complete-password-reset"), {

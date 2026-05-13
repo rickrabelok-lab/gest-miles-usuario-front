@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-import { getApiUrl, hasApiUrl } from "@/services/api";
+import { getApiUrl, hasAbsoluteApiUrl } from "@/services/api";
 
 function friendlyNetworkError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
@@ -32,7 +32,7 @@ const ForgotPassword = () => {
 
     setPending(true);
     try {
-      if (hasApiUrl()) {
+      if (hasAbsoluteApiUrl()) {
         const res = await fetch(getApiUrl("/api/auth/request-password-reset"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -47,7 +47,7 @@ const ForgotPassword = () => {
               : res.statusText;
           throw new Error(apiErr ?? hint404);
         }
-        setMessage((body as { message?: string }).message ?? "Se o email for cadastrado na Gest Miles, enviaremos instruções.");
+        setMessage((body as { message?: string }).message ?? "Se o e-mail for cadastrado na Gest Miles, enviaremos instruções.");
         return;
       }
 
@@ -58,12 +58,11 @@ const ForgotPassword = () => {
         return;
       }
 
-      const redirectTo = `${window.location.origin}/auth/reset-password`;
+      const appOrigin = (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, "") || window.location.origin;
+      const redirectTo = `${appOrigin}/auth/reset-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(em, { redirectTo });
       if (error) throw error;
-      setMessage(
-        "Se o email for cadastrado na Gest Miles, enviaremos instruções. (E-mail do Supabase Auth; em produção, prefira VITE_API_URL + Brevo.)",
-      );
+      setMessage("Se o e-mail for cadastrado na Gest Miles, enviaremos o link de recuperação em instantes.");
     } catch (e) {
       setMessage(friendlyNetworkError(e));
     } finally {
@@ -76,7 +75,7 @@ const ForgotPassword = () => {
       title="Recuperar senha"
       description="Digite o seu e-mail para receber um link de recuperação."
     >
-      {!hasApiUrl() && (
+      {!hasAbsoluteApiUrl() && (
         <p className="rounded-[14px] border border-amber-500/40 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-800/50 dark:bg-amber-950/50 dark:text-amber-100">
           <strong>E-mail da Supabase:</strong> como <span className="font-mono">VITE_API_URL</span> não está definido no{" "}
           <span className="font-mono">.env.local</span>, o envio usa o template do <strong>Supabase Auth</strong>, não a
