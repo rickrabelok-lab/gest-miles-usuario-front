@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,14 +8,6 @@ import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-
-type AcessoConta = {
-  id: string;
-  programa: string;
-  login: string;
-  senha: string;
-  lockedAt?: string;
-};
 
 type ClientePerfilData = {
   cpf: string;
@@ -26,7 +18,6 @@ type ClientePerfilData = {
   informacoesFamiliares: string;
   endereco: string;
   inicioGestao: string;
-  acessos: AcessoConta[];
   planoAcao: {
     latam: boolean;
     azul: boolean;
@@ -51,7 +42,6 @@ const defaultPerfilData: ClientePerfilData = {
   informacoesFamiliares: "",
   endereco: "",
   inicioGestao: "",
-  acessos: [],
   planoAcao: {
     latam: false,
     azul: false,
@@ -75,20 +65,103 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
+function rethrowWithStage(stage: string, err: { message?: string } | null | undefined): void {
+  if (!err) return;
+  const m = typeof err.message === "string" && err.message ? err.message : "erro desconhecido";
+  throw new Error(`${stage}: ${m}`);
+}
+
+/** Clona via JSON para remover `undefined` e garantir payload válido em `jsonb` (PostgREST). */
+function jsonSafeForDb<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function deepEqualJson(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (a === null || b === null) return a === b;
+  const ta = typeof a;
+  const tb = typeof b;
+  if (ta !== tb) return false;
+  if (ta !== "object") return false;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!deepEqualJson(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  if (Array.isArray(a) || Array.isArray(b)) return false;
+  const ao = a as Record<string, unknown>;
+  const bo = b as Record<string, unknown>;
+  const keysA = Object.keys(ao).sort();
+  const keysB = Object.keys(bo).sort();
+  if (keysA.length !== keysB.length) return false;
+  for (let i = 0; i < keysA.length; i++) {
+    if (keysA[i] !== keysB[i]) return false;
+  }
+  for (const k of keysA) {
+    if (!deepEqualJson(ao[k], bo[k])) return false;
+  }
+  return true;
+}
+
+async function verifyPersistenciaPerfilCliente(
+  usuarioId: string,
+  expectedClientePerfil: Record<string, unknown>,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from("perfis")
+    .select("configuracao_tema")
+    .eq("usuario_id", usuarioId)
+    .maybeSingle();
+  if (error) throw new Error(`Confirmação de gravação: ${error.message}`);
+  if (!data) throw new Error("Confirmação de gravação: perfil não encontrado após salvar.");
+  const cfg = (data.configuracao_tema ?? null) as Record<string, unknown> | null;
+  const raw = cfg?.clientePerfil;
+  if (raw === undefined || raw === null || typeof raw !== "object") {
+    throw new Error("Confirmação de gravação: bloco clientePerfil não encontrado no Supabase após salvar.");
+  }
+  const expected = jsonSafeForDb(expectedClientePerfil);
+  const actual = jsonSafeForDb(raw as Record<string, unknown>);
+  if (!deepEqualJson(expected, actual)) {
+    throw new Error(
+      "Confirmação de gravação: os dados lidos do servidor não coincidem com os enviados. Tente novamente.",
+    );
+  }
+}
+
+function buildClientePerfilPayload(
+  existingClientePerfil: Record<string, unknown>,
+  perfilData: ClientePerfilData,
+): Record<string, unknown> {
+  const dbPlanoAcao = (existingClientePerfil.planoAcao ?? {}) as Record<string, unknown>;
+  const formPlanoAcao = perfilData.planoAcao as Record<string, unknown>;
+
+  const planoAcao = {
+    ...defaultPerfilData.planoAcao,
+    ...dbPlanoAcao,
+    ...formPlanoAcao,
+  };
+
+  const next: Record<string, unknown> = {
+    ...existingClientePerfil,
+    ...perfilData,
+    planoAcao,
+  };
+
+  delete next.acessos;
+
+  return jsonSafeForDb(next);
+}
+
 const ClientProfile = () => {
   const navigate = useNavigate();
-  const { user, loading, role } = useAuth();
+  const { user, loading } = useAuth();
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState("");
   const [perfilData, setPerfilData] = useState<ClientePerfilData>(defaultPerfilData);
-  const [novoAcesso, setNovoAcesso] = useState<{ programa: string; login: string; senha: string }>({
-    programa: "",
-    login: "",
-    senha: "",
-  });
-  const [showAccessPasswords, setShowAccessPasswords] = useState(false);
-  const canManageAccesses =
-    role === "gestor" || role === "admin" || (role as unknown as string) === "cs";
+  const [profileReady, setProfileReady] = useState(false);
+  const profileLoadSeqRef = useRef(0);
 
   const fallbackSlug = useMemo(() => {
     const fromEmail = user?.email?.split("@")[0] ?? "usuario";
@@ -96,87 +169,48 @@ const ClientProfile = () => {
   }, [user?.email]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setProfileReady(false);
+      return;
+    }
+    setProfileReady(false);
+    const seq = ++profileLoadSeqRef.current;
     const load = async () => {
-      const { data, error } = await supabase
-        .from("perfis")
-        .select("nome_completo, configuracao_tema")
-        .eq("usuario_id", user.id)
-        .maybeSingle();
-      if (error) {
-        toast.error(`Erro ao carregar perfil: ${error.message}`);
-        return;
+      try {
+        const { data, error } = await supabase
+          .from("perfis")
+          .select("nome_completo, configuracao_tema")
+          .eq("usuario_id", user.id)
+          .maybeSingle();
+        if (error) {
+          toast.error(`Erro ao carregar perfil: ${error.message}`);
+          return;
+        }
+        if (seq !== profileLoadSeqRef.current) return;
+
+        const nome = data?.nome_completo ?? user.email?.split("@")[0] ?? "";
+        setFullName(nome);
+
+        const cfg = (data?.configuracao_tema ?? {}) as Record<string, unknown>;
+        const existing = (cfg.clientePerfil ?? {}) as Partial<ClientePerfilData>;
+        setPerfilData({
+          ...defaultPerfilData,
+          ...existing,
+          planoAcao: {
+            ...defaultPerfilData.planoAcao,
+            ...(existing.planoAcao ?? {}),
+          },
+        });
+        if (seq === profileLoadSeqRef.current) setProfileReady(true);
+      } catch (err) {
+        if (seq !== profileLoadSeqRef.current) return;
+        const msg = err instanceof Error ? err.message : "Erro ao carregar dados do perfil.";
+        toast.error(msg);
+        setProfileReady(false);
       }
-
-      const nome = data?.nome_completo ?? user.email?.split("@")[0] ?? "";
-      setFullName(nome);
-
-      const cfg = (data?.configuracao_tema ?? {}) as Record<string, unknown>;
-      const existing = (cfg.clientePerfil ?? {}) as Partial<ClientePerfilData>;
-      setPerfilData({
-        ...defaultPerfilData,
-        ...existing,
-        acessos:
-          Array.isArray(existing.acessos) && existing.acessos.length > 0
-            ? existing.acessos.map((a, idx) => ({
-                id:
-                  typeof a.id === "string" && a.id.length > 0
-                    ? a.id
-                    : `acesso-${idx}-${Date.now()}`,
-                programa: String(a.programa ?? ""),
-                login: String(a.login ?? ""),
-                senha: String(a.senha ?? ""),
-                lockedAt:
-                  typeof a.lockedAt === "string" && a.lockedAt.length > 0
-                    ? a.lockedAt
-                    : undefined,
-              }))
-            : defaultPerfilData.acessos,
-        planoAcao: {
-          ...defaultPerfilData.planoAcao,
-          ...(existing.planoAcao ?? {}),
-        },
-      });
     };
     void load();
   }, [user?.id, user?.email]);
-
-  const updateAcesso = (idx: number, patch: Partial<AcessoConta>) => {
-    setPerfilData((prev) => ({
-      ...prev,
-      acessos: prev.acessos.map((item, i) => (i === idx ? { ...item, ...patch } : item)),
-    }));
-  };
-
-  const addAcesso = () => {
-    const programa = novoAcesso.programa.trim();
-    const login = novoAcesso.login.trim();
-    const senha = novoAcesso.senha.trim();
-    if (!programa || !login || !senha) {
-      toast.error("Preencha programa, login e senha antes de adicionar.");
-      return;
-    }
-    setPerfilData((prev) => ({
-      ...prev,
-      acessos: [
-        ...prev.acessos,
-        {
-          id: crypto.randomUUID(),
-          programa,
-          login,
-          senha,
-          lockedAt: new Date().toISOString(),
-        },
-      ],
-    }));
-    setNovoAcesso({ programa: "", login: "", senha: "" });
-  };
-
-  const removeAcesso = (idx: number) =>
-    setPerfilData((prev) => ({
-      ...prev,
-      acessos: prev.acessos.filter((_, i) => i !== idx),
-    }));
 
   const togglePlano = (key: keyof ClientePerfilData["planoAcao"]) =>
     setPerfilData((prev) => ({
@@ -186,6 +220,10 @@ const ClientProfile = () => {
 
   const handleSave = async () => {
     if (!user?.id) return;
+    if (!profileReady) {
+      toast.error("Aguarde o carregamento do perfil antes de salvar.");
+      return;
+    }
     setSaving(true);
     try {
       const { data: existing, error: existingError } = await supabase
@@ -193,32 +231,60 @@ const ClientProfile = () => {
         .select("id, slug, configuracao_tema")
         .eq("usuario_id", user.id)
         .maybeSingle();
-      if (existingError) throw existingError;
+      rethrowWithStage("Ler perfil", existingError);
 
-      const nextConfig = {
-        ...((existing?.configuracao_tema as Record<string, unknown>) ?? {}),
-        clientePerfil: perfilData,
-      };
+      const existingConfig = jsonSafeForDb((existing?.configuracao_tema as Record<string, unknown>) ?? {});
+      const existingClientePerfil = ((existingConfig.clientePerfil as Record<string, unknown>) ?? {}) as Record<
+        string,
+        unknown
+      >;
+
+      const nextClientePerfil = buildClientePerfilPayload(existingClientePerfil, perfilData);
+
+      const nextConfig = jsonSafeForDb({
+        ...existingConfig,
+        clientePerfil: nextClientePerfil,
+      });
+
+      const nomeGravar = fullName.trim();
+      const contactEmail = perfilData.emailContato.trim().toLowerCase() || null;
 
       if (existing?.id) {
-        const { error } = await supabase
+        const { error, data: updated } = await supabase
           .from("perfis")
           .update({
-            nome_completo: fullName,
+            nome_completo: nomeGravar,
             configuracao_tema: nextConfig,
+            email: contactEmail,
           })
-          .eq("usuario_id", user.id);
-        if (error) throw error;
+          .eq("usuario_id", user.id)
+          .select("id")
+          .maybeSingle();
+        rethrowWithStage("Gravar perfil no Supabase", error);
+        if (!updated?.id) {
+          throw new Error(
+            "Gravar perfil: nenhuma linha atualizada (permissões ou sessão). Verifique se tem acesso a este perfil.",
+          );
+        }
       } else {
-        const { error } = await supabase.from("perfis").insert({
-          usuario_id: user.id,
-          slug: `${fallbackSlug}-${user.id.slice(0, 8)}`,
-          nome_completo: fullName,
-          configuracao_tema: nextConfig,
-        });
-        if (error) throw error;
+        const { error, data: inserted } = await supabase
+          .from("perfis")
+          .insert({
+            usuario_id: user.id,
+            slug: `${fallbackSlug}-${user.id.slice(0, 8)}`,
+            nome_completo: nomeGravar,
+            configuracao_tema: nextConfig,
+            email: contactEmail,
+          })
+          .select("id")
+          .maybeSingle();
+        rethrowWithStage("Criar perfil no Supabase", error);
+        if (!inserted?.id) {
+          throw new Error("Criar perfil: registo não devolvido após inserção.");
+        }
       }
 
+      await verifyPersistenciaPerfilCliente(user.id, nextClientePerfil);
       toast.success("Perfil do cliente salvo com sucesso.");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Erro ao salvar perfil.";
@@ -303,90 +369,14 @@ const ClientProfile = () => {
         </section>
 
         <section className="space-y-2 rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-muted-foreground">Acessos (programas e companhias)</p>
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowAccessPasswords((prev) => !prev)}
-                title={showAccessPasswords ? "Ocultar senhas" : "Mostrar senhas"}
-              >
-                {showAccessPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-                onClick={addAcesso}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Adicionar
-              </Button>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 rounded-lg border border-dashed border-border p-2">
-            <Input
-              placeholder="Programa"
-              value={novoAcesso.programa}
-              onChange={(e) => setNovoAcesso((prev) => ({ ...prev, programa: e.target.value }))}
-            />
-            <Input
-              placeholder="Login"
-              value={novoAcesso.login}
-              onChange={(e) => setNovoAcesso((prev) => ({ ...prev, login: e.target.value }))}
-            />
-            <Input
-              type={showAccessPasswords ? "text" : "password"}
-              placeholder="Senha"
-              value={novoAcesso.senha}
-              onChange={(e) => setNovoAcesso((prev) => ({ ...prev, senha: e.target.value }))}
-            />
-          </div>
-          {perfilData.acessos.map((acesso, idx) => (
-            <div key={acesso.id} className="space-y-2 rounded-lg border border-border p-2">
-              {!canManageAccesses && (
-                <p className="text-[11px] font-medium text-muted-foreground">
-                  Registro travado para cliente. Edição apenas por gestor/CS/admin.
-                </p>
-              )}
-              <div className="grid grid-cols-3 gap-2">
-                <Input
-                  placeholder="Programa"
-                  value={acesso.programa}
-                  onChange={(e) => updateAcesso(idx, { programa: e.target.value })}
-                  readOnly={!canManageAccesses}
-                />
-                <Input
-                  placeholder="Login"
-                  value={acesso.login}
-                  onChange={(e) => updateAcesso(idx, { login: e.target.value })}
-                  readOnly={!canManageAccesses}
-                />
-                <Input
-                  type={showAccessPasswords ? "text" : "password"}
-                  placeholder="Senha"
-                  value={acesso.senha}
-                  onChange={(e) => updateAcesso(idx, { senha: e.target.value })}
-                  readOnly={!canManageAccesses}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                {canManageAccesses && (
-                  <Button type="button" size="sm" variant="ghost" onClick={() => removeAcesso(idx)}>
-                    <Trash2 className="h-4 w-4" />
-                    Remover
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+          <p className="text-xs font-semibold text-muted-foreground">Acessos (programas e companhias)</p>
+          <p className="text-xs text-muted-foreground">
+            Credenciais foram removidas deste formulario por seguranca. A gestao deve acontecer somente pelo cofre
+            seguro do backend, com criptografia, permissao e auditoria.
+          </p>
         </section>
 
-        <Button type="button" className="w-full" onClick={handleSave} disabled={saving}>
+        <Button type="button" className="w-full" onClick={handleSave} disabled={saving || !profileReady}>
           {saving ? "Salvando..." : "Salvar perfil"}
         </Button>
       </div>
