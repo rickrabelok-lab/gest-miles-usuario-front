@@ -8,6 +8,16 @@ const API_URL = import.meta.env.VITE_API_URL ?? import.meta.env.API_URL ?? "";
 
 export const hasApiUrl = () => !!API_URL;
 
+/**
+ * Retorna true apenas quando VITE_API_URL é uma URL absoluta (http/https).
+ * Com VITE_API_URL=/ (proxy Vite dev), retorna false — o app usa Supabase diretamente.
+ * Use este check para fluxos que exigem um backend real (ex: recuperação de senha via Brevo).
+ */
+export function hasAbsoluteApiUrl(): boolean {
+  const b = (import.meta.env.VITE_API_URL ?? import.meta.env.API_URL ?? "").trim();
+  return b.startsWith("http://") || b.startsWith("https://");
+}
+
 export function getApiUrl(path: string): string {
   const base = API_URL.replace(/\/$/, "");
   const p = path.startsWith("/") ? path : `/${path}`;
