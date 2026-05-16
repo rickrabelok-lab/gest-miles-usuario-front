@@ -17,7 +17,12 @@ import programAccessRoutes from "./routes/programAccess.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const allowedCorsOrigins = (process.env.CORS_ORIGINS || process.env.PUBLIC_APP_URL || "")
+const allowedCorsOrigins = [
+  process.env.CORS_ORIGINS || "",
+  process.env.PUBLIC_APP_URL || "",
+  process.env.PUBLIC_MANAGER_URL || "",
+]
+  .join(",")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
