@@ -17,31 +17,34 @@ import programAccessRoutes from "./routes/programAccess.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const STATIC_ALLOWED_ORIGINS = [
+  "https://manager.gestmiles.com.br",
+  "http://localhost:3002",
+  "http://localhost:3080",
+];
+
 const allowedCorsOrigins = [
-  process.env.CORS_ORIGINS || "",
-  process.env.PUBLIC_APP_URL || "",
-  process.env.PUBLIC_MANAGER_URL || "",
-]
-  .join(",")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+  ...STATIC_ALLOWED_ORIGINS,
+  ...[
+    process.env.CORS_ORIGINS || "",
+    process.env.PUBLIC_APP_URL || "",
+    process.env.PUBLIC_MANAGER_URL || "",
+  ]
+    .join(",")
+    .split(",")
+    .map((o) => o.trim().replace(/\/$/, ""))
+    .filter(Boolean),
+];
 
-const isProduction = process.env.NODE_ENV === 'production';
-
-const corsOptions = allowedCorsOrigins.length
-  ? {
-      origin(origin, callback) {
-        if (!origin || allowedCorsOrigins.includes(origin)) {
-          return callback(null, true);
-        }
-        return callback(new Error("Origin not allowed by CORS."));
-      },
-      credentials: true,
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedCorsOrigins.includes(origin)) {
+      return callback(null, true);
     }
-  : isProduction
-    ? { origin: false, credentials: true }
-    : { origin: true, credentials: true };
+    return callback(new Error("Origin not allowed by CORS."));
+  },
+  credentials: true,
+};
 
 app.use(cors(corsOptions));
 
