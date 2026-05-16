@@ -208,6 +208,99 @@ ${saudacao}
   }
 });
 
+/** POST /api/auth/request-password-reset-manager - Envia reset custom (gestor) por Brevo */
+router.post("/request-password-reset-manager", async (req, res) => {
+  try {
+    const em = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
+    if (!isValidEmail(em)) {
+      return res.status(400).json({ error: "E-mail inválido." });
+    }
+
+    const brevoKey = process.env.BREVO_API_KEY;
+    const sender = process.env.BREVO_SENDER_EMAIL;
+    const managerUrl = (process.env.PUBLIC_MANAGER_URL || "http://localhost:3002").replace(/\/$/, "");
+    if (!brevoKey || !sender) {
+      return res.status(503).json({ error: "Brevo não configurado no backend." });
+    }
+
+    const sbAdmin = assertSupabaseService();
+    const { data: uid, error: uidErr } = await sbAdmin.rpc("get_user_id_by_email_for_service", { p_email: em });
+    if (uidErr) throw uidErr;
+    if (!uid) {
+      return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = sha256Hex(rawToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const { error: insErr } = await sbAdmin.from("password_reset_tokens").insert({
+      user_id: uid,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+    });
+    if (insErr) throw insErr;
+
+    const primeiroNome = await getPrimeiroNomeCliente(sbAdmin, uid);
+    const saudacao = primeiroNome
+      ? `<p style="margin:0 0 14px 0;font-size:15px;">Olá, <strong>${primeiroNome}</strong>,</p>`
+      : `<p style="margin:0 0 14px 0;font-size:15px;">Olá,</p>`;
+    const link = `${managerUrl}/auth/reset-password?token=${encodeURIComponent(rawToken)}`;
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/></head>
+<body style="margin:0;background:#f0eef5;font-family:'Segoe UI',system-ui,sans-serif;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f0eef5;padding:28px 14px;"><tr><td align="center">
+<table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px -10px rgba(80,0,140,0.22);border:1px solid #d8d0e4;">
+<tr><td style="background:linear-gradient(180deg,#2a0050 0%,#1c0035 100%);padding:28px 28px 0 28px;text-align:center;">
+<p style="margin:0 0 10px 0;font-size:22px;font-weight:700;color:#ffffff;">Gest Miles</p>
+<p style="margin:0;display:inline-block;padding:5px 14px;border:1px solid rgba(255,255,255,0.18);border-radius:6px;font-size:10px;font-weight:700;color:#e0baff;letter-spacing:1px;">PAINEL DE GESTÃO</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:20px;"><tr>
+<td style="background:#8A05BE;height:3px;"></td><td style="background:#b56cff;height:3px;"></td><td style="background:#8A05BE;height:3px;"></td>
+</tr></table>
+</td></tr>
+<tr><td style="padding:24px 32px 12px 32px;background:#ffffff;color:#1a1a1a;font-size:15px;line-height:1.65;">
+${saudacao}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 16px 0;"><tr><td style="background:#f9f0ff;border-left:3px solid #8A05BE;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;color:#5b0099;">
+&#128274; Solicitação de redefinição de senha para a sua conta de <strong>gestor</strong>.
+</td></tr></table>
+<p style="margin:0 0 10px 0;font-size:14px;">Clique abaixo para criar uma nova senha de acesso ao painel operacional. O link expira em <strong>1 hora</strong>.</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0 0 0;"><tr><td align="center">
+<a href="${link}" style="display:inline-block;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;color:#ffffff;background-color:#7003a8;">Redefinir senha</a>
+</td></tr></table>
+<p style="margin:18px 0 0 0;color:#7a7a7a;font-size:13px;line-height:1.55;">Se não foi você: ignore este e-mail. Nenhuma alteração será feita na sua conta.</p>
+</td></tr>
+<tr><td style="padding:14px 32px 18px 32px;background:#fcfaff;border-top:1px solid #ecdeff;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
+<td style="vertical-align:top;">
+<p style="margin:0;color:#888;font-size:12px;">Atenciosamente,</p>
+<p style="margin:3px 0 0 0;font-size:14px;font-weight:700;"><span style="color:#555;">Equipa </span><span style="color:#8A05BE;">Gest Miles</span></p>
+<p style="margin:2px 0 0 0;color:#aaa;font-size:11px;">Suporte operacional</p>
+</td>
+<td style="text-align:right;vertical-align:bottom;">
+<p style="margin:0;color:#ccc;font-size:10px;line-height:1.4;">Email automático<br/>não responda</p>
+</td>
+</tr></table>
+</td></tr>
+</table></td></tr></table></body></html>`;
+
+    const r = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json", "api-key": brevoKey },
+      body: JSON.stringify({
+        sender: { name: process.env.BREVO_SENDER_NAME || "Gest Miles", email: sender },
+        to: [{ email: em }],
+        subject: "Recuperação de acesso — Painel de Gestão Gest Miles",
+        htmlContent: html,
+      }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+
+    return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "Erro ao enviar reset." });
+  }
+});
+
 /** POST /api/auth/complete-password-reset - Consome token e altera senha */
 router.post("/complete-password-reset", async (req, res) => {
   try {
