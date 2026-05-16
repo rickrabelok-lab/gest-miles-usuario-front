@@ -32,17 +32,18 @@ export default function NpsClientePrompt() {
   const dismissed = useRef<Set<string>>(new Set());
 
   const current = convites[0];
+  const currentId = current?.id ?? null;
 
   useEffect(() => {
-    if (!current) {
+    if (!currentId) {
       setOpen(false);
       return;
     }
-    if (dismissed.current.has(current.id)) return;
+    if (dismissed.current.has(currentId)) return;
     setOpen(true);
     setNota(null);
     setComentario("");
-  }, [current?.id]);
+  }, [currentId]);
 
   const gestorNome = current ? gestorNomeById[current.gestor_id] ?? "seu gestor" : "";
 

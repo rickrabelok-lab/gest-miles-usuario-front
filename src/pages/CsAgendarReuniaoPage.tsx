@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -60,7 +60,7 @@ const CsAgendarReuniaoPage = () => {
   const { role } = useAuth();
   const csEnabled = role === "cs" || role === "admin";
   const { data: csDash } = useCsGestores(csEnabled);
-  const csGrupos = csDash?.grupos ?? [];
+  const csGrupos = useMemo(() => csDash?.grupos ?? [], [csDash?.grupos]);
 
   const [selectedEquipeId, setSelectedEquipeId] = useState("");
   const [participantOptions, setParticipantOptions] = useState<ReuniaoParticipanteOption[]>([]);
@@ -95,7 +95,7 @@ const CsAgendarReuniaoPage = () => {
     }
   }, [selectedEquipeId, csGrupos]);
 
-  const loadAgendaEquipe = async (equipeId: string) => {
+  const loadAgendaEquipe = useCallback(async (equipeId: string) => {
     if (!equipeId) {
       setAgendaReunioes([]);
       return;
@@ -180,9 +180,9 @@ const CsAgendarReuniaoPage = () => {
     } finally {
       setAgendaLoading(false);
     }
-  };
+  }, []);
 
-  const loadParticipantOptions = async (equipeId: string) => {
+  const loadParticipantOptions = useCallback(async (equipeId: string) => {
     if (!equipeId) {
       setParticipantOptions([]);
       setSelectedParticipantIds([]);
@@ -239,7 +239,7 @@ const CsAgendarReuniaoPage = () => {
       setParticipantOptions(gestores);
       setSelectedParticipantIds(gestores.map((g) => g.id));
     }
-  };
+  }, [csGrupos]);
 
   const handleCreateReuniao = async () => {
     if (!selectedEquipeId) {
@@ -319,7 +319,7 @@ const CsAgendarReuniaoPage = () => {
     if (!selectedEquipeId) return;
     void loadParticipantOptions(selectedEquipeId);
     void loadAgendaEquipe(selectedEquipeId);
-  }, [selectedEquipeId]);
+  }, [loadAgendaEquipe, loadParticipantOptions, selectedEquipeId]);
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md bg-nubank-bg p-4 pb-24 dark:bg-background">
@@ -488,4 +488,3 @@ const CsAgendarReuniaoPage = () => {
 };
 
 export default CsAgendarReuniaoPage;
-

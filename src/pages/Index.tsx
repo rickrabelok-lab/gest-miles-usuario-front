@@ -868,6 +868,8 @@ const Index = () => {
   } = useGestor(
     managerMode,
     useMemo(() => {
+      // Intencional: invalida a releitura de localStorage quando a lista acessada muda.
+      void accessedClientsVersion;
       const ids = new Set<string>();
       if (managerClientId) ids.add(managerClientId);
       if (!managerMode || !user?.id || typeof window === "undefined") {
@@ -1415,6 +1417,8 @@ const Index = () => {
   );
 
   const clientsForBottomNav = useMemo(() => {
+    // Intencional: invalida a releitura de localStorage quando a lista acessada muda.
+    void accessedClientsVersion;
     if (!managerMode || typeof window === "undefined" || !user?.id)
       return gestorClientOptions;
     const key = `${MANAGER_ACCESSED_CLIENTS_PREFIX}${user.id}`;

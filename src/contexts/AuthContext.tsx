@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- Context API intentionally keeps provider, hook, and exported types together. */
 import {
   createContext,
   useCallback,

@@ -95,7 +95,7 @@ export const useDestinationBestPrices = ({
     return () => {
       cancelled = true;
     };
-  }, [destinationKey, originKey]);
+  }, [normalizedDestinations, normalizedOrigins]);
 
   return {
     loading,

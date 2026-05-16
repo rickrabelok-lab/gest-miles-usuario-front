@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filterPrograms, highlightSegments } from "../ProgramSelectionSheet";
+import { filterPrograms, highlightSegments } from "../programSelectionUtils";
 
 const OPTIONS = [
   { programId: "latam-pass", name: "Latam Pass", logo: "LP", logoColor: "#1a3a6b" },

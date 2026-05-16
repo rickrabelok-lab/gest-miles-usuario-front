@@ -250,6 +250,7 @@ export const useGestor = (
       return data ?? [];
     },
   });
+  const programsData = programsQuery.data;
 
   const demandasQuery = useQuery({
     queryKey: ["gestor_demandas_cliente", allClientIds],
@@ -414,7 +415,7 @@ export const useGestor = (
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const stateRow = (row: (typeof programsQuery.data)[number]) =>
+    const stateRow = (row: NonNullable<typeof programsData>[number]) =>
       (row?.state ?? {}) as {
         lotes?: Array<{ validadeLote?: string; quantidade?: number }>;
         movimentos?: Array<{
@@ -453,7 +454,7 @@ export const useGestor = (
       });
     });
 
-    (programsQuery.data ?? []).forEach((row) => {
+    (programsData ?? []).forEach((row) => {
       const clientId = row.cliente_id as string;
       const programId = (row.program_id as string) ?? "";
       const current = grouped.get(clientId);
@@ -596,7 +597,7 @@ export const useGestor = (
     });
 
     return result;
-  }, [allClientIds, profilesQuery.data, programsQuery.data, gestoresPorClienteQuery.data, demandasQuery.data]);
+  }, [allClientIds, profilesQuery.data, programsData, gestoresPorClienteQuery.data, demandasQuery.data]);
 
   const vencimentosTodosClientes = useMemo<GestorVencimentoItem[]>(() => {
     const profiles = new Map<string, string>();
@@ -609,7 +610,7 @@ export const useGestor = (
     const msDia = 1000 * 60 * 60 * 24;
     const items: GestorVencimentoItem[] = [];
 
-    (programsQuery.data ?? []).forEach((row) => {
+    (programsData ?? []).forEach((row) => {
       const clientId = row.cliente_id as string;
       const clientName = profiles.get(clientId) ?? "Cliente";
       const programId = (row.program_id as string) ?? "";
@@ -666,7 +667,7 @@ export const useGestor = (
     });
 
     return items.sort((a, b) => a.diasRestantes - b.diasRestantes);
-  }, [profilesQuery.data, programsQuery.data]);
+  }, [profilesQuery.data, programsData]);
 
   const demandasGestor = useMemo<GestorDemandaItem[]>(() => {
     const profiles = new Map<string, string>();
@@ -747,7 +748,7 @@ export const useGestor = (
       totalHistorico: { entradas: 0, economia: 0 },
     };
 
-    (programsQuery.data ?? []).forEach((row) => {
+    (programsData ?? []).forEach((row) => {
       const state = (row.state ?? {}) as {
         movimentos?: Array<{
           tipo?: string;
@@ -790,7 +791,7 @@ export const useGestor = (
       ultimos12meses: build("ultimos12meses"),
       totalHistorico: build("totalHistorico"),
     };
-  }, [programsQuery.data]);
+  }, [programsData]);
 
   const planosAcaoPorPrograma = useMemo<
     Record<GestorPlanoAcaoProgramKey, GestorPlanoAcaoClienteItem[]>

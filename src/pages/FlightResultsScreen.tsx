@@ -42,8 +42,8 @@ export default function FlightResultsScreen() {
   const depStr   = searchParams.get("dep")
   const retStr   = searchParams.get("ret")
 
-  const depDate    = depStr ? parseISO(depStr) : new Date()
-  const retDate    = retStr ? parseISO(retStr) : null
+  const depDate    = useMemo(() => (depStr ? parseISO(depStr) : new Date()), [depStr])
+  const retDate    = useMemo(() => (retStr ? parseISO(retStr) : null), [retStr])
   const isRoundtrip = !!retDate
 
   const [activeTab,            setActiveTab]            = useState<"ida" | "volta">("ida")
@@ -56,8 +56,7 @@ export default function FlightResultsScreen() {
 
   const datePrices = useMemo(
     () => generateDatePrices(fromCode, toCode, activeTab === "ida" ? depDate : (retDate ?? depDate)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fromCode, toCode, activeTab],
+    [fromCode, toCode, activeTab, depDate, retDate],
   )
 
   const currentFlights = useMemo(() => {
