@@ -221,12 +221,14 @@ router.post("/request-password-reset-manager", async (req, res) => {
     const brevoKey = process.env.BREVO_API_KEY;
     const sender = process.env.BREVO_SENDER_EMAIL;
     const managerUrl = (process.env.PUBLIC_MANAGER_URL || "http://localhost:3002").replace(/\/$/, "");
+    console.log("[mgr-reset] brevo configured:", !!brevoKey, !!sender, "managerUrl:", managerUrl);
     if (!brevoKey || !sender) {
       return res.status(503).json({ error: "Brevo não configurado no backend." });
     }
 
     const sbAdmin = assertSupabaseService();
     const { data: uid, error: uidErr } = await sbAdmin.rpc("get_user_id_by_email_for_service", { p_email: em });
+    console.log("[mgr-reset] uid found:", !!uid, "uidErr:", uidErr?.message);
     if (uidErr) throw uidErr;
     if (!uid) {
       return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
@@ -293,10 +295,13 @@ ${saudacao}
         htmlContent: html,
       }),
     });
+    console.log("[mgr-reset] brevo response status:", r.status);
     if (!r.ok) throw new Error(await r.text());
 
+    console.log("[mgr-reset] email sent successfully to:", em);
     return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
   } catch (err) {
+    console.log("[mgr-reset] error:", err.message);
     return res.status(500).json({ error: err.message || "Erro ao enviar reset." });
   }
 });
