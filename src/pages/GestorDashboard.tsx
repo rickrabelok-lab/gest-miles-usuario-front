@@ -180,7 +180,7 @@ const GestorDashboard = ({ variant = "gestor" }: GestorDashboardProps) => {
     invalidate: invalidateCsTeam,
   } = useCsGestores(csQueryEnabled);
 
-  const csFlat = csDash?.flat ?? [];
+  const csFlat = useMemo(() => csDash?.flat ?? [], [csDash?.flat]);
   const csGrupos = csDash?.grupos ?? [];
   const csDiretos = csDash?.gestoresSomenteDireto ?? [];
 

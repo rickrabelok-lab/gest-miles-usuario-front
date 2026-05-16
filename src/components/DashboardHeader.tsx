@@ -75,7 +75,7 @@ const DashboardHeader = () => {
     (role === "gestor" || role === "admin" || role === "cs" || role === "admin_equipe");
 
   const { data: csDashboard } = useCsGestores(role === "cs" || role === "admin_equipe");
-  const csTeam = csDashboard?.flat ?? [];
+  const csTeam = useMemo(() => csDashboard?.flat ?? [], [csDashboard?.flat]);
   const showDemandOpenBanner = isGestorView || role === "cs" || role === "admin_equipe";
 
   const { data: brandingData } = useBrandingConfig();

@@ -12,7 +12,6 @@ class AppErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Keep a trail in console for faster debugging in production/dev.
-    // eslint-disable-next-line no-console
     console.error("App crash:", error, errorInfo);
   }
 

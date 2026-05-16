@@ -36,18 +36,18 @@ export default function CsatClientePrompt() {
   const dismissed = useRef<Set<string>>(new Set());
 
   const current = pending[0];
+  const currentKey = current ? pendingKey(current.gestor_id, current.mes_referencia) : null;
 
   useEffect(() => {
-    if (!current) {
+    if (!currentKey) {
       setOpen(false);
       return;
     }
-    const k = pendingKey(current.gestor_id, current.mes_referencia);
-    if (dismissed.current.has(k)) return;
+    if (dismissed.current.has(currentKey)) return;
     setOpen(true);
     setNota(null);
     setComentario("");
-  }, [current?.gestor_id, current?.mes_referencia]);
+  }, [currentKey]);
 
   const gestorNome = current ? gestorNomeById[current.gestor_id] ?? "seu gestor" : "";
 

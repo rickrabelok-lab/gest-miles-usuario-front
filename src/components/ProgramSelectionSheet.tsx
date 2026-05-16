@@ -2,43 +2,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Minus, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  filterPrograms,
+  highlightSegments,
+  type ActiveProgram,
+  type ProgramOption,
+} from "./programSelectionUtils";
 
-// ── Tipos públicos ────────────────────────────────────────────────────────────
-
-export type ProgramOption = {
-  programId: string;
-  name: string;
-  logo: string;
-  logoColor: string;
-};
-
-export type ActiveProgram = ProgramOption & {
-  balance: string;
-};
-
-export type HighlightSegment = { text: string; highlight: boolean };
-
-// ── Utilitários puros (exportados para teste) ─────────────────────────────────
-
-export function filterPrograms<T extends { name: string }>(
-  list: T[],
-  query: string,
-): T[] {
-  if (!query) return list;
-  const q = query.toLowerCase();
-  return list.filter((item) => item.name.toLowerCase().includes(q));
-}
-
-export function highlightSegments(text: string, query: string): HighlightSegment[] {
-  if (!query) return [{ text, highlight: false }];
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return [{ text, highlight: false }];
-  return [
-    { text: text.slice(0, idx),                  highlight: false },
-    { text: text.slice(idx, idx + query.length),  highlight: true  },
-    { text: text.slice(idx + query.length),       highlight: false },
-  ].filter((s) => s.text.length > 0);
-}
+export type { ActiveProgram, ProgramOption } from "./programSelectionUtils";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -65,6 +36,11 @@ export function ProgramSelectionSheet({
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -76,7 +52,7 @@ export function ProgramSelectionSheet({
       });
       const t = setTimeout(() => searchRef.current?.focus(), 400);
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape") onClose();
+        if (e.key === "Escape") onCloseRef.current();
       };
       document.addEventListener("keydown", handleKeyDown);
       return () => {
@@ -134,7 +110,7 @@ export function ProgramSelectionSheet({
         className={cn(
           "absolute inset-x-0 bottom-0 top-12 flex flex-col rounded-t-[22px]",
           "border-t border-white/10 bg-[#16162a] shadow-2xl",
-          "transition-transform duration-[350ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
+          "transition-transform [transition-duration:350ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]",
           visible ? "translate-y-0" : "translate-y-full",
         )}
       >
