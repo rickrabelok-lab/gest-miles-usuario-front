@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import type { PersistedProgramState } from "@/lib/program-state";
 
 export type EmissaoInput = {
   cliente_id: string;
@@ -46,7 +45,7 @@ export async function registrarEmissao(input: EmissaoInput): Promise<void> {
 
   const { data: programRows, error: fetchError } = await supabase
     .from("programas_cliente")
-    .select("id, program_id, program_name, saldo, state")
+    .select("id, program_id, program_name, saldo")
     .eq("cliente_id", input.cliente_id);
 
   if (fetchError) throw fetchError;
@@ -71,69 +70,21 @@ export async function registrarEmissao(input: EmissaoInput): Promise<void> {
     );
   }
 
-  const { error: insertError } = await supabase.from("emissoes").insert({
-    cliente_id: input.cliente_id,
-    programa: input.programa,
-    origem: input.origem,
-    destino: input.destino,
-    classe: input.classe,
-    data_ida: input.data_ida || null,
-    data_volta: input.data_volta || null,
-    milhas_utilizadas: milhas,
-    taxa_embarque: Number(input.taxa_embarque) || 0,
-    data_emissao: input.data_emissao,
-    usuario_responsavel: input.usuario_responsavel,
-    observacoes: input.observacoes ?? null,
+  const { error: rpcError } = await supabase.rpc("cliente_registrar_emissao", {
+    p_cliente_id: input.cliente_id,
+    p_programa_cliente_id: match.id,
+    p_programa: input.programa,
+    p_origem: input.origem,
+    p_destino: input.destino,
+    p_classe: input.classe,
+    p_data_ida: input.data_ida || null,
+    p_data_volta: input.data_volta || null,
+    p_milhas_utilizadas: milhas,
+    p_taxa_embarque: Number(input.taxa_embarque) || 0,
+    p_data_emissao: input.data_emissao,
+    p_observacoes: input.observacoes ?? null,
+    p_sobrenome_emissao: sobrenomeEmissao,
   });
 
-  if (insertError) throw insertError;
-
-  const state = (match.state ?? {}) as PersistedProgramState & {
-    movimentos?: Array<{
-      id?: string;
-      data?: string;
-      tipo?: string;
-      descricao?: string;
-      milhas?: number;
-      taxas?: number;
-      origem?: string;
-      destino?: string;
-      classe?: string;
-    }>;
-  };
-  const movimentos = Array.isArray(state.movimentos) ? state.movimentos : [];
-  const newSaldo = Math.max(0, currentSaldo - milhas);
-  const descricao = `Emissão ${input.origem || "?"} → ${input.destino || "?"}${input.classe ? ` (${input.classe})` : ""}`;
-
-  const novoMovimento = {
-    id: `em-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    data: input.data_emissao,
-    tipo: "saida" as const,
-    descricao,
-    milhas,
-    taxas: Number(input.taxa_embarque) || 0,
-    origem: input.origem || undefined,
-    destino: input.destino || undefined,
-    classe: input.classe || undefined,
-    sobrenomeEmissao,
-  };
-
-  const newState: PersistedProgramState = {
-    saldo: newSaldo,
-    movimentos: [...movimentos, novoMovimento],
-    custoSaldo: state.custoSaldo ?? 0,
-    custoMedioMilheiro: state.custoMedioMilheiro ?? 0,
-    lotes: Array.isArray(state.lotes) ? state.lotes : [],
-  };
-
-  const { error: updateError } = await supabase
-    .from("programas_cliente")
-    .update({
-      saldo: newSaldo,
-      state: newState,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", match.id);
-
-  if (updateError) throw updateError;
+  if (rpcError) throw rpcError;
 }
