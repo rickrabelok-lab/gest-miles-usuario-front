@@ -66,13 +66,13 @@ export async function submitCsatAvaliacao(input: {
   nota: number;
   comentario: string | null;
 }): Promise<void> {
-  const { error } = await supabase.from("csat_avaliacoes").insert({
-    cliente_id: input.clienteId,
-    gestor_id: input.gestorId,
-    equipe_id: input.equipeId,
-    mes_referencia: input.mesReferencia,
-    nota: input.nota,
-    comentario: input.comentario,
+  const { error } = await supabase.rpc("cliente_submit_csat_avaliacao", {
+    p_cliente_id: input.clienteId,
+    p_gestor_id: input.gestorId,
+    p_equipe_id: input.equipeId,
+    p_mes_referencia: input.mesReferencia,
+    p_nota: input.nota,
+    p_comentario: input.comentario,
   });
   if (error) {
     if (error.code === "23505") {

@@ -82,12 +82,12 @@ export async function submitNpsAvaliacao(input: {
   nota: number;
   comentario: string | null;
 }): Promise<void> {
-  const { error } = await supabase.from("nps_avaliacoes").insert({
-    cliente_id: input.clienteId,
-    gestor_id: input.gestorId,
-    equipe_id: input.equipeId,
-    nota: input.nota,
-    comentario: input.comentario,
+  const { error } = await supabase.rpc("cliente_submit_nps_avaliacao", {
+    p_cliente_id: input.clienteId,
+    p_gestor_id: input.gestorId,
+    p_equipe_id: input.equipeId,
+    p_nota: input.nota,
+    p_comentario: input.comentario,
   });
   if (error) throw toQueryError(error, "Não foi possível enviar sua avaliação.");
 }
