@@ -99,12 +99,12 @@ async function assertCanAccessCliente(req, clienteId) {
   return { actorId: user.id, actorRole: role, clientePerfil };
 }
 async function auditProgramAccess(sb, { acessoId = null, clienteId, actorId, action, metadata = {} }) {
-  const { error } = await sb.from("cliente_programa_acesso_audit_logs").insert({
-    acesso_id: acessoId,
-    cliente_id: clienteId,
-    actor_id: actorId,
-    action,
-    metadata,
+  const { error } = await sb.rpc("cliente_programa_acesso_audit_log_write", {
+    p_acesso_id: acessoId,
+    p_cliente_id: clienteId,
+    p_actor_id: actorId,
+    p_action: action,
+    p_metadata: metadata,
   });
   if (error) throw error;
 }
