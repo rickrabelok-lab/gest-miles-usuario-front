@@ -1319,11 +1319,10 @@ const Index = () => {
               targetGestorId: params.gestorId,
             };
 
-      const { error } = await supabase.from("demandas_cliente").insert({
-        cliente_id: demandTargetClientId,
-        tipo: params.tipo,
-        status: "pendente",
-        payload,
+      const { error } = await supabase.rpc("cliente_criar_demanda", {
+        p_cliente_id: demandTargetClientId,
+        p_tipo: params.tipo,
+        p_payload: payload,
       });
       if (error) throw error;
 
