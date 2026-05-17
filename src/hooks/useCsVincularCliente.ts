@@ -28,9 +28,9 @@ export function useCsVincularCliente() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) throw new Error("Faça login novamente.");
 
-      const { error } = await supabase.from("cliente_gestores").insert({
-        cliente_id,
-        gestor_id,
+      const { error } = await supabase.rpc("cs_vincular_cliente_gestores", {
+        p_cliente_id: cliente_id,
+        p_gestor_ids: [gestor_id],
       });
       if (error) throw error;
     },
@@ -67,13 +67,13 @@ export function useCsVincularClienteNaEquipe() {
         throw new Error("Esta equipe não tem gestores em equipe_gestores.");
       }
 
-      const rows = gestorIds.map((gestor_id) => ({ cliente_id, gestor_id }));
-      const { data, error } = await supabase
-        .from("cliente_gestores")
-        .upsert(rows, { onConflict: "cliente_id,gestor_id", ignoreDuplicates: true })
-        .select();
+      const { data, error } = await supabase.rpc("cs_vincular_cliente_gestores", {
+        p_cliente_id: cliente_id,
+        p_gestor_ids: gestorIds,
+      });
       if (error) throw error;
-      const linked = data?.length ?? 0;
+      const result = Array.isArray(data) ? data[0] : null;
+      const linked = Number(result?.linked ?? 0);
       const skipped = gestorIds.length - linked;
       return { linked, skipped, total: gestorIds.length };
     },
