@@ -26,12 +26,11 @@ export const logOperacional = async ({
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  const { error: legacyErr } = await supabase.from("logs_acoes").insert({
-    user_id: user.id,
-    tipo_acao: tipoAcao,
-    entidade_afetada: entidadeAfetada,
-    entidade_id: entidadeId ?? null,
-    details: details ?? {},
+  const { error: legacyErr } = await supabase.rpc("operational_log_write", {
+    p_tipo_acao: tipoAcao,
+    p_entidade_afetada: entidadeAfetada,
+    p_entidade_id: entidadeId ?? null,
+    p_details: details ?? {},
   });
   if (legacyErr && import.meta.env.DEV) {
     console.warn("[audit] logs_acoes:", legacyErr.message);
