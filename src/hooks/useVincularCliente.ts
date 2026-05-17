@@ -17,9 +17,8 @@ export const useVincularCliente = (gestorUserId: string | undefined) => {
       }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) throw new Error("Faça login novamente para vincular clientes.");
-      const { error } = await supabase.from("cliente_gestores").insert({
-        gestor_id: user.id,
-        cliente_id: uuid,
+      const { error } = await supabase.rpc("gestor_vincular_cliente_self", {
+        p_cliente_id: uuid,
       });
       if (error) {
         const err = new Error(error.message) as Error & { code?: string };
@@ -41,18 +40,15 @@ export const useVincularCliente = (gestorUserId: string | undefined) => {
       }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) throw new Error("Faça login novamente para desvincular.");
-      const { data, error } = await supabase
-        .from("cliente_gestores")
-        .delete()
-        .eq("gestor_id", user.id)
-        .eq("cliente_id", uuid)
-        .select("cliente_id");
+      const { data, error } = await supabase.rpc("gestor_desvincular_cliente_self", {
+        p_cliente_id: uuid,
+      });
       if (error) {
         const err = new Error(error.message) as Error & { code?: string };
         err.code = error.code;
         throw err;
       }
-      return { deleted: (data ?? []).length > 0 };
+      return { deleted: Number(data ?? 0) > 0 };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cliente_gestores"] });
