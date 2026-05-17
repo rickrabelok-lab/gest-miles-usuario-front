@@ -69,11 +69,9 @@ const Me = () => {
         slug = `${fallbackSlug}-${attempt + 1}`;
       }
 
-      const { error: insertError } = await supabase.from("perfis").insert({
-        usuario_id: user.id,
-        slug,
-        nome_completo: user.user_metadata?.full_name ?? user.email ?? "Usuário",
-        role: "cliente",
+      const { error: insertError } = await supabase.rpc("ensure_self_cliente_profile", {
+        p_slug: slug,
+        p_nome_completo: user.user_metadata?.full_name ?? user.email ?? "Usuário",
       });
 
       if (insertError) {
