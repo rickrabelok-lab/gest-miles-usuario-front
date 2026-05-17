@@ -1575,70 +1575,19 @@ const Index = () => {
 
     setActionPlanSaving(true);
     try {
-      const { data: existingPerfilRows, error: existingPerfilError } = await supabase
-        .from("perfis")
-        .select("id, slug, nome_completo, configuracao_tema")
-        .eq("usuario_id", demandTargetClientId)
-        .limit(1);
-      if (existingPerfilError) throw existingPerfilError;
-      const existingPerfil = (existingPerfilRows ?? [])[0] as
-        | {
-            id?: string | number;
-            slug?: string | null;
-            nome_completo?: string | null;
-            configuracao_tema?: Record<string, unknown> | null;
-          }
-        | undefined;
-
-      const existingConfig = (existingPerfil?.configuracao_tema ?? {}) as Record<
-        string,
-        unknown
-      >;
-      const existingClientePerfil = (existingConfig.clientePerfil ?? {}) as Record<
-        string,
-        unknown
-      >;
-      const existingPlanoAcao = (existingClientePerfil.planoAcao ?? {}) as Record<
-        string,
-        unknown
-      >;
-
-      const nextPlanoAcao: Record<string, unknown> = { ...existingPlanoAcao };
+      const nextPlanoAcao: Record<string, unknown> = {};
       ACTION_PLAN_PROGRAM_LABELS.forEach(([key]) => {
         nextPlanoAcao[key] = nextKeys.includes(key);
       });
 
-      const nextConfig = {
-        ...existingConfig,
-        clientePerfil: {
-          ...existingClientePerfil,
-          planoAcao: nextPlanoAcao,
-        },
-      };
-
       const fallbackSuffix = demandTargetClientId.slice(0, 8);
-      const slug = existingPerfil?.slug ?? `cliente-${fallbackSuffix}`;
-      const nomeCompleto = existingPerfil?.nome_completo ?? `Cliente ${fallbackSuffix}`;
-
-      if (existingPerfil != null && existingPerfil.id != null) {
-        const { data: updated, error: updateError } = await supabase
-          .from("perfis")
-          .update({ configuracao_tema: nextConfig })
-          .eq("usuario_id", demandTargetClientId)
-          .select("usuario_id");
-        if (updateError) throw updateError;
-        if (!updated?.length) {
-          throw new Error("Sem permissão para salvar (gestor: rode o SQL no Supabase e vincule o cliente em Clientes ativos).");
-        }
-      } else {
-        const { error: insertError } = await supabase.from("perfis").insert({
-          usuario_id: demandTargetClientId,
-          slug,
-          nome_completo: nomeCompleto,
-          configuracao_tema: nextConfig,
-        });
-        if (insertError) throw insertError;
-      }
+      const { error: saveError } = await supabase.rpc("cliente_set_action_plan", {
+        p_usuario_id: demandTargetClientId,
+        p_plano_acao: nextPlanoAcao,
+        p_slug: `cliente-${fallbackSuffix}`,
+        p_nome_completo: `Cliente ${fallbackSuffix}`,
+      });
+      if (saveError) throw saveError;
 
       queryClient.invalidateQueries({ queryKey: ["cliente_gestores_perfis"] });
       return true;

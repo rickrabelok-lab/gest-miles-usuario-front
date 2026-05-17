@@ -417,47 +417,14 @@ const LoyaltyProgramDetails = () => {
 
     setActionPlanFollowupSaving(true);
     try {
-      const { data: perfilRows, error } = await supabase
-        .from("perfis")
-        .select("id, slug, configuracao_tema")
-        .eq("usuario_id", effectiveClientId)
-        .limit(1);
+      const fallbackSuffix = effectiveClientId.slice(0, 8);
+      const { error } = await supabase.rpc("cliente_set_action_plan", {
+        p_usuario_id: effectiveClientId,
+        p_plano_acao: { [actionPlanProgramKey]: keepInPlan },
+        p_slug: `cliente-${fallbackSuffix}`,
+        p_nome_completo: `Cliente ${fallbackSuffix}`,
+      });
       if (error) throw error;
-      const perfil = (perfilRows ?? [])[0] as
-        | { id?: string; slug?: string | null; configuracao_tema?: Record<string, unknown> | null }
-        | undefined;
-
-      const perfilCfg = (perfil?.configuracao_tema ?? {}) as Record<string, unknown>;
-      const clientePerfil = (perfilCfg.clientePerfil ?? {}) as Record<string, unknown>;
-      const existingPlanoAcao = (clientePerfil.planoAcao ?? {}) as Record<string, unknown>;
-      const nextPlanoAcao: Record<string, unknown> = {
-        ...existingPlanoAcao,
-        [actionPlanProgramKey]: keepInPlan,
-      };
-      const nextConfig = {
-        ...perfilCfg,
-        clientePerfil: {
-          ...clientePerfil,
-          planoAcao: nextPlanoAcao,
-        },
-      };
-
-      if (perfil?.id) {
-        const { error: updateError } = await supabase
-          .from("perfis")
-          .update({ configuracao_tema: nextConfig })
-          .eq("usuario_id", effectiveClientId);
-        if (updateError) throw updateError;
-      } else {
-        const fallbackSuffix = effectiveClientId.slice(0, 8);
-        const { error: insertError } = await supabase.from("perfis").insert({
-          usuario_id: effectiveClientId,
-          slug: `cliente-${fallbackSuffix}`,
-          nome_completo: `Cliente ${fallbackSuffix}`,
-          configuracao_tema: nextConfig,
-        });
-        if (insertError) throw insertError;
-      }
 
       queryClient.invalidateQueries({ queryKey: ["cliente_gestores_perfis"] });
       setActionPlanFollowupOpen(false);
@@ -2247,4 +2214,3 @@ const LoyaltyProgramDetails = () => {
 };
 
 export default LoyaltyProgramDetails;
-
