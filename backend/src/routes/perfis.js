@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { buildSelfPerfilPayload } from "../lib/perfisPayload.js";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -70,27 +71,27 @@ router.get("/:usuarioId", requireAuth, async (req, res) => {
   }
 });
 
-/** PUT /api/perfis - Upsert perfil */
+/** PUT /api/perfis - Upsert seguro do perfil próprio */
 router.put("/", requireAuth, async (req, res) => {
   try {
-    const payload = req.body;
     const supabase = createSupabaseWithAuth(req.accessToken);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.id) {
       return res.status(401).json({ error: "Usuário não autenticado" });
     }
+    const payload = buildSelfPerfilPayload(req.body, user);
     const { error } = await supabase
       .from("perfis")
-      .upsert(
-        { ...payload, usuario_id: payload.usuario_id ?? user.id },
-        { onConflict: "usuario_id" }
-      );
+      .upsert(payload, { onConflict: "usuario_id" });
 
     if (error) {
       return res.status(400).json({ error: error.message });
     }
     return res.json({ ok: true });
   } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.message, code: err.code, details: err.details });
+    }
     return res.status(500).json({ error: err.message || "Erro ao salvar perfil" });
   }
 });

@@ -105,9 +105,11 @@ Perfil de um usuário. Requer Bearer token.
 ---
 
 ### PUT /api/perfis
-Upsert perfil. Requer Bearer token.
+Upsert seguro do perfil próprio. Requer Bearer token.
 
-**Body:** Objeto perfil
+**Body permitido:** `slug`, `nome_completo`, `nome`, `email`, `data_nascimento`, `cpf`, `numero_telefone`, `endereco`, `configuracao_tema`.
+
+Campos sensíveis como `usuario_id`, `role`, `equipe_id`, `organizacao_id`, Stripe, assinatura e status são rejeitados pela API.
 
 **Resposta:** `{ ok: true }`
 
