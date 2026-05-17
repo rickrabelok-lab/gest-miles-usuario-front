@@ -1,5 +1,4 @@
 import { Router } from "express";
-import Stripe from "stripe";
 import { getStripe } from "../lib/stripeClient.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -13,33 +12,24 @@ const publicUrl = () =>
 
 router.post("/admin/connection-test", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { secretKey, webhookSecret, mode } = req.body || {};
-    const normalizedMode = mode === "live" ? "live" : "sandbox";
-    const expectedPrefix = normalizedMode === "live" ? "sk_live_" : "sk_test_";
-
-    if (typeof secretKey !== "string" || !secretKey.startsWith(expectedPrefix)) {
-      return res.status(400).json({
-        error: `A Stripe Secret Key deve começar com ${expectedPrefix}.`,
-      });
-    }
-    if (typeof webhookSecret !== "string" || !webhookSecret.startsWith("whsec_")) {
-      return res.status(400).json({
-        error: "O Webhook Secret deve começar com whsec_.",
-      });
-    }
-
+    const configuredKey = process.env.STRIPE_SECRET_KEY || "";
+    const mode = configuredKey.startsWith("sk_live_") ? "live" : "sandbox";
+    const webhookSecretConfigured =
+      typeof process.env.STRIPE_WEBHOOK_SECRET === "string" &&
+      process.env.STRIPE_WEBHOOK_SECRET.startsWith("whsec_");
     const startedAt = Date.now();
-    const stripe = new Stripe(secretKey);
+    const stripe = getStripe();
     const account = await stripe.accounts.retrieve();
     const latencyMs = Date.now() - startedAt;
 
     return res.json({
       ok: true,
-      mode: normalizedMode,
+      mode,
       latencyMs,
       accountId: account.id,
       country: account.country ?? null,
       chargesEnabled: account.charges_enabled ?? false,
+      webhookSecretConfigured,
     });
   } catch (e) {
     return res.status(500).json({ error: e.message || "Falha ao validar conexão Stripe." });
