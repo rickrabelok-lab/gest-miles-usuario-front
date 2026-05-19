@@ -31,5 +31,26 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return undefined;
+            if (/node_modules\/(\.pnpm\/)?(react|react-dom|react-router|react-router-dom)(@|\/)/.test(id)) {
+              return "react-vendor";
+            }
+            if (id.includes("@tanstack/react-query")) return "query-vendor";
+            if (id.includes("lucide-react")) return "icons-vendor";
+            if (id.includes("react-hook-form") || id.includes("@hookform/resolvers")) return "forms-vendor";
+            if (id.includes("jspdf")) return "pdf-jspdf";
+            if (id.includes("html2canvas") || id.includes("dompurify")) return "pdf-render";
+            if (id.includes("@supabase")) return "supabase-vendor";
+            if (id.includes("@radix-ui")) return "ui-vendor";
+            if (id.includes("recharts")) return "charts-vendor";
+            return undefined;
+          },
+        },
+      },
+    },
   };
 });
