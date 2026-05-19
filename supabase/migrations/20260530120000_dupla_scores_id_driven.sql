@@ -91,10 +91,6 @@ begin
       from gestor_map gm
       join public.cliente_gestores cg on cg.gestor_id = gm.gestor_id
       union
-      select gm.dupla_key, gc.cliente_id
-      from gestor_map gm
-      join public.gestor_clientes gc on gc.gestor_id = gm.gestor_id
-      union
       select gm.dupla_key, ec.cliente_id
       from gestor_map gm
       join public.equipe_clientes ec
