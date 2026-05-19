@@ -37,3 +37,6 @@ dist-ssr
 .worktrees/
 
 .vercel
+
+# Supabase local CLI state
+supabase/.temp/
