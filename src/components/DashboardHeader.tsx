@@ -8,7 +8,6 @@ import {
   Check,
   FileEdit,
   Bell,
-  Users,
   Info,
   UserPlus,
   HelpCircle,
@@ -18,8 +17,8 @@ import {
   CreditCard,
 } from "lucide-react";
 import GestMilesLogo from "@/components/GestMilesLogo";
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   DropdownMenu,
@@ -31,8 +30,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/s
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveOptionalHeaderWordmarkImageUrl } from "@/lib/gestMilesBranding";
 import { useBrandingConfig } from "@/hooks/useBrandingConfig";
-import { useCsGestores } from "@/hooks/useCsGestores";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import NotificationsDropdown from "@/components/notifications/NotificationsDropdown";
 
@@ -57,26 +54,8 @@ const getDisplayName = (user: { email?: string; user_metadata?: Record<string, u
 const DashboardHeader = () => {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [idCopied, setIdCopied] = useState(false);
-  const [managedClientIds, setManagedClientIds] = useState<string[]>([]);
-  const [managedClientNames, setManagedClientNames] = useState<Record<string, string>>({});
-  const [demandSummary, setDemandSummary] = useState({
-    openCount: 0,
-    pendingCount: 0,
-    inProgressCount: 0,
-    lastClientName: null as string | null,
-  });
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { user, role, signOut } = useAuth();
-  const isGestorView = role === "gestor" || role === "admin";
-  const activeClientId = searchParams.get("clientId");
-  const canOpenClientProfile =
-    Boolean(activeClientId) &&
-    (role === "gestor" || role === "admin" || role === "cs" || role === "admin_equipe");
-
-  const { data: csDashboard } = useCsGestores(role === "cs" || role === "admin_equipe");
-  const csTeam = useMemo(() => csDashboard?.flat ?? [], [csDashboard?.flat]);
-  const showDemandOpenBanner = isGestorView || role === "cs" || role === "admin_equipe";
+  const { user, signOut } = useAuth();
 
   const { data: brandingData } = useBrandingConfig();
   const optionalHeaderWordmarkImageUrl = useMemo(
@@ -84,161 +63,7 @@ const DashboardHeader = () => {
     [brandingData.brandAssets],
   );
 
-  useEffect(() => {
-    if (role === "cs" || role === "admin_equipe") {
-      const ids = new Set<string>();
-      csTeam.forEach((g) => {
-        g.clientes.forEach((c) => {
-          if (c.clienteId) ids.add(c.clienteId);
-        });
-      });
-      const idList = Array.from(ids);
-      setManagedClientIds(idList);
-      if (idList.length === 0) {
-        setManagedClientNames({});
-        return;
-      }
-      let cancelled = false;
-      void (async () => {
-        const { data: perfisData } = await supabase
-          .from("perfis")
-          .select("usuario_id, nome_completo")
-          .in("usuario_id", idList);
-        if (cancelled) return;
-        const names: Record<string, string> = {};
-        (perfisData ?? []).forEach((row) => {
-          names[row.usuario_id as string] = (row.nome_completo as string) || "Cliente";
-        });
-        setManagedClientNames(names);
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (!isGestorView || !user?.id) {
-      setManagedClientIds([]);
-      setManagedClientNames({});
-      setDemandSummary({
-        openCount: 0,
-        pendingCount: 0,
-        inProgressCount: 0,
-        lastClientName: null,
-      });
-      return;
-    }
-
-    let cancelled = false;
-    const loadManagedClients = async () => {
-      const { data, error } = await supabase
-        .from("cliente_gestores")
-        .select("cliente_id")
-        .eq("gestor_id", user.id);
-      if (error || cancelled) return;
-      const ids = (data ?? []).map((row) => row.cliente_id as string).filter(Boolean);
-      setManagedClientIds(ids);
-      if (ids.length === 0) {
-        setManagedClientNames({});
-        return;
-      }
-      const { data: perfisData } = await supabase
-        .from("perfis")
-        .select("usuario_id, nome_completo")
-        .in("usuario_id", ids);
-      if (cancelled) return;
-      const names: Record<string, string> = {};
-      (perfisData ?? []).forEach((row) => {
-        names[row.usuario_id as string] = (row.nome_completo as string) || "Cliente";
-      });
-      setManagedClientNames(names);
-    };
-
-    void loadManagedClients();
-    return () => {
-      cancelled = true;
-    };
-  }, [isGestorView, user?.id, role, csTeam]);
-
-  useEffect(() => {
-    if (!showDemandOpenBanner || managedClientIds.length === 0) {
-      setDemandSummary({
-        openCount: 0,
-        pendingCount: 0,
-        inProgressCount: 0,
-        lastClientName: null,
-      });
-      return;
-    }
-
-    const managedIds = new Set(managedClientIds);
-    let active = true;
-
-    const loadDemandSummary = async () => {
-      const { data, error } = await supabase
-        .from("demandas_cliente")
-        .select("cliente_id,status,created_at")
-        .in("cliente_id", managedClientIds)
-        .in("status", ["pendente", "em_andamento"])
-        .order("created_at", { ascending: false });
-
-      if (!active || error) return;
-
-      const rows = (data ?? []) as Array<{
-        cliente_id?: string;
-        status?: string;
-      }>;
-      const pendingCount = rows.filter((row) => row.status === "pendente").length;
-      const inProgressCount = rows.filter((row) => row.status === "em_andamento").length;
-      const lastClientId = rows[0]?.cliente_id ? String(rows[0].cliente_id) : null;
-      const lastClientName = lastClientId
-        ? managedClientNames[lastClientId] ?? "Cliente"
-        : null;
-
-      setDemandSummary({
-        openCount: rows.length,
-        pendingCount,
-        inProgressCount,
-        lastClientName,
-      });
-    };
-
-    void loadDemandSummary();
-
-    const channel = supabase
-      .channel(
-        `header-demandas-open-${
-          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-            ? crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
-        }`,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "demandas_cliente" },
-        (payload) => {
-          const row = (payload.new ?? payload.old) as { cliente_id?: string } | null;
-          const clienteId = String(row?.cliente_id ?? "");
-          if (!clienteId || !managedIds.has(clienteId)) return;
-          setBannerVisible(true);
-          void loadDemandSummary();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      active = false;
-      void supabase.removeChannel(channel);
-    };
-  }, [showDemandOpenBanner, managedClientIds, managedClientNames]);
-
-  const isViewingClient = Boolean(activeClientId) && canOpenClientProfile;
-  const displayedAccountId = isViewingClient ? (activeClientId as string) : (user?.id ?? "");
-  const displayedAccountLabel = isViewingClient
-    ? "ID do cliente em visualização"
-    : "ID da sua conta";
-  const displayedClientName = isViewingClient
-    ? managedClientNames[activeClientId as string] ?? null
-    : null;
+  const displayedAccountId = user?.id ?? "";
 
   const copyAccountId = () => {
     if (!displayedAccountId) return;
@@ -246,11 +71,7 @@ const DashboardHeader = () => {
       .writeText(displayedAccountId)
       .then(() => {
         setIdCopied(true);
-        toast.success(
-          isViewingClient
-            ? "ID do cliente copiado."
-            : "ID da conta copiado. Envie ao gestor para solicitar acesso.",
-        );
+        toast.success("ID da conta copiado. Envie ao gestor para solicitar acesso.");
         setTimeout(() => setIdCopied(false), 2000);
       })
       .catch(() => toast.error("Não foi possível copiar."));
@@ -262,14 +83,6 @@ const DashboardHeader = () => {
       navigate("/");
     } catch {
       navigate("/");
-    }
-  };
-
-  const goDemandasPendentes = () => {
-    if (role === "cs" || role === "admin_equipe") {
-      navigate("/cs?tab=demandas&status=pendente");
-    } else {
-      navigate("/gestor?tab=demandas&status=pendente");
     }
   };
 
@@ -395,13 +208,8 @@ const DashboardHeader = () => {
                     </p>
                     <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 dark:border-gray-200 dark:bg-gray-100/80">
                       <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600">
-                        {displayedAccountLabel}
+                        ID da sua conta
                       </p>
-                      {displayedClientName && (
-                        <p className="mt-0.5 text-[12px] font-semibold text-gray-800 dark:text-gray-900">
-                          {displayedClientName}
-                        </p>
-                      )}
                       <SheetClose asChild>
                         <button
                           type="button"
@@ -419,11 +227,6 @@ const DashboardHeader = () => {
                         </button>
                       </SheetClose>
                     </div>
-                    {isViewingClient && user?.id && (
-                      <p className="mt-1.5 text-[10px] text-gray-500">
-                        Sua conta: <span className="font-mono">{user.id.slice(0, 8)}…</span>
-                      </p>
-                    )}
                   </section>
 
                   <section className="mb-5">
@@ -431,20 +234,6 @@ const DashboardHeader = () => {
                       Ações rápidas
                     </p>
                     <div className="space-y-0.5">
-                      {canOpenClientProfile && (
-                        <SheetClose asChild>
-                          <button
-                            type="button"
-                            className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                            onClick={() =>
-                              navigate(`/perfil?clientId=${encodeURIComponent(activeClientId ?? "")}`)
-                            }
-                          >
-                            <User className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                            <span>Perfil do cliente</span>
-                          </button>
-                        </SheetClose>
-                      )}
                       <SheetClose asChild>
                         <button
                           type="button"
@@ -465,42 +254,6 @@ const DashboardHeader = () => {
                           <span>Adicionar Alerta</span>
                         </button>
                       </SheetClose>
-                      {(role === "gestor" || role === "admin") && (
-                        <SheetClose asChild>
-                          <button
-                            type="button"
-                            className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                            onClick={() => navigate("/clientes")}
-                          >
-                            <Users className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                            <span>Clientes</span>
-                          </button>
-                        </SheetClose>
-                      )}
-                      {(role === "cs" || role === "admin") && (
-                        <SheetClose asChild>
-                          <button
-                            type="button"
-                            className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                            onClick={() => navigate("/cs")}
-                          >
-                            <Users className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                            <span>Painel CS</span>
-                          </button>
-                        </SheetClose>
-                      )}
-                      {(role === "admin_equipe" || role === "cs") && (
-                        <SheetClose asChild>
-                          <button
-                            type="button"
-                            className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                            onClick={() => navigate("/cs/adicionar-clientes")}
-                          >
-                            <UserPlus className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                            <span>Adicionar clientes</span>
-                          </button>
-                        </SheetClose>
-                      )}
                       <SheetClose asChild>
                         <button
                           type="button"
@@ -609,23 +362,9 @@ const DashboardHeader = () => {
       {bannerVisible && (
         <div className="mx-4 mb-2.5 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
           <Zap size={14} className="shrink-0 text-amber-600" aria-hidden />
-          {showDemandOpenBanner ? (
-            <button
-              type="button"
-              onClick={goDemandasPendentes}
-              className="flex-1 text-left text-[11px] text-amber-800 hover:opacity-90"
-            >
-              <b>Demandas abertas:</b> {demandSummary.openCount}{" "}
-              {demandSummary.openCount === 1 ? "demanda" : "demandas"}{" "}
-              {demandSummary.openCount > 0
-                ? `(pendentes: ${demandSummary.pendingCount} · andamento: ${demandSummary.inProgressCount})`
-                : "no momento."}
-            </button>
-          ) : (
-            <p className="flex-1 text-[11px] leading-snug text-amber-800">
-              Bônus de até <span className="font-bold text-amber-700">133%</span> na transferência. Confira
-            </p>
-          )}
+          <p className="flex-1 text-[11px] leading-snug text-amber-800">
+            Bônus de até <span className="font-bold text-amber-700">133%</span> na transferência. Confira
+          </p>
           <button
             onClick={() => setBannerVisible(false)}
             className="shrink-0 text-amber-500 opacity-60 hover:opacity-100"
