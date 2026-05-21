@@ -51,6 +51,7 @@ const CLASSES = [
 ] as const;
 
 type SortOption = "value" | "miles" | "newest";
+const RADAR_OPORTUNIDADES_TIMEOUT_MS = 8000;
 
 const RadarOportunidadesPage = () => {
   const navigate = useNavigate();
@@ -64,13 +65,19 @@ const RadarOportunidadesPage = () => {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, RADAR_OPORTUNIDADES_TIMEOUT_MS);
+
     const load = async () => {
       setLoading(true);
       try {
         const { data, error } = await supabase
           .from("oportunidades_voo")
           .select("id, origem, destino, programa, classe, milhas, data_voo, valor_estimado, regiao_destino, data_detectada")
-          .order("data_detectada", { ascending: false });
+          .order("data_detectada", { ascending: false })
+          .abortSignal(controller.signal);
         if (cancelled) return;
         if (error) {
           console.warn("[Radar] oportunidades_voo:", error.message);
@@ -92,12 +99,15 @@ const RadarOportunidadesPage = () => {
           })),
         );
       } finally {
+        clearTimeout(timeoutId);
         if (!cancelled) setLoading(false);
       }
     };
     void load();
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
+      controller.abort();
     };
   }, []);
 
