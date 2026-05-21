@@ -33,6 +33,28 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const ROLE_FETCH_TIMEOUT_MS = 8000;
+const ROLE_FETCH_TIMEOUT_ERROR = "role_fetch_timeout";
+
+async function queryWithTimeout<T>(queryFactory: (signal: AbortSignal) => PromiseLike<T>) {
+  let timedOut = false;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, ROLE_FETCH_TIMEOUT_MS);
+
+  try {
+    const result = await queryFactory(controller.signal);
+    if (timedOut) throw new Error(ROLE_FETCH_TIMEOUT_ERROR);
+    return result;
+  } catch (error) {
+    if (timedOut) throw new Error(ROLE_FETCH_TIMEOUT_ERROR);
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [user, setUser] = useState<User | null>(null);
@@ -58,32 +80,44 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     lastFetchedUserIdRef.current = userId;
     let data: { role?: string; equipe_id?: string | null } | null = null;
 
-    const full = await supabase
-      .from("perfis")
-      .select("role, equipe_id")
-      .eq("usuario_id", userId)
-      .maybeSingle();
+    try {
+      const full = await queryWithTimeout((signal) =>
+        supabase
+          .from("perfis")
+          .select("role, equipe_id")
+          .eq("usuario_id", userId)
+          .maybeSingle()
+          .abortSignal(signal),
+      );
 
-    if (full.error) {
-      const legacy = await supabase
-        .from("perfis")
-        .select("role")
-        .eq("usuario_id", userId)
-        .maybeSingle();
-      if (legacy.error) {
-        setRole(null);
-        setEquipeId(null);
-        setRoleLoading(false);
-        return;
+      if (full.error) {
+        const legacy = await queryWithTimeout((signal) =>
+          supabase
+            .from("perfis")
+            .select("role")
+            .eq("usuario_id", userId)
+            .maybeSingle()
+            .abortSignal(signal),
+        );
+        if (legacy.error) {
+          setRole(null);
+          setEquipeId(null);
+          return;
+        }
+        data = legacy.data;
+      } else {
+        data = full.data;
       }
-      data = legacy.data;
-    } else {
-      data = full.data;
+    } catch {
+      setRole(null);
+      setEquipeId(null);
+      return;
+    } finally {
+      setRoleLoading(false);
     }
 
     setRole(mapPerfilRoleForOperationalUi(data?.role));
     setEquipeId((data?.equipe_id as string | null | undefined) ?? null);
-    setRoleLoading(false);
   }, []);
 
   useEffect(() => {
