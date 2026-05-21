@@ -2,7 +2,7 @@
  * Normaliza o nome da equipe para cabeçalhos (ex.: com `uppercase` no CSS).
  * "Equipe do João Carvalho" → "Equipe João Carvalho" → "EQUIPE JOÃO CARVALHO".
  */
-export function formatEquipeTituloExibicao(nome: string): string {
+function formatEquipeTituloExibicao(nome: string): string {
   return nome.trim().replace(/^equipe\s+do\s+/i, "Equipe ");
 }
 

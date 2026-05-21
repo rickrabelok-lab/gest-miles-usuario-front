@@ -138,11 +138,6 @@ export function useTriggerTaskFromInsight() {
   });
 }
 
-export function useClientInsightsStatusDefault() {
-  const [filters, setFilters] = useState<ClientInsightsFilters>({ status: "ativo" });
-  return { filters, setFilters };
-}
-
 export function useClientInsightsSyncForClient() {
   const qc = useQueryClient();
 
@@ -159,4 +154,3 @@ export function useClientInsightsSyncForClient() {
     },
   });
 }
-

@@ -46,14 +46,14 @@ export type GestorClienteResumo = {
   demandasAndamento: number;
 };
 
-export type DrePeriodo = {
+type DrePeriodo = {
   entradasTotal: number;
   economiaTotal: number;
   roiPercentual: number;
   lucroEstrategico: number;
 };
 
-export type GestorDreConsolidado = {
+type GestorDreConsolidado = {
   ultimos30dias: DrePeriodo;
   ultimos90dias: DrePeriodo;
   ultimos12meses: DrePeriodo;

@@ -28,7 +28,7 @@ function toQueryError(err: unknown, fallback: string): Error {
   return new Error(fallback);
 }
 
-export function extractUuidAfterLabel(text: string, label: string): string | null {
+function extractUuidAfterLabel(text: string, label: string): string | null {
   // Ex.: "clienteId=<uuid>"
   const re = new RegExp(`${label}=([0-9a-fA-F-]{36})`);
   const m = text.match(re);
@@ -88,16 +88,16 @@ export function useNotificacoesMarkRead(enabled: boolean, usuarioId: string | nu
 
       // Abrir item relacionado (o que o usuário pediu)
       if (input.tipo === "tarefa") {
-        nav("/cs/tarefas");
+        nav("/");
         return;
       }
 
       if (input.tipo === "alerta") {
         const clienteId = extractUuidAfterLabel(input.mensagem, "clienteId");
         if (clienteId) {
-          nav(`/?clientId=${encodeURIComponent(clienteId)}`);
+          nav("/");
         } else {
-          nav("/cs/alertas");
+          nav("/vencimentos");
         }
         return;
       }
@@ -122,4 +122,3 @@ export function useNotificacoesMarkAllRead(enabled: boolean, usuarioId: string |
     },
   });
 }
-
