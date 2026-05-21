@@ -16,6 +16,7 @@ const EMPTY_DATA: BrandingConfigData = {
   brandAssets: {},
   programCardLogos: {},
 };
+const BRANDING_CONFIG_TIMEOUT_MS = 8000;
 
 function normalizeStringMap(raw: unknown): Record<string, string> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
@@ -42,13 +43,16 @@ export function useBrandingConfig(): {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), BRANDING_CONFIG_TIMEOUT_MS);
     try {
       let row: Record<string, unknown> | null = null;
       const withPc = await supabase
         .from("pesquisa_passagens_config")
         .select("destination_images, airline_logos, brand_assets, program_card_logos")
         .eq("id", 1)
-        .maybeSingle();
+        .maybeSingle()
+        .abortSignal(controller.signal);
       if (withPc.error) {
         const msg = withPc.error.message ?? "";
         const noCol =
@@ -58,7 +62,8 @@ export function useBrandingConfig(): {
             .from("pesquisa_passagens_config")
             .select("destination_images, airline_logos, brand_assets")
             .eq("id", 1)
-            .maybeSingle();
+            .maybeSingle()
+            .abortSignal(controller.signal);
           if (fallback.error) throw fallback.error;
           row = (fallback.data as Record<string, unknown> | null) ?? null;
         } else {
@@ -76,6 +81,7 @@ export function useBrandingConfig(): {
       setError(e instanceof Error ? e.message : String(e));
       setData(EMPTY_DATA);
     } finally {
+      window.clearTimeout(timeoutId);
       setLoading(false);
     }
   }, []);
