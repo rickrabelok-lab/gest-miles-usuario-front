@@ -15,6 +15,27 @@ type BestPricesByDestination = Record<
   }
 >;
 
+const DESTINATION_BEST_PRICES_TIMEOUT_MS = 8000;
+const DESTINATION_BEST_PRICES_TIMEOUT_ERROR = "destination_best_prices_timeout";
+
+async function withDestinationBestPricesTimeout<T>(operation: Promise<T>) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error(DESTINATION_BEST_PRICES_TIMEOUT_ERROR)),
+          DESTINATION_BEST_PRICES_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 export const useDestinationBestPrices = ({
   destinations,
   origins,
@@ -57,9 +78,11 @@ export const useDestinationBestPrices = ({
 
     const load = async () => {
       try {
-        const result = await getBestPriceByDestinationForAllModes(
-          normalizedDestinations,
-          normalizedOrigins,
+        const result = await withDestinationBestPricesTimeout(
+          getBestPriceByDestinationForAllModes(
+            normalizedDestinations,
+            normalizedOrigins,
+          ),
         );
         if (cancelled) return;
 
