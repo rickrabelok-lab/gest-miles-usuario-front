@@ -95,5 +95,13 @@
     "typescript-eslint": "^8.38.0",
     "vite": "6.4.2",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "ws": "8.20.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "ws": "8.20.1"
+    }
   }
 }
