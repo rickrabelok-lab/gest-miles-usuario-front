@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, ClipboardList, ExternalLink, Lightbulb, ShieldAlert, Zap } from "lucide-react";
+import { CheckCircle2, ClipboardList, ExternalLink, Lightbulb, RotateCcw, ShieldAlert, Zap } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -99,7 +99,7 @@ export default function ClientInsightsSection({
   const [status, setStatus] = useState<"all" | InsightStatus>("ativo");
   const syncedRef = useRef<string | null>(null);
 
-  const { data: insights = [], isLoading, error } = useClientInsights(clienteId, enabled, { status });
+  const { data: insights = [], isLoading, error, refetch, isFetching } = useClientInsights(clienteId, enabled, { status });
   const resolveMutation = useResolveClientInsight();
   const triggerTaskMutation = useTriggerTaskFromInsight();
   const syncMutation = useClientInsightsSyncForClient();
@@ -158,9 +158,22 @@ export default function ClientInsightsSection({
         {isLoading && <p className="py-6 text-center text-sm text-muted-foreground">Carregando insights…</p>}
 
         {error && (
-          <p className="py-4 text-center text-sm text-destructive">
-            {error instanceof Error ? error.message : "Erro ao carregar insights."}
-          </p>
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <p className="text-sm text-destructive">
+              {error instanceof Error ? error.message : "Erro ao carregar insights."}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1 text-xs"
+              disabled={isFetching}
+              onClick={() => void refetch()}
+            >
+              <RotateCcw className="h-3 w-3" />
+              {isFetching ? "Tentando..." : "Tentar novamente"}
+            </Button>
+          </div>
         )}
 
         {!isLoading && !error && insights.length === 0 && (
