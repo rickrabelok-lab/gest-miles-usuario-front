@@ -15,6 +15,31 @@ export type PriceCalendarProvider = {
   getMonthPrices: (query: PriceCalendarQuery) => Promise<Map<number, number>>;
 };
 
+const PRICE_CALENDAR_TIMEOUT_MS = 8000;
+
+async function withTimeout<T>(
+  promise: PromiseLike<T>,
+  timeoutMs = PRICE_CALENDAR_TIMEOUT_MS,
+  onTimeout?: () => void,
+): Promise<T | null> {
+  let timedOut = false;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timeoutId = setTimeout(() => {
+      timedOut = true;
+      onTimeout?.();
+      resolve(null);
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeout]);
+    return timedOut ? null : result;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 function recordToMap(rec: Record<number, number>): Map<number, number> {
   const m = new Map<number, number>();
   for (const [k, v] of Object.entries(rec)) {
@@ -31,26 +56,36 @@ class DefaultPriceCalendarProvider implements PriceCalendarProvider {
     const monthStr = monthKey(query.month);
 
     if (hasApiUrl()) {
-      const rec = await fetchCalendarPrices({
-        originCode: query.originCode,
-        destinationCode: query.destinationCode,
-        mode,
-        month: monthStr,
-      });
+      const rec = await withTimeout(
+        fetchCalendarPrices({
+          originCode: query.originCode,
+          destinationCode: query.destinationCode,
+          mode,
+          month: monthStr,
+        }),
+      );
       if (rec && Object.keys(rec).length > 0) {
         return recordToMap(rec);
       }
     }
 
     if (isSupabaseConfigured) {
-      const { data } = await supabase
-        .from("calendar_prices")
-        .select("prices")
-        .eq("origin_code", query.originCode)
-        .eq("destination_code", query.destinationCode)
-        .eq("mode", mode)
-        .eq("year_month", monthStr)
-        .maybeSingle();
+      const controller = new AbortController();
+      const result = await withTimeout(
+        supabase
+          .from("calendar_prices")
+          .select("prices")
+          .eq("origin_code", query.originCode)
+          .eq("destination_code", query.destinationCode)
+          .eq("mode", mode)
+          .eq("year_month", monthStr)
+          .maybeSingle()
+          .abortSignal(controller.signal),
+        PRICE_CALENDAR_TIMEOUT_MS,
+        () => controller.abort(),
+      );
+
+      const data = result?.data;
 
       const prices = data?.prices as Record<string, number> | undefined;
       if (prices && typeof prices === "object" && !Array.isArray(prices)) {
