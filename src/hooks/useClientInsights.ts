@@ -81,6 +81,9 @@ export function useClientInsights(clienteId: string | null, enabled: boolean, fi
   return useQuery({
     queryKey,
     enabled: enabled && !!clienteId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: async (): Promise<ClientInsightEnriched[]> => {
       if (!clienteId) return [];
 
