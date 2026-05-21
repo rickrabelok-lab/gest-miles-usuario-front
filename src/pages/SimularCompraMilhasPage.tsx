@@ -38,6 +38,7 @@ type PrecoCompra = {
 
 const SIMULAR_COMPRA_META_TIMEOUT_MS = 8000;
 const SIMULAR_COMPRA_META_TIMEOUT_ERROR = "simular_compra_meta_timeout";
+const PRECO_COMPRA_MILHAS_RECENT_LIMIT = 100;
 
 const SimularCompraMilhasPage = () => {
   const navigate = useNavigate();
@@ -94,6 +95,7 @@ const SimularCompraMilhasPage = () => {
               .from("preco_compra_milhas")
               .select("programa, preco_milheiro, bonus_percentual, data_promocao")
               .order("data_promocao", { ascending: false })
+              .limit(PRECO_COMPRA_MILHAS_RECENT_LIMIT)
               .abortSignal(controller.signal),
           ]);
         if (!isMounted) return;

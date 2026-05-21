@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 const CLIENT_INSIGHTS_TIMEOUT_MS = 8000;
 const CLIENT_INSIGHTS_TIMEOUT_ERROR = "client_insights_timeout";
+const CLIENT_INSIGHTS_RECENT_LIMIT = 100;
 
 export type InsightNivel = "baixo" | "medio" | "alto" | "critico";
 export type InsightStatus = "ativo" | "resolvido";
@@ -46,21 +47,24 @@ function toQueryError(err: unknown, fallback: string): Error {
   return new Error(fallback);
 }
 
-async function withClientInsightsTimeout<T>(promise: PromiseLike<T>, fallback: string): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error(CLIENT_INSIGHTS_TIMEOUT_ERROR)), CLIENT_INSIGHTS_TIMEOUT_MS);
-  });
+async function withClientInsightsTimeout<T>(
+  run: (signal: AbortSignal) => PromiseLike<T>,
+  fallback: string,
+): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, CLIENT_INSIGHTS_TIMEOUT_MS);
 
   try {
-    return await Promise.race([promise, timeout]);
+    return await run(controller.signal);
   } catch (err) {
-    if (err instanceof Error && err.message === CLIENT_INSIGHTS_TIMEOUT_ERROR) {
+    if (controller.signal.aborted) {
       throw new Error(fallback);
     }
     throw err;
   } finally {
-    if (timeoutId) clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
   }
 }
 
@@ -86,14 +90,15 @@ export function useClientInsights(clienteId: string | null, enabled: boolean, fi
           "id, cliente_id, gestor_id, equipe_id, tipo_insight, titulo, descricao, nivel, status, data_criacao",
         )
         .eq("cliente_id", clienteId)
-        .order("data_criacao", { ascending: false });
+        .order("data_criacao", { ascending: false })
+        .limit(CLIENT_INSIGHTS_RECENT_LIMIT);
 
       if (filters.status !== "all") {
         q = q.eq("status", filters.status);
       }
 
       const { data: rows, error } = await withClientInsightsTimeout(
-        q,
+        (signal) => q.abortSignal(signal),
         "O carregamento de insights demorou demais. Tente novamente.",
       );
       if (error) throw toQueryError(error, "Não foi possível carregar insights do cliente.");
@@ -106,7 +111,12 @@ export function useClientInsights(clienteId: string | null, enabled: boolean, fi
       }
 
       const { data: perfis, error: pErr } = await withClientInsightsTimeout(
-        supabase.from("perfis").select("usuario_id, nome_completo").in("usuario_id", gestorIds),
+        (signal) =>
+          supabase
+            .from("perfis")
+            .select("usuario_id, nome_completo")
+            .in("usuario_id", gestorIds)
+            .abortSignal(signal),
         "O carregamento dos gestores demorou demais. Tente novamente.",
       );
       if (pErr) throw toQueryError(pErr, "Não foi possível carregar nomes de gestores.");
@@ -168,9 +178,12 @@ export function useClientInsightsSyncForClient() {
   return useMutation({
     mutationFn: async (input: { clienteId: string }) => {
       const { error } = await withClientInsightsTimeout(
-        supabase.rpc("insights_cliente_sync_for_cliente", {
-          p_cliente_id: input.clienteId,
-        }),
+        (signal) =>
+          supabase
+            .rpc("insights_cliente_sync_for_cliente", {
+              p_cliente_id: input.clienteId,
+            })
+            .abortSignal(signal),
         "A sincronização de insights demorou demais. Tente novamente.",
       );
       if (error) throw toQueryError(error, "Não foi possível sincronizar insights do cliente.");
