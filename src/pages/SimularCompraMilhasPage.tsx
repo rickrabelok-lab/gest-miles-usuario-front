@@ -36,6 +36,9 @@ type PrecoCompra = {
   bonus_percentual: number;
 };
 
+const SIMULAR_COMPRA_META_TIMEOUT_MS = 8000;
+const SIMULAR_COMPRA_META_TIMEOUT_ERROR = "simular_compra_meta_timeout";
+
 const SimularCompraMilhasPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -71,6 +74,12 @@ const SimularCompraMilhasPage = () => {
   >(null);
 
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, SIMULAR_COMPRA_META_TIMEOUT_MS);
+
     const loadMeta = async () => {
       try {
         const [{ data: rotasData, error: rotasErr }, { data: precosData, error: precosErr }] =
@@ -79,12 +88,15 @@ const SimularCompraMilhasPage = () => {
               .from("rotas_premium")
               .select(
                 "id, origem, destino, programa, classe, milhas_necessarias, taxas_embarque, valor_tarifa_pagante",
-              ),
+              )
+              .abortSignal(controller.signal),
             supabase
               .from("preco_compra_milhas")
               .select("programa, preco_milheiro, bonus_percentual, data_promocao")
-              .order("data_promocao", { ascending: false }),
+              .order("data_promocao", { ascending: false })
+              .abortSignal(controller.signal),
           ]);
+        if (!isMounted) return;
         if (rotasErr) {
           console.warn("[SimularCompra] rotas_premium:", rotasErr.message);
         }
@@ -116,11 +128,30 @@ const SimularCompraMilhasPage = () => {
           });
         });
         setPrecos(Array.from(byProgram.values()));
+      } catch (error) {
+        if (!isMounted) return;
+        console.warn(
+          "[SimularCompra] meta:",
+          controller.signal.aborted
+            ? SIMULAR_COMPRA_META_TIMEOUT_ERROR
+            : error instanceof Error
+              ? error.message
+              : error,
+        );
       } finally {
-        setLoadingMeta(false);
+        window.clearTimeout(timeoutId);
+        if (isMounted) {
+          setLoadingMeta(false);
+        }
       }
     };
     void loadMeta();
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, []);
 
   const programasComSaldo = useMemo(
@@ -540,4 +571,3 @@ const SimularCompraMilhasPage = () => {
 };
 
 export default SimularCompraMilhasPage;
-
