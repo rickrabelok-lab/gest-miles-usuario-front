@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
 
+const CLIENT_INSIGHTS_TIMEOUT_MS = 8000;
+const CLIENT_INSIGHTS_TIMEOUT_ERROR = "client_insights_timeout";
+
 export type InsightNivel = "baixo" | "medio" | "alto" | "critico";
 export type InsightStatus = "ativo" | "resolvido";
 export type InsightTipoInsight =
@@ -43,6 +46,24 @@ function toQueryError(err: unknown, fallback: string): Error {
   return new Error(fallback);
 }
 
+async function withClientInsightsTimeout<T>(promise: PromiseLike<T>, fallback: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(CLIENT_INSIGHTS_TIMEOUT_ERROR)), CLIENT_INSIGHTS_TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } catch (err) {
+    if (err instanceof Error && err.message === CLIENT_INSIGHTS_TIMEOUT_ERROR) {
+      throw new Error(fallback);
+    }
+    throw err;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 export type ClientInsightsFilters = {
   status: "all" | InsightStatus;
 };
@@ -71,7 +92,10 @@ export function useClientInsights(clienteId: string | null, enabled: boolean, fi
         q = q.eq("status", filters.status);
       }
 
-      const { data: rows, error } = await q;
+      const { data: rows, error } = await withClientInsightsTimeout(
+        q,
+        "O carregamento de insights demorou demais. Tente novamente.",
+      );
       if (error) throw toQueryError(error, "Não foi possível carregar insights do cliente.");
 
       const list = (rows ?? []) as ClientInsightRow[];
@@ -81,10 +105,10 @@ export function useClientInsights(clienteId: string | null, enabled: boolean, fi
         return list.map((r) => ({ ...r, gestorNome: "—" }));
       }
 
-      const { data: perfis, error: pErr } = await supabase
-        .from("perfis")
-        .select("usuario_id, nome_completo")
-        .in("usuario_id", gestorIds);
+      const { data: perfis, error: pErr } = await withClientInsightsTimeout(
+        supabase.from("perfis").select("usuario_id, nome_completo").in("usuario_id", gestorIds),
+        "O carregamento dos gestores demorou demais. Tente novamente.",
+      );
       if (pErr) throw toQueryError(pErr, "Não foi possível carregar nomes de gestores.");
 
       const nomeById: Record<string, string> = {};
@@ -143,9 +167,12 @@ export function useClientInsightsSyncForClient() {
 
   return useMutation({
     mutationFn: async (input: { clienteId: string }) => {
-      const { error } = await supabase.rpc("insights_cliente_sync_for_cliente", {
-        p_cliente_id: input.clienteId,
-      });
+      const { error } = await withClientInsightsTimeout(
+        supabase.rpc("insights_cliente_sync_for_cliente", {
+          p_cliente_id: input.clienteId,
+        }),
+        "A sincronização de insights demorou demais. Tente novamente.",
+      );
       if (error) throw toQueryError(error, "Não foi possível sincronizar insights do cliente.");
     },
     onSuccess: async (_data, variables) => {
