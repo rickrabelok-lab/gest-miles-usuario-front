@@ -17,6 +17,8 @@ const EMPTY_DATA: BrandingConfigData = {
   programCardLogos: {},
 };
 const BRANDING_CONFIG_TIMEOUT_MS = 8000;
+let brandingConfigCache: BrandingConfigData | null = null;
+let brandingConfigInFlight: Promise<BrandingConfigData> | null = null;
 
 function normalizeStringMap(raw: unknown): Record<string, string> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
@@ -30,21 +32,14 @@ function normalizeStringMap(raw: unknown): Record<string, string> {
   return out;
 }
 
-export function useBrandingConfig(): {
-  loading: boolean;
-  error: string | null;
-  data: BrandingConfigData;
-  refetch: () => Promise<void>;
-} {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<BrandingConfigData>(EMPTY_DATA);
+async function fetchBrandingConfig(force = false): Promise<BrandingConfigData> {
+  if (!force && brandingConfigCache) return brandingConfigCache;
+  if (!force && brandingConfigInFlight) return brandingConfigInFlight;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  brandingConfigInFlight = (async () => {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), BRANDING_CONFIG_TIMEOUT_MS);
+
     try {
       let row: Record<string, unknown> | null = null;
       const withPc = await supabase
@@ -72,16 +67,43 @@ export function useBrandingConfig(): {
       } else {
         row = (withPc.data as Record<string, unknown> | null) ?? null;
       }
-      const destinationImages = normalizeStringMap(row?.destination_images);
-      const airlineLogos = normalizeStringMap(row?.airline_logos);
-      const brandAssets = normalizeStringMap(row?.brand_assets);
-      const programCardLogos = normalizeStringMap(row?.program_card_logos);
-      setData({ destinationImages, airlineLogos, brandAssets, programCardLogos });
+
+      const data = {
+        destinationImages: normalizeStringMap(row?.destination_images),
+        airlineLogos: normalizeStringMap(row?.airline_logos),
+        brandAssets: normalizeStringMap(row?.brand_assets),
+        programCardLogos: normalizeStringMap(row?.program_card_logos),
+      };
+      brandingConfigCache = data;
+      return data;
+    } finally {
+      window.clearTimeout(timeoutId);
+      brandingConfigInFlight = null;
+    }
+  })();
+
+  return brandingConfigInFlight;
+}
+
+export function useBrandingConfig(): {
+  loading: boolean;
+  error: string | null;
+  data: BrandingConfigData;
+  refetch: () => Promise<void>;
+} {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<BrandingConfigData>(EMPTY_DATA);
+
+  const load = useCallback(async (force = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await fetchBrandingConfig(force));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setData(EMPTY_DATA);
     } finally {
-      window.clearTimeout(timeoutId);
       setLoading(false);
     }
   }, []);
@@ -90,5 +112,5 @@ export function useBrandingConfig(): {
     void load();
   }, [load]);
 
-  return { loading, error, data, refetch: load };
+  return { loading, error, data, refetch: () => load(true) };
 }
