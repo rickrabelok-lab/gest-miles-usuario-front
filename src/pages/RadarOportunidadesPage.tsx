@@ -51,12 +51,13 @@ const CLASSES = [
 ] as const;
 
 type SortOption = "value" | "miles" | "newest";
-const RADAR_OPORTUNIDADES_TIMEOUT_MS = 8000;
+const RADAR_OPORTUNIDADES_INITIAL_LIMIT = 80;
 
 const RadarOportunidadesPage = () => {
   const navigate = useNavigate();
   const [list, setList] = useState<OportunidadeVoo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [filterPrograma, setFilterPrograma] = useState<string>("");
   const [filterRegiao, setFilterRegiao] = useState<string>("");
@@ -65,23 +66,21 @@ const RadarOportunidadesPage = () => {
 
   useEffect(() => {
     let cancelled = false;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-    }, RADAR_OPORTUNIDADES_TIMEOUT_MS);
 
     const load = async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         const { data, error } = await supabase
           .from("oportunidades_voo")
           .select("id, origem, destino, programa, classe, milhas, data_voo, valor_estimado, regiao_destino, data_detectada")
           .order("data_detectada", { ascending: false })
-          .abortSignal(controller.signal);
+          .limit(RADAR_OPORTUNIDADES_INITIAL_LIMIT);
         if (cancelled) return;
         if (error) {
           console.warn("[Radar] oportunidades_voo:", error.message);
           setList([]);
+          setLoadError("Não foi possível carregar as oportunidades agora.");
           return;
         }
         setList(
@@ -98,16 +97,19 @@ const RadarOportunidadesPage = () => {
             data_detectada: String(row.data_detectada ?? ""),
           })),
         );
+      } catch (error) {
+        if (!cancelled) {
+          console.warn("[Radar] oportunidades_voo:", error);
+          setList([]);
+          setLoadError("Não foi possível carregar as oportunidades agora.");
+        }
       } finally {
-        clearTimeout(timeoutId);
         if (!cancelled) setLoading(false);
       }
     };
     void load();
     return () => {
       cancelled = true;
-      clearTimeout(timeoutId);
-      controller.abort();
     };
   }, []);
 
@@ -257,6 +259,8 @@ const RadarOportunidadesPage = () => {
         <div className="space-y-3">
           {loading ? (
             <p className="py-6 text-center text-sm text-muted-foreground">Carregando...</p>
+          ) : loadError ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">{loadError}</p>
           ) : filtered.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
               Nenhuma oportunidade encontrada. Ajuste os filtros ou aguarde novas ofertas.

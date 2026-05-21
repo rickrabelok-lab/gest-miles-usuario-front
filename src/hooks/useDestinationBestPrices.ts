@@ -15,26 +15,15 @@ type BestPricesByDestination = Record<
   }
 >;
 
-const DESTINATION_BEST_PRICES_TIMEOUT_MS = 8000;
-const DESTINATION_BEST_PRICES_TIMEOUT_ERROR = "destination_best_prices_timeout";
+const DESTINATION_BEST_PRICES_STALE_MS = 15 * 60 * 1000;
 
-async function withDestinationBestPricesTimeout<T>(operation: Promise<T>) {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    return await Promise.race([
-      operation,
-      new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(
-          () => reject(new Error(DESTINATION_BEST_PRICES_TIMEOUT_ERROR)),
-          DESTINATION_BEST_PRICES_TIMEOUT_MS,
-        );
-      }),
-    ]);
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
+const bestPricesCache = new Map<
+  string,
+  {
+    pricesByDestination: BestPricesByDestination;
+    expiresAt: number;
   }
-}
+>();
 
 export const useDestinationBestPrices = ({
   destinations,
@@ -65,6 +54,7 @@ export const useDestinationBestPrices = ({
     () => (originKey ? originKey.split("|") : []),
     [originKey],
   );
+  const cacheKey = `${destinationKey}::${originKey}`;
 
   useEffect(() => {
     if (normalizedDestinations.length === 0 || normalizedOrigins.length === 0) {
@@ -73,16 +63,21 @@ export const useDestinationBestPrices = ({
       return;
     }
 
+    const cached = bestPricesCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      setPricesByDestination(cached.pricesByDestination);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
 
     const load = async () => {
       try {
-        const result = await withDestinationBestPricesTimeout(
-          getBestPriceByDestinationForAllModes(
-            normalizedDestinations,
-            normalizedOrigins,
-          ),
+        const result = await getBestPriceByDestinationForAllModes(
+          normalizedDestinations,
+          normalizedOrigins,
         );
         if (cancelled) return;
 
@@ -101,6 +96,10 @@ export const useDestinationBestPrices = ({
           next[item.destination].money = item;
         });
 
+        bestPricesCache.set(cacheKey, {
+          pricesByDestination: next,
+          expiresAt: Date.now() + DESTINATION_BEST_PRICES_STALE_MS,
+        });
         setPricesByDestination(next);
       } catch {
         if (!cancelled) {
@@ -118,7 +117,7 @@ export const useDestinationBestPrices = ({
     return () => {
       cancelled = true;
     };
-  }, [normalizedDestinations, normalizedOrigins]);
+  }, [cacheKey, normalizedDestinations, normalizedOrigins]);
 
   return {
     loading,
