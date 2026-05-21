@@ -29,6 +29,10 @@ type MeResponse = {
   } | null;
 };
 
+const SUBSCRIPTION_LOADING_TIMEOUT_MS = 8000;
+const SUBSCRIPTION_PLANS_TIMEOUT_ERROR = "subscription_plans_timeout";
+const SUBSCRIPTION_ME_TIMEOUT_ERROR = "subscription_me_timeout";
+
 /**
  * Página de subscrição para clientes: listar planos públicos, abrir Stripe Checkout
  * e, com assinatura ativa, o portal de faturação.
@@ -53,8 +57,14 @@ const AssinaturaClientePage = () => {
     }
     setLoadingPlans(true);
     setError(null);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort(SUBSCRIPTION_PLANS_TIMEOUT_ERROR);
+    }, SUBSCRIPTION_LOADING_TIMEOUT_MS);
     try {
-      const res = await fetch(getApiUrl("/api/stripe/plans"));
+      const res = await fetch(getApiUrl("/api/stripe/plans"), {
+        signal: controller.signal,
+      });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error((j as { error?: string }).error ?? res.statusText);
@@ -62,8 +72,15 @@ const AssinaturaClientePage = () => {
       const data = (await res.json()) as { plans: PlanRow[] };
       setPlans(data.plans ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao carregar planos.");
+      setError(
+        controller.signal.aborted
+          ? "A API demorou para carregar os planos. Tente novamente."
+          : e instanceof Error
+            ? e.message
+            : "Erro ao carregar planos.",
+      );
     } finally {
+      window.clearTimeout(timeoutId);
       setLoadingPlans(false);
     }
   }, []);
@@ -74,12 +91,20 @@ const AssinaturaClientePage = () => {
       return;
     }
     setLoadingMe(true);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort(SUBSCRIPTION_ME_TIMEOUT_ERROR);
+    }, SUBSCRIPTION_LOADING_TIMEOUT_MS);
     try {
-      const data = await apiFetch<MeResponse>("/api/stripe/me", { token });
+      const data = await apiFetch<MeResponse>("/api/stripe/me", {
+        token,
+        signal: controller.signal,
+      });
       setMe(data);
     } catch {
       setMe(null);
     } finally {
+      window.clearTimeout(timeoutId);
       setLoadingMe(false);
     }
   }, [token]);
