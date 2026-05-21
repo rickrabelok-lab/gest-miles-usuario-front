@@ -66,6 +66,20 @@ function AppBootReadySignal() {
   return null;
 }
 
+function RouteLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+      <div className="flex flex-col items-center gap-3">
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-primary/25 border-t-primary"
+          aria-hidden="true"
+        />
+        <p className="text-sm font-medium text-muted-foreground">Carregando tela...</p>
+      </div>
+    </div>
+  );
+}
+
 /** Rotas exclusivas de cliente / cliente gestão (equipa interna usa Manager ou Admin). */
 function ClienteOnly({ children }: { children: JSX.Element }) {
   return (
@@ -89,7 +103,7 @@ const App = () => {
         <AppBootReadySignal />
         <SearchFlightsProvider>
           <BrowserRouter>
-            <Suspense fallback={null}>
+            <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<HomeGate />} />
                 <Route
