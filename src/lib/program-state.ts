@@ -71,7 +71,7 @@ export type ProgramaClienteRow = {
   created_at: string;
 };
 
-export const emptyProgramState: PersistedProgramState = {
+const emptyProgramState: PersistedProgramState = {
   saldo: 0,
   movimentos: [],
   custoSaldo: 0,

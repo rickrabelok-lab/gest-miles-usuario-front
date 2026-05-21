@@ -114,7 +114,7 @@ export default function ClientInsightsSection({
     void syncMutation
       .mutateAsync({ clienteId })
       .catch((e) => toast.error(e instanceof Error ? e.message : "Falha ao sincronizar insights."));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- syncMutation e estavel via hook; syncedRef impede repetir para o mesmo cliente
   }, [enabled, clienteId]);
 
   const onOpenClient = (id: string) => {
@@ -264,4 +264,3 @@ export default function ClientInsightsSection({
     </Card>
   );
 }
-

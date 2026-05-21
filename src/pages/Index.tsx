@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -7,7 +6,6 @@ import {
   ChevronRight,
   Download,
   Plus,
-  Search,
   X,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -27,7 +25,6 @@ import { EmissaoResumoCard } from "@/components/emissao/EmissaoResumoCard";
 import { cn } from "@/lib/utils";
 import { ProgramSelectionSheet } from "@/components/ProgramSelectionSheet";
 import { SolicitarCotacaoWizard, type WizardSubmitParams } from "@/components/SolicitarCotacaoWizard";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,11 +38,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProgramasCliente } from "@/hooks/useProgramasCliente";
 import { useBrandingConfig } from "@/hooks/useBrandingConfig";
-import { useGestor } from "@/hooks/useGestor";
-import { useVincularCliente } from "@/hooks/useVincularCliente";
-import { useReunioesNotificacoes } from "@/hooks/useReunioesNotificacoes";
 import { supabase } from "@/lib/supabase";
-import { homePathForRole } from "@/lib/homeRoute";
 import { CARD_DESTINATION_TO_AIRPORT_CODE } from "@/lib/airports";
 import airlineLatamLogo from "@/assets/airline-latam.png";
 import airlineAzulLogo from "@/assets/airline-azul.png";
@@ -56,69 +49,8 @@ const STORAGE_PREFIX = "mile-manager:program-state:";
 const LOGO_STORAGE_PREFIX = "mile-manager:program-logo:";
 const PROGRAM_CARDS_STORAGE_KEY = "mile-manager:program-cards";
 const MIGRATION_FLAG_PREFIX = "mile-manager:migration:v1:";
-const MANAGER_ACCESSED_CLIENTS_PREFIX = "mile-manager:manager-accessed-clients:";
 const ORIGINS_STORAGE_PREFIX = "mile-manager:enabled-origins:";
 const DEFAULT_ENABLED_ORIGINS = ["BHZ", "SAO", "RIO", "BSB"];
-
-/** SQL para permitir que o gestor salve o plano de ação do cliente (rodar no Supabase SQL Editor). */
-const PERFIS_GESTOR_UPDATE_SQL = `-- Permite que o gestor atualize (e crie) o perfil dos clientes que ele gerencia.
--- No Supabase: SQL Editor > New query > Cole este bloco > Run.
-
-create or replace function public.can_manage_client(target_cliente_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select coalesce(
-    auth.uid() = target_cliente_id
-    or public.is_legacy_platform_admin()
-    or exists (
-      select 1
-      from public.cliente_gestores cg
-      where cg.gestor_id = auth.uid()
-        and cg.cliente_id = target_cliente_id
-    )
-    -- CS que consegue visualizar o cliente também pode atualizar o perfil
-    -- (necessário para salvar/remover Plano de Ação).
-    or public.can_cs_view_client(target_cliente_id)
-    -- admin de equipe (mesma equipe via perfis.equipe_id)
-    or exists (
-      select 1
-      from public.perfis me
-      join public.perfis c on c.equipe_id is not distinct from me.equipe_id
-      where me.usuario_id = auth.uid()
-        and me.role = 'admin'
-        and me.equipe_id is not null
-        and c.usuario_id = target_cliente_id
-        and c.equipe_id is not null
-    ),
-    false
-  );
-$$;
-
--- Restaurar policy de UPDATE no formato esperado nas migrations recentes.
--- Isso evita perder permissões que podem ser necessárias quando o token é de CS/admin de equipe.
-drop policy if exists perfis_update_own_or_gestor_or_admin on public.perfis;
-create policy perfis_update_own_or_gestor_or_admin on public.perfis
-  for update
-  using (
-    auth.uid() = usuario_id
-    or public.is_legacy_platform_admin()
-    or public.team_admin_sees_perfil(usuario_id)
-    or public.can_manage_client(usuario_id)
-    or public.cs_can_access_gestor(usuario_id)
-  )
-  with check (
-    auth.uid() = usuario_id
-    or public.is_legacy_platform_admin()
-    or public.team_admin_sees_perfil(usuario_id)
-    or public.can_manage_client(usuario_id)
-    or public.cs_can_access_gestor(usuario_id)
-  );
-`;
-
 type SelectedDestinationSearch = {
   code: string;
   name: string;
@@ -395,23 +327,6 @@ function parseIataRouteFromText(text: string): { origem: string; destino: string
   const m = text.match(/([A-Za-z]{3})\s*[–—-]\s*([A-Za-z]{3})/);
   if (m) return { origem: m[1].toUpperCase(), destino: m[2].toUpperCase() };
   return { origem: "—", destino: "—" };
-}
-
-function formatGestorResponsavelResumo(
-  resumoClientes: Array<{
-    clienteId: string;
-    gestoresResponsaveis: Array<{ nome: string }>;
-  }>,
-  managerClientId: string | null | undefined,
-): string | undefined {
-  if (!managerClientId?.trim()) return undefined;
-  const c = resumoClientes.find((x) => x.clienteId === managerClientId);
-  const names =
-    c?.gestoresResponsaveis
-      ?.map((g) => String(g.nome ?? "").trim())
-      .filter(Boolean) ?? [];
-  if (names.length === 0) return undefined;
-  return names.join(" · ");
 }
 
 function resumoClienteLinha(label: string, value: ReactNode) {
@@ -760,57 +675,13 @@ const normalizeProgramCards = (value: unknown): ProgramCardData[] => {
 
 const Index = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { role, user } = useAuth();
   const brandingConfig = useBrandingConfig();
-  const { resumo: reunioesResumoDia } = useReunioesNotificacoes(
-    role === "gestor" || role === "cs" || role === "admin",
-  );
-  const managerClientIdParam = searchParams.get("clientId");
-  const managerClientId =
-    role === "gestor" || role === "admin" || role === "cs"
-      ? managerClientIdParam
-      : null;
-
-  // Contexto de "visualização do cliente" usado pelos tabs avançados.
-  // - gestor/cs/admin: precisa do `clientId` na querystring
-  // - cliente_gestao: o cliente visualizado é o próprio usuário
-  const advancedClientId = role === "cliente_gestao" ? user?.id ?? null : managerClientId;
-  const canShowTimeline =
-    role === "gestor" || role === "admin" || role === "cs"
-      ? !!managerClientId
-      : role === "cliente_gestao"
-        ? !!user?.id
-        : false;
-
-  // Insights apenas para gestor/cs/admin (cliente_gestao pode ficar só no Timeline, por segurança/UX).
-  const canShowInsights = role === "gestor" || role === "admin" || role === "cs" ? !!managerClientId : false;
-
-  // Apenas gestores/CS/admin podem editar (incluir/remover) Plano de Ação.
-  const canEditActionPlan = role === "gestor" || role === "cs" || role === "admin";
-  /** CS só entra em modo gestor quando há clientId (acompanhar cliente); gestor/admin veem o painel ampliado na home. */
-  const managerMode =
-    role === "gestor" ||
-    role === "admin" ||
-    (role === "cs" && !!managerClientIdParam);
-  const demandTargetClientId = managerClientId ?? user?.id ?? null;
-  // Usado para controlar quando o botão/ícones do Plano de Ação devem aparecer.
-  const showActionPlanButton = !managerMode || !!managerClientId;
-
-  useEffect(() => {
-    if (!role || reunioesResumoDia.total <= 0) return;
-    if (typeof window === "undefined") return;
-    const todayKey = new Date().toISOString().slice(0, 10);
-    const storageKey = `mile-manager:agenda-notified:${todayKey}:${role}`;
-    if (window.localStorage.getItem(storageKey)) return;
-    const horarios = reunioesResumoDia.horarios.join(", ");
-    toast.info(
-      `Você tem ${reunioesResumoDia.total} reunião(ões) hoje${horarios ? `: ${horarios}` : "."}`,
-      { duration: 6000 },
-    );
-    window.localStorage.setItem(storageKey, "1");
-  }, [reunioesResumoDia.total, reunioesResumoDia.horarios, role]);
+  const advancedClientId = role === "cliente_gestao" ? user?.id ?? null : null;
+  const canShowTimeline = role === "cliente_gestao" && !!user?.id;
+  const canShowInsights = false;
+  const demandTargetClientId = user?.id ?? null;
   const [activeTab, setActiveTab] = useState("saldo");
   const [showAll, setShowAll] = useState(false);
 
@@ -829,94 +700,27 @@ const Index = () => {
   const [programs, setPrograms] = useState<ProgramCardData[]>(basePrograms);
   const [economiaPeriodoMeses, setEconomiaPeriodoMeses] = useState<1 | 6 | 12>(12);
   const [isAddProgramMenuOpen, setIsAddProgramMenuOpen] = useState(false);
-  const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
   const [isDemandDialogOpen, setIsDemandDialogOpen] = useState(false);
   const [demandSubmitting, setDemandSubmitting] = useState(false);
   const [demandaGestores, setDemandaGestores] = useState<DemandGestorOption[]>([]);
-  const [isClientesAtivosOpen, setIsClientesAtivosOpen] = useState(false);
-  const [isClientesVencendoOpen, setIsClientesVencendoOpen] = useState(false);
-  const [vencendoSearch, setVencendoSearch] = useState("");
-  const [vencendoFilter, setVencendoFilter] = useState<"todos" | "critico" | "atencao" | "ok">("todos");
-  const [vincularIdInput, setVincularIdInput] = useState("");
   const [actionPlanProgramKeys, setActionPlanProgramKeys] = useState<ActionPlanProgramKey[]>([]);
   const [actionPlanDemands, setActionPlanDemands] = useState<ActionPlanDemandItem[]>([]);
-  const [actionPlanSaving, setActionPlanSaving] = useState(false);
   const [actionPlanError, setActionPlanError] = useState<string | null>(null);
   const [optionLogoImages, setOptionLogoImages] = useState<Record<string, string>>(
     {},
   );
   const [enabledOrigins, setEnabledOrigins] = useState<string[]>(DEFAULT_ENABLED_ORIGINS);
-  const [accessedClientsVersion, setAccessedClientsVersion] = useState(0);
-  const [selectedPlanoProgramKey, setSelectedPlanoProgramKey] = useState<ActionPlanProgramKey | null>(null);
-  const [showPlanoAcaoPermissionHelp, setShowPlanoAcaoPermissionHelp] = useState(false);
-  const [demandBannerDismissed, setDemandBannerDismissed] = useState(false);
   const economiaReportRef = useRef<HTMLDivElement | null>(null);
   const vencendoSectionRef = useRef<HTMLDivElement | null>(null);
   const {
     byProgramId: remoteByProgramId,
     data: remotePrograms,
     saveProgramState,
-  } =
-    useProgramasCliente(managerClientId);
-  const {
-    resumoClientes,
-    linkedClientIds,
-    kpis: gestorKpis,
-    demandasGestor,
-    planosAcaoPorPrograma,
-    vencimentosTodosClientes,
-  } = useGestor(
-    managerMode,
-    useMemo(() => {
-      // Intencional: invalida a releitura de localStorage quando a lista acessada muda.
-      void accessedClientsVersion;
-      const ids = new Set<string>();
-      if (managerClientId) ids.add(managerClientId);
-      if (!managerMode || !user?.id || typeof window === "undefined") {
-        return Array.from(ids);
-      }
-      ids.add(user.id);
-      const key = `${MANAGER_ACCESSED_CLIENTS_PREFIX}${user.id}`;
-      const raw = window.localStorage.getItem(key);
-      if (raw) {
-        try {
-          const list = JSON.parse(raw) as Array<{ id?: string }>;
-          if (Array.isArray(list)) {
-            list.forEach((item) => {
-              if (typeof item?.id === "string" && item.id.trim()) {
-                ids.add(item.id);
-              }
-            });
-          }
-        } catch {
-          // ignora lista inválida
-        }
-      }
-      return Array.from(ids);
-    }, [managerMode, managerClientId, user?.id, accessedClientsVersion]),
-  );
-  const managerClientName = managerClientId
-    ? resumoClientes.find((cliente) => cliente.clienteId === managerClientId)?.nome ?? null
-    : null;
+  } = useProgramasCliente(null);
 
   const [resumoCliente, setResumoCliente] = useState<ResumoClientePayload | null>(null);
 
-  const gestorResumoClienteLabel = useMemo(
-    () => formatGestorResponsavelResumo(resumoClientes, managerClientId),
-    [resumoClientes, managerClientId],
-  );
-  const { vincular, desvincular, isVincularLoading, isDesvincularLoading, getErrorMessage } =
-    useVincularCliente(
-      role === "gestor" || role === "admin" ? user?.id : undefined,
-    );
-
-  // Cliente: só dados do próprio user.id (nunca "anonymous"). Gestor: pode ver cliente ou "anonymous" antes de login.
-  const dataOwnerId: string | null =
-    role === "gestor" || role === "admin"
-      ? managerClientId ?? user?.id ?? "anonymous"
-      : role === "cs"
-        ? managerClientId ?? user?.id ?? null
-        : user?.id ?? null;
+  const dataOwnerId: string | null = user?.id ?? null;
 
   useEffect(() => {
     if (typeof window === "undefined" || !dataOwnerId) {
@@ -947,44 +751,6 @@ const Index = () => {
     }
   }, [dataOwnerId]);
 
-  const gestorScore = useMemo(() => {
-    if (!managerMode || !gestorKpis) return 0;
-    const economiaMediaGerada = gestorKpis.roiMedio;
-    // Escala linear: 35.000 de economia média => score 1.000.
-    return Math.round(
-      Math.min(1000, Math.max(0, (economiaMediaGerada / 35000) * 1000)),
-    );
-  }, [managerMode, gestorKpis]);
-
-  const vencendoAllItems = useMemo(
-    () => (vencimentosTodosClientes ?? []).slice(0, 200),
-    [vencimentosTodosClientes],
-  );
-
-  const vencendoCounts = useMemo(() => ({
-    critico: vencendoAllItems.filter((i) => i.diasRestantes <= 30).length,
-    atencao: vencendoAllItems.filter((i) => i.diasRestantes > 30 && i.diasRestantes <= 60).length,
-    ok: vencendoAllItems.filter((i) => i.diasRestantes > 60).length,
-  }), [vencendoAllItems]);
-
-  const vencendoFiltered = useMemo(() => {
-    const q = vencendoSearch.trim().toLowerCase();
-    return vencendoAllItems.filter((item) => {
-      const matchSearch = !q || item.clienteNome.toLowerCase().includes(q);
-      const getUrg = (d: number) => d <= 30 ? "critico" : d <= 60 ? "atencao" : "ok";
-      const matchFilter = vencendoFilter === "todos" || getUrg(item.diasRestantes) === vencendoFilter;
-      return matchSearch && matchFilter;
-    });
-  }, [vencendoAllItems, vencendoSearch, vencendoFilter]);
-
-  const clientesComVencendo90d = useMemo(
-    () =>
-      resumoClientes
-        .filter((c) => c.pontosVencendo90d > 0)
-        .sort((a, b) => b.pontosVencendo90d - a.pontosVencendo90d),
-    [resumoClientes],
-  );
-
   /** Logos no seletor: globais (admin_master / «Marca e imagens») + eventual override local legacy. */
   const programLogoImagesForSheet = useMemo(() => {
     const out: Record<string, string> = { ...brandingConfig.data.programCardLogos };
@@ -993,41 +759,6 @@ const Index = () => {
     }
     return out;
   }, [brandingConfig.data.programCardLogos, optionLogoImages]);
-  const demandasPendentes = useMemo(
-    () => demandasGestor.filter((d) => d.status === "pendente").length,
-    [demandasGestor],
-  );
-  const demandasEmAndamento = useMemo(
-    () => demandasGestor.filter((d) => d.status === "em_andamento").length,
-    [demandasGestor],
-  );
-
-  const handleOpenManagerClient = (clientId: string) => {
-    if (managerMode && user?.id && typeof window !== "undefined") {
-      const key = `${MANAGER_ACCESSED_CLIENTS_PREFIX}${user.id}`;
-      const raw = window.localStorage.getItem(key);
-      let list: Array<{ id: string; name?: string }> = [];
-      if (raw) {
-        try {
-          list = JSON.parse(raw);
-          if (!Array.isArray(list)) list = [];
-        } catch {
-          list = [];
-        }
-      }
-      const exists = list.some((item) => item.id === clientId);
-      if (!exists) {
-        const knownName = resumoClientes.find((c) => c.clienteId === clientId)?.nome;
-        list.push({ id: clientId, name: knownName });
-        window.localStorage.setItem(key, JSON.stringify(list));
-        setAccessedClientsVersion((v) => v + 1);
-      }
-    }
-    const query = new URLSearchParams(searchParams);
-    query.set("clientId", clientId);
-    navigate(`/?${query.toString()}`);
-  };
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!dataOwnerId) {
@@ -1144,8 +875,7 @@ const Index = () => {
                 : nearestExpiringDays <= 60
                   ? "-60d"
                   : "-90d";
-          // Milhas a vencer só é exibido para gestor; cliente não vê esse badge.
-          const showExpiring = managerMode && hasExpiringMiles;
+          const showExpiring = false;
 
           const ultimoMovimentoTipo = parsed.movimentos?.[0]?.tipo;
           const variation: ProgramCardData["variation"] =
@@ -1185,10 +915,10 @@ const Index = () => {
       window.removeEventListener("focus", hydrateProgramsFromStorage);
       window.removeEventListener("storage", hydrateProgramsFromStorage);
     };
-  }, [programDefs, remoteByProgramId, dataOwnerId, managerMode, brandingConfig.data]);
+  }, [programDefs, remoteByProgramId, dataOwnerId, brandingConfig.data]);
 
   useEffect(() => {
-    if (!user?.id || managerClientId) return;
+    if (!user?.id) return;
     if (typeof window === "undefined") return;
 
     const migrationKey = `${MIGRATION_FLAG_PREFIX}${user.id}`;
@@ -1242,7 +972,7 @@ const Index = () => {
     };
 
     void runMigration();
-  }, [user?.id, managerClientId, programDefs, saveProgramState]);
+  }, [user?.id, programDefs, saveProgramState]);
 
   const handleToggleProgramCard = (
     option: (typeof AVAILABLE_PROGRAM_OPTIONS)[number],
@@ -1367,13 +1097,11 @@ const Index = () => {
         .eq("cliente_id", demandTargetClientId);
       if (linksErr) {
         setDemandaGestores([]);
-        setDemandaGestorId("");
         return;
       }
       const gestorIds = [...new Set((links ?? []).map((l) => l.gestor_id as string).filter(Boolean))];
       if (gestorIds.length === 0) {
         setDemandaGestores([]);
-        setDemandaGestorId("");
         return;
       }
 
@@ -1383,7 +1111,6 @@ const Index = () => {
         .in("usuario_id", gestorIds);
       if (perfisErr) {
         setDemandaGestores([]);
-        setDemandaGestorId("");
         return;
       }
 
@@ -1405,47 +1132,6 @@ const Index = () => {
 
     void loadDemandGestores();
   }, [isDemandDialogOpen, demandTargetClientId]);
-
-  const gestorClientOptions = useMemo(
-    () =>
-      resumoClientes.map((client) => ({
-        id: client.clienteId,
-        name: client.nome,
-      })),
-    [resumoClientes],
-  );
-
-  const clientsForBottomNav = useMemo(() => {
-    // Intencional: invalida a releitura de localStorage quando a lista acessada muda.
-    void accessedClientsVersion;
-    if (!managerMode || typeof window === "undefined" || !user?.id)
-      return gestorClientOptions;
-    const key = `${MANAGER_ACCESSED_CLIENTS_PREFIX}${user.id}`;
-    const raw = window.localStorage.getItem(key);
-    let accessed: Array<{ id: string; name?: string }> = [];
-    if (raw) {
-      try {
-        accessed = JSON.parse(raw);
-        if (!Array.isArray(accessed)) accessed = [];
-      } catch {
-        accessed = [];
-      }
-    }
-    const fromApiIds = new Set(gestorClientOptions.map((c) => c.id));
-    const onlyAccessed = accessed.filter((a) => !fromApiIds.has(a.id));
-    return [
-      ...gestorClientOptions,
-      ...onlyAccessed.map((a) => ({
-        id: a.id,
-        name: a.name ?? `Cliente ${a.id.slice(0, 8)}${a.id.length > 8 ? "…" : ""}`,
-      })),
-    ];
-  }, [
-    managerMode,
-    user?.id,
-    gestorClientOptions,
-    accessedClientsVersion,
-  ]);
 
   const actionPlanSelectedPrograms = useMemo(() => {
     return actionPlanProgramKeys.map((key) => {
@@ -1477,7 +1163,7 @@ const Index = () => {
   );
 
   useEffect(() => {
-    if (!showActionPlanButton || !demandTargetClientId) return;
+    if (!demandTargetClientId) return;
     let isMounted = true;
 
     const loadActionPlan = async () => {
@@ -1490,64 +1176,7 @@ const Index = () => {
           .eq("usuario_id", demandTargetClientId)
           .limit(1);
 
-        // Só carregamos demandas/detalhes se o usuário realmente puder editar.
-        const shouldFetchDemands = canEditActionPlan && isActionPlanDialogOpen;
-
-        const [perfilResult, demandasResult] = shouldFetchDemands
-          ? await Promise.all([
-              perfilPromise,
-              supabase
-                .from("demandas_cliente")
-                .select("id, tipo, status, payload, created_at")
-                .eq("cliente_id", demandTargetClientId)
-                .order("created_at", { ascending: false })
-                .limit(40),
-            ])
-          : [await perfilPromise, null];
-
-        if (!isMounted) return;
-        if (perfilResult.error) throw perfilResult.error;
-
-        const perfilRow = (perfilResult.data ?? [])[0] as
-          | { configuracao_tema?: Record<string, unknown> | null }
-          | undefined;
-        const perfilCfg = (perfilRow?.configuracao_tema ?? {}) as Record<string, unknown>;
-        const clientePerfil = (perfilCfg.clientePerfil ?? {}) as Record<string, unknown>;
-        const planoAcao = (clientePerfil.planoAcao ?? {}) as Record<string, unknown>;
-
-        const selectedProgramKeys = ACTION_PLAN_PROGRAM_LABELS
-          .filter(([key]) => planoAcao[key] === true)
-          .map(([key]) => key);
-        setActionPlanProgramKeys(selectedProgramKeys);
-
-        if (shouldFetchDemands) {
-          if (!demandasResult) return;
-          if (demandasResult.error) throw demandasResult.error;
-
-          const demands = ((demandasResult.data ?? []) as ActionPlanDemandRow[])
-            .filter((row) => row.tipo === "emissao")
-            .map((row) => {
-              const payload = (row.payload ?? {}) as Record<string, unknown>;
-              const destinoRaw = payload.destino;
-              const origemRaw = payload.origem;
-              const destino = typeof destinoRaw === "string" ? destinoRaw.trim() : "";
-              const origem = typeof origemRaw === "string" ? origemRaw.trim() : "";
-              if (!destino) return null;
-              return {
-                id: row.id,
-                origem: origem || null,
-                destino,
-                status: row.status ?? "pendente",
-                createdAt: row.created_at,
-              } as ActionPlanDemandItem;
-            })
-            .filter((item): item is ActionPlanDemandItem => !!item);
-
-          setActionPlanDemands(demands);
-        } else {
-          // Cliente só precisa ver quais programas já estão no plano.
-          setActionPlanDemands([]);
-        }
+        setActionPlanDemands([]);
       } catch (error) {
         const msg =
           error instanceof Error
@@ -1564,65 +1193,7 @@ const Index = () => {
     return () => {
       isMounted = false;
     };
-  }, [showActionPlanButton, demandTargetClientId, canEditActionPlan, isActionPlanDialogOpen]);
-
-  const persistActionPlanPrograms = async (nextKeys: ActionPlanProgramKey[]) => {
-    if (!demandTargetClientId) {
-      toast.error("Cliente não identificado para salvar o plano de ação.");
-      return false;
-    }
-
-    setActionPlanSaving(true);
-    try {
-      const nextPlanoAcao: Record<string, unknown> = {};
-      ACTION_PLAN_PROGRAM_LABELS.forEach(([key]) => {
-        nextPlanoAcao[key] = nextKeys.includes(key);
-      });
-
-      const fallbackSuffix = demandTargetClientId.slice(0, 8);
-      const { error: saveError } = await supabase.rpc("cliente_set_action_plan", {
-        p_usuario_id: demandTargetClientId,
-        p_plano_acao: nextPlanoAcao,
-        p_slug: `cliente-${fallbackSuffix}`,
-        p_nome_completo: `Cliente ${fallbackSuffix}`,
-      });
-      if (saveError) throw saveError;
-
-      queryClient.invalidateQueries({ queryKey: ["cliente_gestores_perfis"] });
-      return true;
-    } catch (error) {
-      const rawMsg =
-        error instanceof Error
-          ? error.message
-          : typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message: unknown }).message)
-            : "Erro ao salvar plano de ação.";
-      const isPermissionError =
-        /Sem permissão|row-level security|permission denied|violates|policy|RLS/i.test(rawMsg);
-      const msg = isPermissionError
-        ? `Sem permissão para salvar. Abra o diálogo de ajuda (ao fechar este toast) e rode o SQL no Supabase. Confirme também que o cliente está em Clientes ativos.\n\nDetalhes: ${rawMsg}`
-        : rawMsg;
-      toast.error(msg);
-      if (isPermissionError) setShowPlanoAcaoPermissionHelp(true);
-      return false;
-    } finally {
-      setActionPlanSaving(false);
-    }
-  };
-
-  const toggleActionPlanProgram = async (programKey: ActionPlanProgramKey) => {
-    if (actionPlanSaving) return;
-    const previousKeys = actionPlanProgramKeys;
-    const nextKeys = previousKeys.includes(programKey)
-      ? previousKeys.filter((key) => key !== programKey)
-      : [...previousKeys, programKey];
-
-    setActionPlanProgramKeys(nextKeys);
-    const saved = await persistActionPlanPrograms(nextKeys);
-    if (!saved) {
-      setActionPlanProgramKeys(previousKeys);
-    }
-  };
+  }, [demandTargetClientId]);
 
   const programMetaBySlug = useMemo(() => {
     const bySlug = new Map<string, ProgramMeta>();
@@ -1641,65 +1212,28 @@ const Index = () => {
   }, [programDefs]);
 
   const allPersistedPrograms = useMemo(() => {
-    // Cliente sem user: abas Vencendo/Extrato/R$ não mostram dados de ninguém.
-    if (!dataOwnerId) return [] as Array<{ meta: ProgramMeta; state: PersistedProgramState }>;
-
-    if (remotePrograms && remotePrograms.length > 0) {
-      // Filtro de segurança: só incluir programas do dono atual (evita vazamento entre usuários).
-      const targetOwnerId = managerClientId ?? user?.id;
-      const safeRows = targetOwnerId
-        ? remotePrograms.filter((row) => row.cliente_id === targetOwnerId)
-        : [];
-
-      return safeRows
-        .map((row) => {
-          const state = row.state as PersistedProgramState | null;
-          if (!state) return null;
-          const meta = programMetaBySlug.get(row.program_id) ?? {
-            slug: row.program_id,
-            name: row.program_name,
-            logo: row.logo ?? getProgramInitials(row.program_name),
-            logoColor: row.logo_color ?? "#64748b",
-          };
-          return { meta, state };
-        })
-        .filter(
-          (item): item is { meta: ProgramMeta; state: PersistedProgramState } =>
-            !!item,
-        );
+    if (!dataOwnerId || !remotePrograms || remotePrograms.length === 0) {
+      return [] as Array<{ meta: ProgramMeta; state: PersistedProgramState }>;
     }
 
-    // Cliente: abas Vencendo/Extrato/R$ usam só dados do backend (nunca localStorage), para não cruzar com outros usuários.
-    if (!managerMode) return [] as Array<{ meta: ProgramMeta; state: PersistedProgramState }>;
-
-    if (typeof window === "undefined") return [] as Array<{
-      meta: ProgramMeta;
-      state: PersistedProgramState;
-    }>;
-
-    const prefixWithOwner = `${STORAGE_PREFIX}${dataOwnerId}:`;
-    const keys = Object.keys(window.localStorage).filter((key) =>
-      key.startsWith(prefixWithOwner),
-    );
-
-    return keys
-      .map((key) => {
-        const raw = window.localStorage.getItem(key);
-        if (!raw) return null;
-        try {
-          const state = JSON.parse(raw) as PersistedProgramState;
-          // key format: STORAGE_PREFIX + dataOwnerId + ":" + slug + ":" + nameSlug
-          const afterPrefix = key.replace(prefixWithOwner, "");
-          const parts = afterPrefix.split(":");
-          const slug = (parts[0] ?? "programa").toLowerCase();
-          const meta = programMetaBySlug.get(slug) ?? getProgramMetaFromSlug(slug);
-          return { meta, state };
-        } catch {
-          return null;
-        }
+    return remotePrograms
+      .filter((row) => row.cliente_id === user?.id)
+      .map((row) => {
+        const state = row.state as PersistedProgramState | null;
+        if (!state) return null;
+        const meta = programMetaBySlug.get(row.program_id) ?? {
+          slug: row.program_id,
+          name: row.program_name,
+          logo: row.logo ?? getProgramInitials(row.program_name),
+          logoColor: row.logo_color ?? "#64748b",
+        };
+        return { meta, state };
       })
-      .filter((item): item is { meta: ProgramMeta; state: PersistedProgramState } => !!item);
-  }, [programMetaBySlug, remotePrograms, dataOwnerId, managerClientId, user?.id, managerMode]);
+      .filter(
+        (item): item is { meta: ProgramMeta; state: PersistedProgramState } =>
+          !!item,
+      );
+  }, [programMetaBySlug, remotePrograms, dataOwnerId, user?.id]);
 
   const vencimentosGlobais = useMemo(() => {
     const hoje = new Date();
@@ -2046,420 +1580,135 @@ const Index = () => {
     <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
       <DashboardHeader />
 
-      {managerMode && !managerClientId && !demandBannerDismissed && (
-        <div className="mx-4 mb-1 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-          <span className="shrink-0">⚡</span>
-          <button
-            type="button"
-            onClick={() =>
-              navigate(
-                role === "cs" || role === "admin_equipe"
-                  ? "/cs?tab=demandas&status=pendente"
-                  : "/gestor?tab=demandas&status=pendente",
-              )
-            }
-            className="flex-1 text-left text-[11px] text-amber-800 hover:opacity-90"
-          >
-            <b>Demandas abertas:</b> {demandasPendentes + demandasEmAndamento}{" "}
-            {demandasPendentes + demandasEmAndamento > 0
-              ? `(pendentes: ${demandasPendentes} · andamento: ${demandasEmAndamento})`
-              : "no momento."}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemandBannerDismissed(true)}
-            className="shrink-0 text-amber-500 opacity-60 hover:opacity-100"
-            aria-label="Fechar aviso de demandas"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+
 
       <BalanceTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
         economyTrend={analiseEconomia.trend}
-        economyLabel={managerMode && !managerClientId ? "Plano de Ação" : "R$"}
+        economyLabel="R$"
         canShowInsights={canShowInsights}
         canShowTimeline={canShowTimeline}
       />
 
-      {managerClientId && (
-        <div className="px-5 pb-3">
-          <div className="inline-flex flex-col rounded-full bg-primary/10 px-4 py-2 text-xs font-semibold text-primary">
-            <span>
-              {role === "cs"
-                ? "Visualizando como CS (supervisão)"
-                : "Visualizando como gestor"}
-            </span>
-            {managerClientName && (
-              <span className="max-w-[220px] truncate text-[10px] font-medium text-primary/90">
-                {managerClientName}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
+
 
       {activeTab === "saldo" && (
         <>
           <div className="px-5 pb-3">
             <div className="flex items-center gap-2">
-              {managerMode && !managerClientId ? (
-                <>
-                  <div className="relative inline-block">
-                    <button
-                      type="button"
-                      onClick={() => setIsClientesAtivosOpen((prev) => !prev)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-nubank-border bg-white px-3 py-1.5 text-xs font-semibold text-nubank-text shadow-nubank transition-colors hover:bg-white/90 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                    >
-                      <Plus size={14} />
-                      {linkedClientIds.length} clientes ativos
-                    </button>
-                    {isClientesAtivosOpen && (
-                      <div className="absolute left-0 z-20 mt-2 w-80 rounded-2xl border border-nubank-border bg-white p-3 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-nubank-text-secondary dark:text-slate-400">
-                          Clientes vinculados (ativos)
-                        </p>
-                        {(() => {
-                          const vinculados = resumoClientes.filter((c) => linkedClientIds.includes(c.clienteId));
-                          return vinculados.length > 0 ? (
-                          <ul className="mb-3 max-h-32 space-y-1 overflow-y-auto text-xs">
-                            {vinculados.map((c) => (
-                              <li key={c.clienteId} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 bg-muted/50">
-                                <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
-                                  <span className="truncate">{c.nome}</span>
-                                  <span className="text-muted-foreground tabular-nums shrink-0">{c.milhas.toLocaleString("pt-BR")} pts</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      await desvincular(c.clienteId);
-                                      toast.success("Cliente desvinculado.");
-                                    } catch (err: unknown) {
-                                      toast.error(getErrorMessage(err));
-                                    }
-                                  }}
-                                  disabled={isDesvincularLoading}
-                                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50 disabled:opacity-50"
-                                >
-                                  Remover
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
+              <div className="flex w-full items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddProgramMenuOpen(true)}
+                  className="inline-flex h-9 items-center justify-center gap-1 rounded-[10px] border border-[#8A05BE] bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-[#8A05BE] shadow-nubank transition-colors hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                >
+                  <Plus size={12} />
+                  <span>Novo</span>
+                </button>
+
+                <ProgramSelectionSheet
+                  isOpen={isAddProgramMenuOpen}
+                  onClose={() => setIsAddProgramMenuOpen(false)}
+                  activePrograms={programDefs.map((p) => ({
+                    programId: p.programId,
+                    name: p.name,
+                    logo: p.logo,
+                    logoColor: p.logoColor,
+                    balance: p.balance,
+                  }))}
+                  onToggle={handleToggleProgramCard}
+                  availableOptions={AVAILABLE_PROGRAM_OPTIONS}
+                  logoImages={programLogoImagesForSheet}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setIsDemandDialogOpen(true)}
+                  className="inline-flex h-9 flex-1 items-center justify-center rounded-[10px] border border-transparent bg-primary px-2 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-nubank transition-colors hover:bg-primary/90"
+                >
+                  Solicitar Cotação
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex h-9 cursor-not-allowed items-center justify-center gap-1 rounded-[10px] border border-gray-200 bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-nubank-text opacity-60 shadow-nubank dark:border-slate-700 dark:bg-transparent dark:text-slate-200"
+                >
+                  {actionPlanSelectedPrograms.length > 1 ? (
+                    <span className="inline-flex items-center gap-1">
+                      {actionPlanButtonIcons.map((program) =>
+                        program.iconSrc ? (
+                          <span key={`action-plan-icon-${program.key}`} className="inline-flex h-4 w-4">
+                            {ACTION_PLAN_AIRLINE_BY_KEY[program.key] ? (
+                              <AirlineLogo airline={ACTION_PLAN_AIRLINE_BY_KEY[program.key]} size={16} />
+                            ) : (
+                              <img
+                                src={program.iconSrc}
+                                alt={`Programa ${program.label}`}
+                                className="h-4 w-4 bg-transparent object-contain"
+                              />
+                            )}
+                          </span>
                         ) : (
-                          <p className="mb-3 text-xs text-muted-foreground">Nenhum cliente vinculado ainda.</p>
-                        );
-                        })()}
-                        <div className="border-t border-nubank-border dark:border-slate-600 pt-2">
-                          <p className="mb-1.5 text-[11px] font-medium text-nubank-text-secondary dark:text-slate-400">Vincular novo cliente</p>
-                          <p className="mb-1.5 text-[10px] text-muted-foreground">Peça o ID da conta do cliente (menu ☰ na conta dele) e cole abaixo.</p>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="UUID do cliente"
-                              value={vincularIdInput}
-                              onChange={(e) => setVincularIdInput(e.target.value)}
-                              className="h-9 text-xs font-mono"
-                            />
-                            <Button
-                              size="sm"
-                              className="h-9 shrink-0"
-                              disabled={!vincularIdInput.trim() || isVincularLoading}
-                              onClick={async () => {
-                                const id = vincularIdInput.trim();
-                                if (!id) return;
-                                try {
-                                  await vincular(id);
-                                  setVincularIdInput("");
-                                  setIsClientesAtivosOpen(false);
-                                  toast.success("Cliente vinculado. Agora ele entra nos cálculos dos cards.");
-                                } catch (err: unknown) {
-                                  toast.error(getErrorMessage(err));
-                                }
-                              }}
-                            >
-                              {isVincularLoading ? "..." : "Vincular"}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/gestor?tab=demandas&status=pendente")}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 shadow-nubank transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
-                  >
-                    Demandas Abertas {demandasPendentes > 0 ? `(${demandasPendentes})` : ""}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/gestor?tab=demandas&status=em_andamento")}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-800 shadow-nubank transition-colors hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
-                  >
-                    Demandas em Andamento{" "}
-                    {demandasEmAndamento > 0 ? `(${demandasEmAndamento})` : ""}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="flex w-full items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddProgramMenuOpen(true)}
-                      className="inline-flex h-9 items-center justify-center gap-1 rounded-[10px] border border-[#8A05BE] bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-[#8A05BE] shadow-nubank transition-colors hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                    >
-                      <Plus size={12} />
-                      <span>Novo</span>
-                    </button>
-
-                    <ProgramSelectionSheet
-                      isOpen={isAddProgramMenuOpen}
-                      onClose={() => setIsAddProgramMenuOpen(false)}
-                      activePrograms={programDefs.map((p) => ({
-                        programId: p.programId,
-                        name: p.name,
-                        logo: p.logo,
-                        logoColor: p.logoColor,
-                        balance: p.balance,
-                      }))}
-                      onToggle={handleToggleProgramCard}
-                      availableOptions={AVAILABLE_PROGRAM_OPTIONS}
-                      logoImages={programLogoImagesForSheet}
-                    />
-
-                    {(!managerMode || !!managerClientId) && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setIsDemandDialogOpen(true)}
-                          className="inline-flex h-9 flex-1 items-center justify-center rounded-[10px] border border-transparent bg-primary px-2 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-nubank transition-colors hover:bg-primary/90"
-                        >
-                          Solicitar Cotação
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!canEditActionPlan) return;
-                            setIsActionPlanDialogOpen(true);
-                          }}
-                          disabled={!canEditActionPlan}
-                          className={`inline-flex h-9 items-center justify-center gap-1 rounded-[10px] border border-gray-200 bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-nubank-text shadow-nubank transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-700 ${
-                            !canEditActionPlan ? "cursor-not-allowed opacity-60" : ""
-                          }`}
-                        >
-                          {actionPlanSelectedPrograms.length > 1 ? (
-                            <span className="inline-flex items-center gap-1">
-                              {actionPlanButtonIcons.map((program) =>
-                                program.iconSrc ? (
-                                  <span key={`action-plan-icon-${program.key}`} className="inline-flex h-4 w-4">
-                                    {ACTION_PLAN_AIRLINE_BY_KEY[program.key] ? (
-                                      <AirlineLogo airline={ACTION_PLAN_AIRLINE_BY_KEY[program.key]} size={16} />
-                                    ) : (
-                                      <img
-                                        src={program.iconSrc}
-                                        alt={`Programa ${program.label}`}
-                                        className="h-4 w-4 bg-transparent object-contain"
-                                      />
-                                    )}
-                                  </span>
-                                ) : (
-                                  <span
-                                    key={`action-plan-icon-${program.key}`}
-                                    className="inline-flex h-4 w-4 items-center justify-center text-[8px] font-bold leading-none text-current"
-                                  >
-                                    {program.fallbackIcon}
-                                  </span>
-                                ),
-                              )}
-                              {actionPlanButtonOverflowCount > 0 && (
-                                <span className="inline-flex h-4 min-w-4 items-center justify-center text-[9px] font-semibold leading-none text-current">
-                                  +{actionPlanButtonOverflowCount}
-                                </span>
-                              )}
-                            </span>
-                          ) : actionPlanSelectedPrograms[0]?.iconSrc ? (
-                            <>
-                              {ACTION_PLAN_AIRLINE_BY_KEY[actionPlanSelectedPrograms[0].key] ? (
-                                <AirlineLogo
-                                  airline={ACTION_PLAN_AIRLINE_BY_KEY[actionPlanSelectedPrograms[0].key]}
-                                  size={16}
-                                />
-                              ) : (
-                                <img
-                                  src={actionPlanSelectedPrograms[0].iconSrc}
-                                  alt={`Programa ${actionPlanSelectedPrograms[0].label}`}
-                                  className="h-4 w-4 bg-transparent object-contain"
-                                />
-                              )}
-                              {canEditActionPlan && (
-                                <span className="truncate">{actionPlanSelectedPrograms[0].label}</span>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              {canEditActionPlan ? (
-                                <span className="truncate">
-                                  {actionPlanSelectedPrograms[0]?.label ?? "Plano de Ação"}
-                                </span>
-                              ) : null}
-                            </>
-                          )}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
+                          <span
+                            key={`action-plan-icon-${program.key}`}
+                            className="inline-flex h-4 w-4 items-center justify-center text-[8px] font-bold leading-none text-current"
+                          >
+                            {program.fallbackIcon}
+                          </span>
+                        ),
+                      )}
+                      {actionPlanButtonOverflowCount > 0 && (
+                        <span className="inline-flex h-4 min-w-4 items-center justify-center text-[9px] font-semibold leading-none text-current">
+                          +{actionPlanButtonOverflowCount}
+                        </span>
+                      )}
+                    </span>
+                  ) : actionPlanSelectedPrograms[0]?.iconSrc ? (
+                    <>
+                      {ACTION_PLAN_AIRLINE_BY_KEY[actionPlanSelectedPrograms[0].key] ? (
+                        <AirlineLogo
+                          airline={ACTION_PLAN_AIRLINE_BY_KEY[actionPlanSelectedPrograms[0].key]}
+                          size={16}
+                        />
+                      ) : (
+                        <img
+                          src={actionPlanSelectedPrograms[0].iconSrc}
+                          alt={`Programa ${actionPlanSelectedPrograms[0].label}`}
+                          className="h-4 w-4 bg-transparent object-contain"
+                        />
+                      )}
+                    </>
+                  ) : null}
+                </button>
+              </div>
             </div>
           </div>
 
-          {managerMode && !managerClientId ? (
-            <div className="grid grid-cols-2 gap-3 px-5">
-              <div
-                className={`relative col-span-2 cursor-default rounded-2xl border-2 p-4 shadow-nubank ${
-                  gestorScore >= 600
-                    ? "border-emerald-500/60 bg-emerald-500/5 dark:bg-emerald-500/10"
-                    : gestorScore >= 300
-                      ? "border-amber-500/60 bg-amber-500/5 dark:bg-amber-500/10"
-                      : "border-red-500/50 bg-red-500/5 dark:bg-red-500/10"
-                }`}
-              >
-                <p className="text-[11px] font-medium text-muted-foreground">Score de desempenho do gestor</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums">
-                  <span
-                    className={
-                      gestorScore >= 600
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : gestorScore >= 300
-                          ? "text-amber-600 dark:text-amber-400"
-                          : "text-red-600 dark:text-red-400"
-                    }
-                  >
-                    {gestorScore}
-                  </span>
-                  <span className="text-muted-foreground font-normal text-sm"> / 1.000</span>
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  Avaliação da economia trazida para todos os clientes sob gestão
-                </p>
-              </div>
-              <div className="relative cursor-default rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank dark:border-slate-700 dark:bg-slate-800">
-                <p className="text-[11px] font-medium text-muted-foreground">Economia total gerada</p>
-                <p className="mt-2 text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {gestorKpis.economiaTotalGestao.toLocaleString("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                    maximumFractionDigits: 0,
-                    minimumFractionDigits: 0,
-                  })}
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">sob gestão (todos os clientes)</p>
-              </div>
-              <div className="relative cursor-default rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank dark:border-slate-700 dark:bg-slate-800">
-                <p className="text-[11px] font-medium text-muted-foreground">Economia média gerada</p>
-                <p className="mt-2 text-lg font-semibold tabular-nums">
-                  {gestorKpis.roiMedio.toLocaleString("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                    maximumFractionDigits: 0,
-                    minimumFractionDigits: 0,
-                  })}
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">consolidado (todos os clientes)</p>
-              </div>
-              <div
-                className={`relative col-span-2 rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank dark:border-slate-700 dark:bg-slate-800 ${
-                  clientesComVencendo90d.length > 0 ? "cursor-pointer" : "cursor-default"
-                }`}
-                onClick={() => {
-                  if (clientesComVencendo90d.length === 0) return;
-                  setIsClientesVencendoOpen((prev) => !prev);
-                }}
-                role={clientesComVencendo90d.length > 0 ? "button" : undefined}
-                tabIndex={clientesComVencendo90d.length > 0 ? 0 : undefined}
-                onKeyDown={(event) => {
-                  if (clientesComVencendo90d.length === 0) return;
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setIsClientesVencendoOpen((prev) => !prev);
-                  }
-                }}
-              >
-                <p className="text-[11px] font-medium text-muted-foreground">Clientes com milhas vencendo &lt;90 dias</p>
-                <p className="mt-2 text-lg font-semibold tabular-nums text-amber-600 dark:text-amber-400">
-                  {gestorKpis.clientesComVencendo90d}
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {clientesComVencendo90d.length > 0
-                    ? "clique para ver os clientes e abrir a conta"
-                    : "clientes com pontos a vencer nos próximos 90 dias"}
-                </p>
-                {isClientesVencendoOpen && clientesComVencendo90d.length > 0 && (
-                  <div className="mt-3 rounded-xl border border-nubank-border bg-white/80 p-2 dark:border-slate-600 dark:bg-slate-700/30">
-                    <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-nubank-text-secondary dark:text-slate-400">
-                      Clientes com vencimento próximo
-                    </p>
-                    <ul className="max-h-36 space-y-1 overflow-y-auto">
-                      {clientesComVencendo90d.map((client) => (
-                        <li key={client.clienteId}>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setIsClientesVencendoOpen(false);
-                              handleOpenManagerClient(client.clienteId);
-                            }}
-                            className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs transition-colors hover:bg-white/80 dark:hover:bg-slate-600/50"
-                          >
-                            <span className="truncate">{client.nome}</span>
-                            <span className="shrink-0 font-semibold text-amber-700 dark:text-amber-300">
-                              {client.pontosVencendo90d.toLocaleString("pt-BR")} pts
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <>
-              <section id="meus-programas" className="flex items-center justify-between px-5 pb-1">
-                <h2 className="text-[15px] font-bold text-gray-900">Meus programas</h2>
-                <button
-                  type="button"
-                  onClick={() => setShowAll(true)}
-                  className="text-[11px] font-semibold text-[#8A05BE]"
-                >
-                  Ver todos →
-                </button>
-              </section>
-              <div className="grid grid-cols-2 gap-1.5 px-5 pb-2">
-                {visiblePrograms.map((prog) => (
-                  <ProgramCard
-                    key={prog.programId}
-                    {...prog}
-                    managerClientId={managerClientId}
-                    managerClientName={managerClientName}
-                  />
-                ))}
-              </div>
+          <section id="meus-programas" className="flex items-center justify-between px-5 pb-1">
+            <h2 className="text-[15px] font-bold text-gray-900">Meus programas</h2>
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="text-[11px] font-semibold text-[#8A05BE]"
+            >
+              Ver todos →
+            </button>
+          </section>
+          <div className="grid grid-cols-2 gap-1.5 px-5 pb-2">
+            {visiblePrograms.map((prog) => (
+              <ProgramCard key={prog.programId} {...prog} />
+            ))}
+          </div>
 
-              {!showAll && programs.length > 4 && (
-                <button
-                  onClick={() => setShowAll(true)}
-                  className="mx-auto mt-1.5 flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-nubank-text-secondary transition-colors hover:bg-white/80 hover:text-nubank-text"
-                >
-                  <ChevronDown size={18} strokeWidth={2} />
-                  Ver todos
-                </button>
-              )}
-            </>
+          {!showAll && programs.length > 4 && (
+            <button
+              onClick={() => setShowAll(true)}
+              className="mx-auto mt-1.5 flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-nubank-text-secondary transition-colors hover:bg-white/80 hover:text-nubank-text"
+            >
+              <ChevronDown size={18} strokeWidth={2} />
+              Ver todos
+            </button>
           )}
 
           <div className="mt-5">
@@ -2478,125 +1727,7 @@ const Index = () => {
 
       {activeTab === "vencendo" && (
         <div ref={vencendoSectionRef} className="flex flex-col gap-3 px-4 py-3">
-          {managerMode && !managerClientId ? (
-            <>
-              {/* Search */}
-              <div className="relative">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" strokeWidth={2} />
-                <input
-                  type="text"
-                  value={vencendoSearch}
-                  onChange={(e) => setVencendoSearch(e.target.value)}
-                  placeholder="Buscar cliente..."
-                  className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-[13px] text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10"
-                />
-              </div>
-
-              {/* Filter chips */}
-              {vencendoAllItems.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {(["todos", "critico", "atencao", "ok"] as const).map((key) => {
-                    const isActive = vencendoFilter === key;
-                    const label =
-                      key === "todos" ? `Todos (${vencendoCounts.critico + vencendoCounts.atencao + vencendoCounts.ok})`
-                      : key === "critico" ? `🔴 Crítico (${vencendoCounts.critico})`
-                      : key === "atencao" ? `🟡 Atenção (${vencendoCounts.atencao})`
-                      : `🟢 OK (${vencendoCounts.ok})`;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setVencendoFilter(key)}
-                        className={
-                          isActive ? "rounded-full px-3 py-1 text-[11px] font-bold text-white"
-                          : key === "critico" ? "rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-bold text-red-600 transition-colors hover:bg-red-50"
-                          : key === "atencao" ? "rounded-full border border-amber-200 bg-white px-3 py-1 text-[11px] font-bold text-amber-600 transition-colors hover:bg-amber-50"
-                          : key === "ok" ? "rounded-full border border-green-200 bg-white px-3 py-1 text-[11px] font-bold text-green-700 transition-colors hover:bg-green-50"
-                          : "rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-bold text-slate-600 transition-colors hover:bg-slate-50"
-                        }
-                        style={isActive ? { background: "#8A05BE" } : undefined}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* List */}
-              {vencendoFiltered.length === 0 ? (
-                <div className="rounded-2xl bg-white p-8 text-center text-sm text-muted-foreground shadow-nubank">
-                  {vencendoSearch || vencendoFilter !== "todos"
-                    ? "Nenhum cliente encontrado para o filtro selecionado."
-                    : "Nenhum vencimento nos próximos dias na carteira."}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1.5">
-                  {vencendoFiltered.map((item, idx) => {
-                    const urg = item.diasRestantes <= 30 ? "critico" : item.diasRestantes <= 60 ? "atencao" : "ok";
-                    const prevUrg = idx > 0
-                      ? (vencendoFiltered[idx - 1].diasRestantes <= 30 ? "critico" : vencendoFiltered[idx - 1].diasRestantes <= 60 ? "atencao" : "ok")
-                      : null;
-                    const showLabel = urg !== prevUrg && vencendoFilter === "todos";
-                    const cardBorder = urg === "critico"
-                      ? "border border-l-4 border-red-200 border-l-red-600"
-                      : urg === "atencao"
-                      ? "border border-l-4 border-amber-200 border-l-amber-500"
-                      : "border border-l-4 border-slate-200 border-l-green-600";
-                    const badge = urg === "critico"
-                      ? "bg-red-50 text-red-600"
-                      : urg === "atencao"
-                      ? "bg-amber-50 text-amber-600"
-                      : "bg-green-50 text-green-700";
-                    const sectionLabel = urg === "critico"
-                      ? "Crítico — até 30 dias"
-                      : urg === "atencao"
-                      ? "Atenção — 31 a 60 dias"
-                      : "Tranquilo — acima de 60 dias";
-                    const sectionColor = urg === "critico"
-                      ? "text-red-500"
-                      : urg === "atencao"
-                      ? "text-amber-500"
-                      : "text-green-600";
-                    return (
-                      <div key={`${item.clienteId}-${item.programId}-${item.data}-${idx}`}>
-                        {showLabel && (
-                          <p className={`px-0.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-widest ${sectionColor}`}>
-                            {sectionLabel}
-                          </p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const qs = new URLSearchParams(searchParams);
-                            qs.set("clientId", item.clienteId);
-                            navigate(`/?${qs.toString()}`);
-                          }}
-                          className={`flex w-full overflow-hidden rounded-xl bg-white text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(0,0,0,0.09)] active:translate-y-0 ${cardBorder}`}
-                        >
-                          <div className="flex-1 px-3 py-2.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="truncate text-[13px] font-semibold text-gray-900">{item.clienteNome}</span>
-                              <span className={`flex-shrink-0 rounded-lg px-2.5 py-0.5 text-[11px] font-extrabold ${badge}`}>
-                                {item.diasRestantes} dias
-                              </span>
-                            </div>
-                            <div className="mt-1 flex items-center justify-between gap-2">
-                              <span className="truncate text-[11px] text-gray-500">{item.programName}</span>
-                              <span className="flex-shrink-0 text-[11px] text-gray-400">
-                                {item.quantidade.toLocaleString("pt-BR")} pts · {item.data}
-                              </span>
-                            </div>
-                          </div>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
+          <>
               {vencimentosGlobais.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-14 text-center">
                   <span className="text-5xl opacity-20">🎉</span>
@@ -2688,7 +1819,6 @@ const Index = () => {
                 </div>
               )}
             </>
-          )}
         </div>
       )}
 
@@ -2727,10 +1857,7 @@ const Index = () => {
                 onClick={() =>
                   setResumoCliente({
                     kind: "extrato",
-                    item,
-                    ...(gestorResumoClienteLabel
-                      ? { gestorResponsavel: gestorResumoClienteLabel }
-                      : {}),
+                    item
                   })
                 }
                 onKeyDown={(e) => {
@@ -2738,10 +1865,7 @@ const Index = () => {
                     e.preventDefault();
                     setResumoCliente({
                       kind: "extrato",
-                      item,
-                      ...(gestorResumoClienteLabel
-                        ? { gestorResponsavel: gestorResumoClienteLabel }
-                        : {}),
+                      item
                     });
                   }
                 }}
@@ -2993,96 +2117,6 @@ const Index = () => {
 
       {activeTab === "economia" && (
         <div className="space-y-3 px-5">
-          {managerMode && !managerClientId ? (
-            <div className="space-y-3">
-              <p className="text-[11px] font-medium text-muted-foreground">
-                Selecione o programa para ver os clientes no plano de ação
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {ACTION_PLAN_PROGRAM_LABELS.map(([key, label]) => {
-                  const clients = planosAcaoPorPrograma[key] ?? [];
-                  const iconSrc = ACTION_PLAN_PROGRAM_ICON_BY_KEY[key];
-                  const airlineCode = ACTION_PLAN_AIRLINE_BY_KEY[key];
-                  const isSelected = selectedPlanoProgramKey === key;
-                  return (
-                    <button
-                      key={`gestor-plan-select-${key}`}
-                      type="button"
-                      onClick={() => setSelectedPlanoProgramKey(isSelected ? null : key)}
-                      className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
-                        isSelected
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-nubank-border bg-white text-nubank-text hover:bg-white/90 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                      }`}
-                    >
-                      {iconSrc ? (
-                        <span className="inline-flex h-4 w-4 items-center justify-center">
-                          {airlineCode ? (
-                            <AirlineLogo airline={airlineCode} size={14} />
-                          ) : (
-                            <img src={iconSrc} alt="" className="h-3.5 w-3.5 bg-transparent object-contain" />
-                          )}
-                        </span>
-                      ) : null}
-                      {label}
-                      <span className="rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] tabular-nums dark:bg-white/10">
-                        {clients.length}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              {selectedPlanoProgramKey && (() => {
-                const key = selectedPlanoProgramKey;
-                const label = ACTION_PLAN_PROGRAM_LABELS.find(([k]) => k === key)?.[1] ?? key;
-                const clients = planosAcaoPorPrograma[key] ?? [];
-                const iconSrc = ACTION_PLAN_PROGRAM_ICON_BY_KEY[key];
-                const airlineCode = ACTION_PLAN_AIRLINE_BY_KEY[key];
-                return (
-                  <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
-                    <div className="flex items-center gap-2">
-                      {iconSrc ? (
-                        <span className="inline-flex h-5 w-5 items-center justify-center">
-                          {airlineCode ? (
-                            <AirlineLogo airline={airlineCode} size={18} />
-                          ) : (
-                            <img src={iconSrc} alt={`Logo ${label}`} className="h-4.5 w-4.5 bg-transparent object-contain" />
-                          )}
-                        </span>
-                      ) : null}
-                      <p className="text-sm font-semibold text-nubank-text">{label}</p>
-                      <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-nubank-text-secondary">
-                        {clients.length} cliente{clients.length === 1 ? "" : "s"}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      Clientes com {label} selecionado no plano de ação
-                    </p>
-                    {clients.length === 0 ? (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Nenhum cliente com este programa no plano de ação.
-                      </p>
-                    ) : (
-                      <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
-                        {clients.map((client) => (
-                          <li key={`${key}-${client.clienteId}`}>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenManagerClient(client.clienteId)}
-                              className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs transition-colors hover:bg-white/90"
-                            >
-                              <span className="truncate">{client.nome}</span>
-                              <span className="shrink-0 text-[11px] font-semibold text-nubank-text-secondary">Abrir</span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          ) : (
           <>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="inline-flex rounded-full border border-nubank-border bg-white p-1 shadow-nubank">
@@ -3389,7 +2423,6 @@ const Index = () => {
           </div>
           </div>
           </>
-          )}
         </div>
       )}
 
@@ -3406,7 +2439,7 @@ const Index = () => {
 
       {activeTab === "sugestoes" && (
         <SmartRedemptionSuggestions
-          clientId={managerClientId ?? user?.id ?? null}
+          clientId={user?.id ?? null}
         />
       )}
 
@@ -3470,270 +2503,12 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showPlanoAcaoPermissionHelp} onOpenChange={setShowPlanoAcaoPermissionHelp}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Como liberar o salvamento do Plano de Ação</DialogTitle>
-            <DialogDescription>
-              O gestor só pode salvar o plano do cliente se o Supabase permitir (policy) e se o cliente estiver vinculado em &quot;Clientes ativos&quot;.
-            </DialogDescription>
-          </DialogHeader>
-          <ol className="list-decimal space-y-1 pl-4 text-sm text-muted-foreground">
-            <li>Abra o Supabase do seu projeto → SQL Editor → New query.</li>
-            <li>Cole o SQL abaixo (botão &quot;Copiar SQL&quot;) e clique em Run.</li>
-            <li>Confirme que este cliente está na lista &quot;Clientes ativos&quot; (vincule pelo UUID se precisar).</li>
-          </ol>
-          <pre className="max-h-64 overflow-auto rounded border bg-muted/50 p-2 text-[11px] font-mono whitespace-pre-wrap break-all">
-            {PERFIS_GESTOR_UPDATE_SQL}
-          </pre>
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowPlanoAcaoPermissionHelp(false)}
-            >
-              Fechar
-            </Button>
-            <Button
-              type="button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(PERFIS_GESTOR_UPDATE_SQL);
-                  toast.success("SQL copiado. Cole no Supabase SQL Editor e execute.");
-                } catch {
-                  toast.error("Não foi possível copiar.");
-                }
-              }}
-            >
-              Copiar SQL
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      <Dialog
-        open={isActionPlanDialogOpen && canEditActionPlan}
-        onOpenChange={(open) => {
-          if (!canEditActionPlan) return;
-          setIsActionPlanDialogOpen(open);
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Plano de Ação</DialogTitle>
-            <DialogDescription>
-              Programas prioritários para acumular pontos e destinos das suas demandas.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            {actionPlanError ? (
-              <p className="text-xs text-destructive">{actionPlanError}</p>
-            ) : null}
-
-            <div className="rounded-xl border border-border bg-card p-3">
-              <p className="text-xs font-semibold text-foreground">
-                Programas disponíveis
-              </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Clique em Adicionar para incluir no plano de ação.
-              </p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {ACTION_PLAN_PROGRAM_LABELS.map(([key, label]) => {
-                  const added = actionPlanProgramKeys.includes(key);
-                  if (added) return null;
-                  const iconSrc = ACTION_PLAN_PROGRAM_ICON_BY_KEY[key];
-                  const airlineCode = ACTION_PLAN_AIRLINE_BY_KEY[key];
-                  return (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-2 py-1.5"
-                    >
-                      <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 text-xs font-semibold text-foreground">
-                        {iconSrc ? (
-                          <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
-                            {airlineCode ? (
-                              <AirlineLogo airline={airlineCode} size={14} />
-                            ) : (
-                              <img
-                                src={iconSrc}
-                                alt=""
-                                className="h-3.5 w-3.5 bg-transparent object-contain"
-                              />
-                            )}
-                          </span>
-                        ) : null}
-                        <span className="truncate">{label}</span>
-                      </span>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-7 shrink-0 gap-1 px-2 text-[11px]"
-                        disabled={actionPlanSaving}
-                        onClick={() => void toggleActionPlanProgram(key)}
-                      >
-                        <Plus size={12} />
-                        Adicionar
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-border bg-card p-3">
-              <p className="text-xs font-semibold text-foreground">
-                Adicionados no plano de ação
-              </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Programas prioritários para este cliente. Remova se quiser tirar do plano.
-              </p>
-              {actionPlanProgramKeys.length === 0 ? (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Nenhum programa adicionado ainda.
-                </p>
-              ) : (
-                <ul className="mt-2 space-y-2">
-                  {actionPlanProgramKeys.map((key) => {
-                    const label = ACTION_PLAN_PROGRAM_LABELS.find(([k]) => k === key)?.[1] ?? key;
-                    const iconSrc = ACTION_PLAN_PROGRAM_ICON_BY_KEY[key];
-                    const airlineCode = ACTION_PLAN_AIRLINE_BY_KEY[key];
-                    return (
-                      <li
-                        key={key}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-2 py-1.5"
-                      >
-                        <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 text-xs font-semibold text-primary">
-                          {iconSrc ? (
-                            <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
-                              {airlineCode ? (
-                                <AirlineLogo airline={airlineCode} size={14} />
-                              ) : (
-                                <img
-                                  src={iconSrc}
-                                  alt=""
-                                  className="h-3.5 w-3.5 bg-transparent object-contain"
-                                />
-                              )}
-                            </span>
-                          ) : null}
-                          <span className="truncate">{label}</span>
-                        </span>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 shrink-0 gap-1 px-2 text-[11px] text-muted-foreground hover:text-destructive"
-                          disabled={actionPlanSaving}
-                          onClick={() => void toggleActionPlanProgram(key)}
-                        >
-                          <X size={12} />
-                          Remover
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-
-            <div className="rounded-xl border border-border bg-card p-3">
-              <p className="text-xs font-semibold text-foreground">
-                Destinos solicitados em demanda
-              </p>
-              {actionPlanDemands.length === 0 ? (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Você ainda não possui demandas de emissão com destino informado.
-                </p>
-              ) : (
-                <div className="mt-2 max-h-56 space-y-2 overflow-y-auto pr-1">
-                  {actionPlanDemands.map((item) => (
-                    <div
-                      key={`action-plan-demand-${item.id}`}
-                      className="rounded-lg border border-border bg-background p-2"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold text-foreground">
-                          {item.origem ? `${item.origem} -> ${item.destino}` : item.destino}
-                        </p>
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          {DEMAND_STATUS_LABELS[item.status] ?? item.status}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        Solicitada em{" "}
-                        {new Date(item.createdAt).toLocaleDateString("pt-BR")}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <CsatClientePrompt />
       <NpsClientePrompt />
 
-      <BottomNav
-        showClientSelector={managerMode}
-        clients={clientsForBottomNav}
-        selectedClientId={managerClientId}
-        onClientSelect={(clientId) => {
-          if (managerMode && user?.id && typeof window !== "undefined") {
-            const key = `${MANAGER_ACCESSED_CLIENTS_PREFIX}${user.id}`;
-            const raw = window.localStorage.getItem(key);
-            let list: Array<{ id: string; name?: string }> = [];
-            if (raw) {
-              try {
-                list = JSON.parse(raw);
-                if (!Array.isArray(list)) list = [];
-              } catch {
-                list = [];
-              }
-            }
-            const existing = list.find((c) => c.id === clientId);
-            if (!existing) {
-              const name = clientsForBottomNav.find((c) => c.id === clientId)?.name;
-              list.push({ id: clientId, name });
-              window.localStorage.setItem(key, JSON.stringify(list));
-              setAccessedClientsVersion((v) => v + 1);
-            }
-          }
-          const query = new URLSearchParams(searchParams);
-          query.set("clientId", clientId);
-          navigate(`/?${query.toString()}`);
-        }}
-        onBackToMyAccount={
-          managerMode
-            ? () => {
-                const query = new URLSearchParams(searchParams);
-                query.delete("clientId");
-                const q = query.toString();
-                navigate(q ? `/?${q}` : homePathForRole(role));
-              }
-            : undefined
-        }
-        onRemoveClient={
-          managerMode && managerClientId
-            ? async (clientId) => {
-                try {
-                  await desvincular(clientId);
-                  toast.success("Cliente desvinculado.");
-                  const query = new URLSearchParams(searchParams);
-                  query.delete("clientId");
-                  navigate(
-                    query.toString() ? `/?${query.toString()}` : homePathForRole(role),
-                  );
-                } catch (err: unknown) {
-                  toast.error(getErrorMessage(err));
-                }
-              }
-            : undefined
-        }
-      />
+      <BottomNav />
     </div>
   );
 };
