@@ -1,0 +1,10 @@
+revoke usage on sequence public.aeroportos_id_seq from anon;
+revoke usage on sequence public.blocos_id_seq from anon;
+revoke usage on sequence public.cliente_gestores_id_seq from anon;
+revoke usage on sequence public.cs_gestores_id_seq from anon;
+revoke usage on sequence public.demandas_cliente_id_seq from anon;
+revoke usage on sequence public.logs_acoes_id_seq from anon;
+revoke usage on sequence public.lotes_programa_id_seq from anon;
+revoke usage on sequence public.movimentos_programa_id_seq from anon;
+revoke usage on sequence public.perfis_id_seq from anon;
+revoke usage on sequence public.programas_cliente_id_seq from anon;
