@@ -10,6 +10,31 @@ const router = Router();
 const publicUrl = () =>
   (process.env.PUBLIC_APP_URL || "http://localhost:3080").replace(/\/$/, "");
 
+const MANAGED_SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due", "unpaid", "paused"]);
+
+function hasManagedSubscriptionStatus(status) {
+  return MANAGED_SUBSCRIPTION_STATUSES.has(String(status || "").toLowerCase());
+}
+
+async function findManagedStripeSubscription(stripe, customerId, subscriptionId) {
+  if (subscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      if (hasManagedSubscriptionStatus(sub?.status)) return sub;
+    } catch {
+      // A local subscription id can be stale after manual Stripe changes. List by customer as fallback.
+    }
+  }
+
+  if (!customerId) return null;
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "all",
+    limit: 10,
+  });
+  return subscriptions.data.find((sub) => hasManagedSubscriptionStatus(sub.status)) ?? null;
+}
+
 router.post("/admin/connection-test", requireAuth, requireAdmin, async (req, res) => {
   try {
     const configuredKey = process.env.STRIPE_SECRET_KEY || "";
@@ -373,11 +398,32 @@ router.post("/checkout-session", requireAuth, async (req, res) => {
     const sbAdmin = assertSupabaseService();
     const { data: perfil } = await sbAdmin
       .from("perfis")
-      .select("stripe_customer_id, nome_completo")
+      .select("stripe_customer_id, stripe_subscription_id, subscription_status, nome_completo")
       .eq("usuario_id", user.id)
       .maybeSingle();
 
     let customerId = perfil?.stripe_customer_id;
+    if (hasManagedSubscriptionStatus(perfil?.subscription_status)) {
+      return res.status(409).json({
+        error: "Você já tem uma assinatura em andamento. Use o portal de cobrança para gerenciar seu plano.",
+        code: "subscription_already_managed",
+      });
+    }
+
+    const managedStripeSubscription = await findManagedStripeSubscription(
+      stripe,
+      customerId,
+      perfil?.stripe_subscription_id,
+    );
+    if (managedStripeSubscription) {
+      return res.status(409).json({
+        error: "Você já tem uma assinatura em andamento. Use o portal de cobrança para gerenciar seu plano.",
+        code: "subscription_already_managed",
+        subscriptionId: managedStripeSubscription.id,
+        status: managedStripeSubscription.status,
+      });
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
