@@ -29,15 +29,17 @@ const SignUp = () => {
     isValidEmail && password.length >= 6 && password === confirmPassword && confirmPassword.length > 0;
 
   const formatAuthError = (error: unknown): string => {
-    const msg = error instanceof Error ? error.message : "Falha ao criar conta.";
-    if (/failed to fetch/i.test(msg)) {
-      return [
-        "Não foi possível contactar o Supabase (rede ou URL).",
-        "Confira no .env.local: VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY;",
-        "reinicie o npm run dev após alterar o .env.",
-      ].join(" ");
+    const msg = error instanceof Error ? error.message : String(error ?? "");
+    if (/failed to fetch|networkerror|load failed|timeout/i.test(msg)) {
+      return "Não foi possível criar sua conta agora. Verifique sua conexão e tente de novo.";
     }
-    return msg;
+    if (/already registered|already exists|user already|email.*exists|email.*registered/i.test(msg)) {
+      return "Já existe uma conta com este e-mail. Entre ou recupere sua senha.";
+    }
+    if (/invalid|weak password|password|email|signup|auth|supabase|jwt|rls|permission|unauthorized|forbidden/i.test(msg)) {
+      return "Não foi possível criar a conta com esses dados. Confira e-mail, senha e tente de novo.";
+    }
+    return "Não foi possível criar sua conta agora. Tente novamente em alguns instantes.";
   };
 
   if (!loading && user) {
@@ -60,6 +62,7 @@ const SignUp = () => {
     try {
       await signInWithGoogle();
     } catch (error) {
+      console.warn("[SignUp] cadastro Google:", error);
       setMessage(formatAuthError(error));
       setPending(false);
       setPendingAction(null);
@@ -77,11 +80,10 @@ const SignUp = () => {
         setMessage("Conta criada com sucesso. Entrando");
         navigate("/me");
       } else {
-        setMessage(
-          "Conta criada. Verifique o e-mail de confirmação (se estiver ativo no Supabase) ou peça ao administrador para desativar «Confirm email» em Authentication → Providers → Email.",
-        );
+        setMessage("Conta criada. Verifique seu e-mail de confirmação para continuar.");
       }
     } catch (error) {
+      console.warn("[SignUp] cadastro senha:", error);
       setMessage(formatAuthError(error));
     } finally {
       setPending(false);
@@ -95,9 +97,7 @@ const SignUp = () => {
     <AuthFlowShell title="Criar conta" description="Preencha os dados abaixo para se registar no Gest Miles.">
       {!isSupabaseConfigured && (
         <p className="rounded-[14px] border border-amber-500/40 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-800/50 dark:bg-amber-950/50 dark:text-amber-100">
-          Supabase não configurado: edite <span className="font-mono">.env.local</span> com{" "}
-          <span className="font-mono">VITE_SUPABASE_URL</span> e <span className="font-mono">VITE_SUPABASE_ANON_KEY</span> e
-          reinicie o <span className="font-mono">npm run dev</span>.
+          Cadastro indisponível agora. Tente novamente em alguns minutos.
         </p>
       )}
       {fromInvite && (

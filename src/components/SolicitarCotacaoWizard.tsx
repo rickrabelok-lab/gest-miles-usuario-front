@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Send } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,6 +53,9 @@ export type WizardSubmitParams =
 
 type Props = {
   gestores: DemandGestorOption[];
+  gestoresLoading?: boolean;
+  gestoresError?: string | null;
+  onRetryGestores?: () => void;
   submitting: boolean;
   onSubmit: (params: WizardSubmitParams) => Promise<void>;
 };
@@ -173,7 +176,14 @@ function GestorChip({ gestor }: { gestor: DemandGestorOption | undefined }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function SolicitarCotacaoWizard({ gestores, submitting, onSubmit }: Props) {
+export function SolicitarCotacaoWizard({
+  gestores,
+  gestoresLoading = false,
+  gestoresError = null,
+  onRetryGestores,
+  submitting,
+  onSubmit,
+}: Props) {
   // ── State ──
   const [step, setStep] = useState(1);
   const [tipo, setTipo] = useState<Tipo>("emissao");
@@ -225,8 +235,51 @@ export function SolicitarCotacaoWizard({ gestores, submitting, onSubmit }: Props
   };
   const isLastStep = step === 3;
   const canSubmit =
+    !gestoresLoading &&
+    !gestoresError &&
     !!resolvedGestor &&
     (tipo === "emissao" || outrosDetalhes.trim().length >= 10);
+
+  const renderGestoresStatus = () => {
+    if (gestoresLoading) {
+      return (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-[10px] font-medium text-gray-600">
+          Carregando gestor responsavel...
+        </div>
+      );
+    }
+
+    if (gestoresError) {
+      return (
+        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-800">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold">Nao foi possivel carregar o gestor.</p>
+            <p className="mt-0.5 text-[10px] leading-relaxed">{gestoresError}</p>
+            {onRetryGestores && (
+              <button
+                type="button"
+                onClick={onRetryGestores}
+                className="mt-2 text-[10px] font-bold text-red-900 underline underline-offset-2"
+              >
+                Tentar novamente
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (!resolvedGestor) {
+      return (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-medium text-amber-800">
+          Nenhum gestor vinculado para este tipo de demanda.
+        </div>
+      );
+    }
+
+    return <GestorChip gestor={resolvedGestor} />;
+  };
 
   // ── Handlers ──
   const handleNext = () => setStep((s) => Math.min(s + 1, 3));
@@ -342,7 +395,7 @@ export function SolicitarCotacaoWizard({ gestores, submitting, onSubmit }: Props
               ))}
             </div>
           </div>
-          <GestorChip gestor={resolvedGestor} />
+          {renderGestoresStatus()}
         </>
       )}
 
@@ -605,14 +658,14 @@ export function SolicitarCotacaoWizard({ gestores, submitting, onSubmit }: Props
         </div>
       )}
 
-      <GestorChip gestor={resolvedGestor} />
+      {renderGestoresStatus()}
     </div>
   );
 
   // ── Step 3 Outros: Detalhe ──
   const renderStep3Outros = () => (
     <div className="flex flex-col gap-3">
-      <GestorChip gestor={resolvedGestor} />
+      {renderGestoresStatus()}
 
       <div>
         <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wide text-primary">

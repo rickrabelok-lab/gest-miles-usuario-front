@@ -30,6 +30,8 @@ export const useDestinationBestPrices = ({
   origins,
 }: UseDestinationBestPricesParams) => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
   const [pricesByDestination, setPricesByDestination] = useState<BestPricesByDestination>(
     {},
   );
@@ -59,6 +61,7 @@ export const useDestinationBestPrices = ({
   useEffect(() => {
     if (normalizedDestinations.length === 0 || normalizedOrigins.length === 0) {
       setLoading(false);
+      setError(null);
       setPricesByDestination({});
       return;
     }
@@ -66,12 +69,14 @@ export const useDestinationBestPrices = ({
     const cached = bestPricesCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       setPricesByDestination(cached.pricesByDestination);
+      setError(null);
       setLoading(false);
       return;
     }
 
     let cancelled = false;
     setLoading(true);
+    setError(null);
 
     const load = async () => {
       try {
@@ -101,9 +106,14 @@ export const useDestinationBestPrices = ({
           expiresAt: Date.now() + DESTINATION_BEST_PRICES_STALE_MS,
         });
         setPricesByDestination(next);
-      } catch {
+      } catch (loadError) {
         if (!cancelled) {
           setPricesByDestination({});
+          setError(
+            loadError instanceof Error && loadError.message.trim()
+              ? loadError.message
+              : "Não foi possível carregar os preços dos destinos.",
+          );
         }
       } finally {
         if (!cancelled) {
@@ -117,10 +127,12 @@ export const useDestinationBestPrices = ({
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, normalizedDestinations, normalizedOrigins]);
+  }, [cacheKey, normalizedDestinations, normalizedOrigins, retryToken]);
 
   return {
+    error,
     loading,
     pricesByDestination,
+    retry: () => setRetryToken((value) => value + 1),
   };
 };

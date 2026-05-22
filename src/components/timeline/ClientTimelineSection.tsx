@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bell, ClipboardList, LogIn, Star, TrendingUp, Zap, ThumbsUp } from "lucide-react";
+import { Bell, ClipboardList, LogIn, RotateCcw, Star, TrendingUp, Zap, ThumbsUp } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,35 @@ import {
   useClientTimeline,
   loadGestoresForCliente,
 } from "@/hooks/useClientTimeline";
+
+function timelineUiError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error ?? "").toLowerCase();
+
+  if (
+    message.includes("permission") ||
+    message.includes("permiss") ||
+    message.includes("rls") ||
+    message.includes("policy") ||
+    message.includes("jwt") ||
+    message.includes("auth")
+  ) {
+    return "Não foi possível confirmar sua permissão para ver a timeline. Recarregue ou acione o suporte se continuar.";
+  }
+
+  if (
+    message.includes("network") ||
+    message.includes("failed to fetch") ||
+    message.includes("fetch") ||
+    message.includes("supabase") ||
+    message.includes("timeline_eventos") ||
+    message.includes("perfis") ||
+    message.includes("cliente_gestores")
+  ) {
+    return "Não foi possível carregar a timeline agora. Recarregue antes de tratar o histórico como vazio.";
+  }
+
+  return "Não foi possível carregar a timeline agora. Tente novamente em instantes.";
+}
 
 export default function ClientTimelineSection({
   clienteId,
@@ -46,7 +75,8 @@ export default function ClientTimelineSection({
       })
       .catch((e) => {
         if (!mounted) return;
-        toast.error(e instanceof Error ? e.message : "Erro ao carregar gestores.");
+        console.warn("[ClientTimelineSection] gestores failed", e);
+        toast.error("Não foi possível carregar o filtro de gestores agora.");
         setGestores([]);
       })
       .finally(() => {
@@ -58,7 +88,7 @@ export default function ClientTimelineSection({
     };
   }, [clienteId, enabled]);
 
-  const { data: events = [], isLoading, error } = useClientTimeline(clienteId, enabled, {
+  const { data: events = [], isLoading, error, refetch, isFetching } = useClientTimeline(clienteId, enabled, {
     tipoEvento,
     gestorId,
     startDate,
@@ -208,9 +238,20 @@ export default function ClientTimelineSection({
 
         {isLoading && <p className="py-6 text-center text-sm text-muted-foreground">Carregando timeline…</p>}
         {error && (
-          <p className="py-4 text-center text-sm text-destructive">
-            {error instanceof Error ? error.message : "Erro ao carregar timeline."}
-          </p>
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <p className="text-sm text-destructive">{timelineUiError(error)}</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1 text-xs"
+              disabled={isFetching}
+              onClick={() => void refetch()}
+            >
+              <RotateCcw className="h-3 w-3" />
+              {isFetching ? "Tentando..." : "Tentar novamente"}
+            </Button>
+          </div>
         )}
 
         {!isLoading && !error && events.length === 0 && (
@@ -257,4 +298,3 @@ export default function ClientTimelineSection({
     </Card>
   );
 }
-

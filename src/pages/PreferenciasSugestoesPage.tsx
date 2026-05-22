@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { usePreferenciasSugestoes } from "@/hooks/usePreferenciasSugestoes";
+import {
+  PREFERENCIAS_SUGESTOES_SAVE_ERROR_MESSAGE,
+  usePreferenciasSugestoes,
+} from "@/hooks/usePreferenciasSugestoes";
 import {
   DESTINO_OPCOES,
   CLASSE_OPCOES,
@@ -16,7 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 const PreferenciasSugestoesPage = () => {
   const navigate = useNavigate();
-  const { preferencias, loading, save, saving, refetch } = usePreferenciasSugestoes();
+  const { preferencias, loading, error, save, saving, refetch } = usePreferenciasSugestoes();
   const [destinos, setDestinos] = useState<DestinoPreferencia[]>(preferencias.preferencia_destino);
   const [classe, setClasse] = useState<ClassePreferencia>(preferencias.preferencia_classe);
 
@@ -43,12 +46,17 @@ const PreferenciasSugestoesPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (error) {
+      toast.error("Recarregue as preferencias antes de salvar.");
+      return;
+    }
     try {
       await save({ preferencia_destino: destinos, preferencia_classe: classe });
       toast.success("Preferências salvas.");
       await refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao salvar.");
+      console.warn("[PreferenciasSugestoesPage] save failed", err);
+      toast.error(PREFERENCIAS_SUGESTOES_SAVE_ERROR_MESSAGE);
     }
   };
 
@@ -73,6 +81,28 @@ const PreferenciasSugestoesPage = () => {
       <main className="px-4 py-6">
         {loading && (
           <p className="text-sm text-muted-foreground">Carregando preferências...</p>
+        )}
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            <p>
+              {error instanceof Error
+                ? error.message
+                : "Nao foi possivel carregar suas preferencias agora."}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3 gap-2"
+              onClick={() => {
+                void refetch();
+              }}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Tentar novamente
+            </Button>
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -127,7 +157,7 @@ const PreferenciasSugestoesPage = () => {
           <Button
             type="submit"
             className="w-full rounded-xl font-semibold"
-            disabled={saving}
+            disabled={saving || loading || !!error}
           >
             {saving ? "Salvando…" : "Salvar preferências"}
           </Button>

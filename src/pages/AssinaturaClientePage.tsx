@@ -29,13 +29,29 @@ type MeResponse = {
   } | null;
 };
 
-const SUBSCRIPTION_LOADING_TIMEOUT_MS = 8000;
-const SUBSCRIPTION_PLANS_TIMEOUT_ERROR = "subscription_plans_timeout";
-const SUBSCRIPTION_ME_TIMEOUT_ERROR = "subscription_me_timeout";
+function formatSubscriptionError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+
+  if (
+    /failed to fetch|networkerror|load failed|timeout|stripe|checkout|billing|portal|api|backend|env|vite_|supabase|jwt|rls|permission|unauthorized|forbidden|404|500|502|503/i.test(
+      message,
+    )
+  ) {
+    return fallback;
+  }
+
+  return message.trim() || fallback;
+}
+
+const MANAGED_SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due", "unpaid", "paused"]);
+
+function hasManagedSubscription(status: string | null | undefined): boolean {
+  return MANAGED_SUBSCRIPTION_STATUSES.has(String(status ?? "").toLowerCase());
+}
 
 /**
- * Página de subscrição para clientes: listar planos públicos, abrir Stripe Checkout
- * e, com assinatura ativa, o portal de faturação.
+ * Página de assinatura para clientes: listar planos públicos, abrir Stripe Checkout
+ * e, com assinatura ativa, o portal de cobrança.
  */
 const AssinaturaClientePage = () => {
   const navigate = useNavigate();
@@ -47,6 +63,8 @@ const AssinaturaClientePage = () => {
   const [interval, setInterval] = useState<"month" | "year">("month");
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loadingMe, setLoadingMe] = useState(false);
+  const [plansError, setPlansError] = useState<string | null>(null);
+  const [meError, setMeError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busySlug, setBusySlug] = useState<string | null>(null);
 
@@ -56,15 +74,9 @@ const AssinaturaClientePage = () => {
       return;
     }
     setLoadingPlans(true);
-    setError(null);
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      controller.abort(SUBSCRIPTION_PLANS_TIMEOUT_ERROR);
-    }, SUBSCRIPTION_LOADING_TIMEOUT_MS);
+    setPlansError(null);
     try {
-      const res = await fetch(getApiUrl("/api/stripe/plans"), {
-        signal: controller.signal,
-      });
+      const res = await fetch(getApiUrl("/api/stripe/plans"));
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error((j as { error?: string }).error ?? res.statusText);
@@ -72,15 +84,13 @@ const AssinaturaClientePage = () => {
       const data = (await res.json()) as { plans: PlanRow[] };
       setPlans(data.plans ?? []);
     } catch (e) {
-      setError(
-        controller.signal.aborted
-          ? "A API demorou para carregar os planos. Tente novamente."
-          : e instanceof Error
-            ? e.message
-            : "Erro ao carregar planos.",
+      setPlansError(
+        formatSubscriptionError(
+          e,
+          "Não conseguimos carregar os planos agora. Tente novamente em instantes.",
+        ),
       );
     } finally {
-      window.clearTimeout(timeoutId);
       setLoadingPlans(false);
     }
   }, []);
@@ -91,20 +101,21 @@ const AssinaturaClientePage = () => {
       return;
     }
     setLoadingMe(true);
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      controller.abort(SUBSCRIPTION_ME_TIMEOUT_ERROR);
-    }, SUBSCRIPTION_LOADING_TIMEOUT_MS);
+    setMeError(null);
     try {
       const data = await apiFetch<MeResponse>("/api/stripe/me", {
         token,
-        signal: controller.signal,
       });
       setMe(data);
-    } catch {
+    } catch (e) {
       setMe(null);
+      setMeError(
+        formatSubscriptionError(
+          e,
+          "Não conseguimos carregar sua assinatura agora. Tente novamente em instantes.",
+        ),
+      );
     } finally {
-      window.clearTimeout(timeoutId);
       setLoadingMe(false);
     }
   }, [token]);
@@ -119,7 +130,7 @@ const AssinaturaClientePage = () => {
 
   const checkout = async (plan: PlanRow) => {
     if (!token) {
-      setError("Inicie sessão para subscrever.");
+      setError("Faça login para assinar.");
       return;
     }
     const priceId =
@@ -145,9 +156,14 @@ const AssinaturaClientePage = () => {
         }),
       });
       if (data.url) window.location.href = data.url;
-      else setError("Resposta sem URL de checkout.");
+      else setError("Não conseguimos abrir o checkout agora. Tente novamente em instantes.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao iniciar checkout.");
+      setError(
+        formatSubscriptionError(
+          e,
+          "Não conseguimos abrir o checkout agora. Tente novamente em instantes.",
+        ),
+      );
     } finally {
       setBusySlug(null);
     }
@@ -164,9 +180,14 @@ const AssinaturaClientePage = () => {
         body: JSON.stringify({}),
       });
       if (data.url) window.location.href = data.url;
-      else setError("Resposta sem URL do portal.");
+      else setError("Não conseguimos abrir o portal de cobrança agora. Tente novamente em instantes.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao abrir o portal de faturação.");
+      setError(
+        formatSubscriptionError(
+          e,
+          "Não conseguimos abrir o portal de cobrança agora. Tente novamente em instantes.",
+        ),
+      );
     } finally {
       setBusySlug(null);
     }
@@ -187,9 +208,10 @@ const AssinaturaClientePage = () => {
         </Button>
         <Card>
           <CardHeader>
-            <CardTitle>Indisponível</CardTitle>
+            <CardTitle>Assinatura indisponível</CardTitle>
             <CardDescription>
-              Configure <code className="text-xs">VITE_API_URL</code> para usar subscrições (backend com Stripe).
+              A contratação de planos está temporariamente indisponível. Tente novamente mais tarde ou fale com o
+              suporte da GestMiles.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -200,6 +222,9 @@ const AssinaturaClientePage = () => {
   const status = me?.perfil?.subscription_status;
   const periodEnd = me?.perfil?.subscription_current_period_end;
   const hasCustomer = !!me?.perfil?.stripe_customer_id;
+  const managedSubscription = hasManagedSubscription(status);
+  const subscriptionStateBlocked = !!token && !!meError;
+  const checkoutBlocked = !!token && (loadingMe || !!meError || managedSubscription);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 pb-24 md:p-8">
@@ -214,9 +239,9 @@ const AssinaturaClientePage = () => {
         Voltar
       </Button>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Planos e subscrição</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Planos e assinatura</h1>
         <p className="text-sm text-muted-foreground">
-          Escolha um plano para aceder às funcionalidades incluídas. O pagamento é processado de forma segura pelo
+          Escolha um plano para acessar as funcionalidades incluídas. O pagamento é processado de forma segura pelo
           Stripe.
         </p>
       </div>
@@ -230,19 +255,29 @@ const AssinaturaClientePage = () => {
       {token ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">A sua subscrição</CardTitle>
+            <CardTitle className="text-lg">Sua assinatura</CardTitle>
             <CardDescription>
               {loadingMe
-                ? "A carregar estado…"
-                : status
+                ? "Carregando estado..."
+                : meError
+                  ? "Não foi possível carregar o estado da assinatura agora."
+                  : status
                   ? `Estado: ${status}${periodEnd ? ` · Próxima renovação: ${new Date(periodEnd).toLocaleString("pt-BR")}` : ""}`
-                  : "Sem subscrição ativa registada."}
+                  : "Sem assinatura ativa registrada."}
             </CardDescription>
           </CardHeader>
+          {meError ? (
+            <CardContent className="space-y-3 text-sm text-destructive">
+              <p>{meError}</p>
+              <Button type="button" variant="outline" size="sm" onClick={() => void loadMe()}>
+                Tentar novamente
+              </Button>
+            </CardContent>
+          ) : null}
           {hasCustomer ? (
             <CardFooter>
               <Button type="button" variant="outline" disabled={busySlug === "__portal__"} onClick={() => void openPortal()}>
-                Gerir faturação e método de pagamento
+                Gerenciar cobrança e método de pagamento
               </Button>
             </CardFooter>
           ) : null}
@@ -272,9 +307,43 @@ const AssinaturaClientePage = () => {
       </div>
 
       {loadingPlans ? (
-        <p className="text-sm text-muted-foreground">A carregar planos…</p>
+        <p className="text-sm text-muted-foreground">Carregando planos...</p>
+      ) : plansError ? (
+        <div className="space-y-3 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-3 text-sm text-destructive">
+          <p>{plansError}</p>
+          <Button type="button" variant="outline" size="sm" onClick={() => void loadPlans()}>
+            Tentar novamente
+          </Button>
+        </div>
+      ) : subscriptionStateBlocked ? (
+        <div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+          <p>
+            Não conseguimos confirmar sua assinatura atual. Recarregue antes de contratar para evitar cobrança duplicada.
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={() => void loadMe()}>
+            Recarregar assinatura
+          </Button>
+        </div>
+      ) : managedSubscription ? (
+        <div className="space-y-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-900">
+          <p>
+            Você já tem uma assinatura em andamento. Use o portal de cobrança para trocar plano, método de pagamento ou
+            regularizar pendências.
+          </p>
+          {hasCustomer ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={busySlug === "__portal__"}
+              onClick={() => void openPortal()}
+            >
+              Gerenciar assinatura
+            </Button>
+          ) : null}
+        </div>
       ) : plans.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Não há planos ativos. Volte mais tarde ou contacte o suporte.</p>
+        <p className="text-sm text-muted-foreground">Não há planos ativos. Volte mais tarde ou fale com o suporte.</p>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {plans.map((plan) => {
@@ -293,20 +362,26 @@ const AssinaturaClientePage = () => {
                 <CardContent className="flex-1 text-sm text-muted-foreground">
                   {canBuy ? (
                     <p>
-                      {interval === "month" ? "Cobrança mensal" : "Cobrança anual"} — o valor exato é confirmado no
+                      {interval === "month" ? "Cobrança mensal" : "Cobrança anual"} - o valor exato é confirmado no
                       checkout.
                     </p>
                   ) : (
-                    <p>Este plano não está disponível para faturação {interval === "month" ? "mensal" : "anual"}.</p>
+                    <p>Este plano não está disponível para cobrança {interval === "month" ? "mensal" : "anual"}.</p>
                   )}
                 </CardContent>
                 <CardFooter>
                   <Button
                     className="w-full"
-                    disabled={!token || !canBuy || busySlug === plan.slug}
+                    disabled={!token || !canBuy || checkoutBlocked || busySlug === plan.slug}
                     onClick={() => void checkout(plan)}
                   >
-                    {busySlug === plan.slug ? "A redirecionar…" : "Subscrever"}
+                    {busySlug === plan.slug
+                      ? "Redirecionando..."
+                      : loadingMe
+                        ? "Confirmando assinatura..."
+                        : managedSubscription
+                          ? "Gerencie pelo portal"
+                          : "Assinar"}
                   </Button>
                 </CardFooter>
               </Card>
@@ -318,9 +393,9 @@ const AssinaturaClientePage = () => {
       {!token ? (
         <p className="text-center text-sm text-muted-foreground">
           <a href="/auth" className="text-primary underline">
-            Inicie sessão
+            Faça login
           </a>{" "}
-          para subscrever.
+          para assinar.
         </p>
       ) : null}
     </div>

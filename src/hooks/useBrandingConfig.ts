@@ -16,7 +16,6 @@ const EMPTY_DATA: BrandingConfigData = {
   brandAssets: {},
   programCardLogos: {},
 };
-const BRANDING_CONFIG_TIMEOUT_MS = 8000;
 let brandingConfigCache: BrandingConfigData | null = null;
 let brandingConfigInFlight: Promise<BrandingConfigData> | null = null;
 
@@ -37,17 +36,13 @@ async function fetchBrandingConfig(force = false): Promise<BrandingConfigData> {
   if (!force && brandingConfigInFlight) return brandingConfigInFlight;
 
   brandingConfigInFlight = (async () => {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), BRANDING_CONFIG_TIMEOUT_MS);
-
     try {
       let row: Record<string, unknown> | null = null;
       const withPc = await supabase
         .from("pesquisa_passagens_config")
         .select("destination_images, airline_logos, brand_assets, program_card_logos")
         .eq("id", 1)
-        .maybeSingle()
-        .abortSignal(controller.signal);
+        .maybeSingle();
       if (withPc.error) {
         const msg = withPc.error.message ?? "";
         const noCol =
@@ -57,8 +52,7 @@ async function fetchBrandingConfig(force = false): Promise<BrandingConfigData> {
             .from("pesquisa_passagens_config")
             .select("destination_images, airline_logos, brand_assets")
             .eq("id", 1)
-            .maybeSingle()
-            .abortSignal(controller.signal);
+            .maybeSingle();
           if (fallback.error) throw fallback.error;
           row = (fallback.data as Record<string, unknown> | null) ?? null;
         } else {
@@ -77,7 +71,6 @@ async function fetchBrandingConfig(force = false): Promise<BrandingConfigData> {
       brandingConfigCache = data;
       return data;
     } finally {
-      window.clearTimeout(timeoutId);
       brandingConfigInFlight = null;
     }
   })();
@@ -102,7 +95,7 @@ export function useBrandingConfig(): {
       setData(await fetchBrandingConfig(force));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
-      setData(EMPTY_DATA);
+      setData(brandingConfigCache ?? EMPTY_DATA);
     } finally {
       setLoading(false);
     }

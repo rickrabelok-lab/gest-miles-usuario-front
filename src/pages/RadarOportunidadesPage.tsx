@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -63,55 +63,58 @@ const RadarOportunidadesPage = () => {
   const [filterRegiao, setFilterRegiao] = useState<string>("");
   const [filterClasse, setFilterClasse] = useState<string>("todas");
   const [sort, setSort] = useState<SortOption>("newest");
+  const hasActiveFilters = Boolean(filterPrograma || filterRegiao || filterClasse !== "todas");
+
+  const load = useCallback(async (isCancelled: () => boolean = () => false) => {
+    setLoading(true);
+    setLoadError(null);
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const { data, error } = await supabase
+        .from("oportunidades_voo")
+        .select("id, origem, destino, programa, classe, milhas, data_voo, valor_estimado, regiao_destino, data_detectada")
+        .or(`data_voo.is.null,data_voo.gte.${today}`)
+        .order("data_detectada", { ascending: false })
+        .limit(RADAR_OPORTUNIDADES_INITIAL_LIMIT);
+      if (isCancelled()) return;
+      if (error) {
+        console.warn("[Radar] oportunidades_voo:", error.message);
+        setList([]);
+        setLoadError("Não foi possível carregar as oportunidades agora.");
+        return;
+      }
+      setList(
+        (data ?? []).map((row) => ({
+          id: Number(row.id),
+          origem: String(row.origem ?? ""),
+          destino: String(row.destino ?? ""),
+          programa: String(row.programa ?? ""),
+          classe: String(row.classe ?? ""),
+          milhas: Number(row.milhas ?? 0),
+          data_voo: row.data_voo ? String(row.data_voo) : null,
+          valor_estimado: Number(row.valor_estimado ?? 0),
+          regiao_destino: row.regiao_destino ? String(row.regiao_destino) : null,
+          data_detectada: String(row.data_detectada ?? ""),
+        })),
+      );
+    } catch (error) {
+      if (!isCancelled()) {
+        console.warn("[Radar] oportunidades_voo:", error);
+        setList([]);
+        setLoadError("Não foi possível carregar as oportunidades agora.");
+      }
+    } finally {
+      if (!isCancelled()) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-
-    const load = async () => {
-      setLoading(true);
-      setLoadError(null);
-      try {
-        const { data, error } = await supabase
-          .from("oportunidades_voo")
-          .select("id, origem, destino, programa, classe, milhas, data_voo, valor_estimado, regiao_destino, data_detectada")
-          .order("data_detectada", { ascending: false })
-          .limit(RADAR_OPORTUNIDADES_INITIAL_LIMIT);
-        if (cancelled) return;
-        if (error) {
-          console.warn("[Radar] oportunidades_voo:", error.message);
-          setList([]);
-          setLoadError("Não foi possível carregar as oportunidades agora.");
-          return;
-        }
-        setList(
-          (data ?? []).map((row) => ({
-            id: Number(row.id),
-            origem: String(row.origem ?? ""),
-            destino: String(row.destino ?? ""),
-            programa: String(row.programa ?? ""),
-            classe: String(row.classe ?? ""),
-            milhas: Number(row.milhas ?? 0),
-            data_voo: row.data_voo ? String(row.data_voo) : null,
-            valor_estimado: Number(row.valor_estimado ?? 0),
-            regiao_destino: row.regiao_destino ? String(row.regiao_destino) : null,
-            data_detectada: String(row.data_detectada ?? ""),
-          })),
-        );
-      } catch (error) {
-        if (!cancelled) {
-          console.warn("[Radar] oportunidades_voo:", error);
-          setList([]);
-          setLoadError("Não foi possível carregar as oportunidades agora.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    void load();
+    void load(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [load]);
 
   const filtered = useMemo(() => {
     let result = [...list];
@@ -151,6 +154,11 @@ const RadarOportunidadesPage = () => {
     new Intl.NumberFormat("pt-BR").format(n) + " milhas";
   const formatDate = (d: string | null) =>
     d ? new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  const clearFilters = () => {
+    setFilterPrograma("");
+    setFilterRegiao("");
+    setFilterClasse("todas");
+  };
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
@@ -260,11 +268,38 @@ const RadarOportunidadesPage = () => {
           {loading ? (
             <p className="py-6 text-center text-sm text-muted-foreground">Carregando...</p>
           ) : loadError ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">{loadError}</p>
+            <div className="rounded-[18px] bg-white p-4 text-center shadow-nubank">
+              <p className="text-sm text-nubank-text-secondary">{loadError}</p>
+              <button
+                type="button"
+                onClick={() => void load()}
+                className="mt-3 rounded-[12px] bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-all duration-200 hover:opacity-95"
+              >
+                Tentar novamente
+              </button>
+            </div>
           ) : filtered.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Nenhuma oportunidade encontrada. Ajuste os filtros ou aguarde novas ofertas.
-            </p>
+            <div className="rounded-[18px] bg-white p-4 text-center shadow-nubank">
+              <p className="text-sm font-medium text-nubank-text">
+                {hasActiveFilters
+                  ? "Nenhuma oportunidade para estes filtros."
+                  : "Nenhuma oportunidade ativa agora."}
+              </p>
+              <p className="mt-1 text-xs text-nubank-text-secondary">
+                {hasActiveFilters
+                  ? "Limpe os filtros para ver todas as oportunidades ainda disponíveis."
+                  : "Quando surgir uma oferta futura ou sem data definida, ela aparece aqui."}
+              </p>
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="mt-3 rounded-[12px] bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-all duration-200 hover:opacity-95"
+                >
+                  Limpar filtros
+                </button>
+              ) : null}
+            </div>
           ) : (
             filtered.map((o) => (
               <Card

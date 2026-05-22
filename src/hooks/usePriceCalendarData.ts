@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SearchMode } from "@/contexts/SearchFlightsContext";
 import { monthKey } from "@/lib/price-calendar";
-import { getPriceCalendarProvider } from "@/lib/price-calendar-provider";
+import {
+  getPriceCalendarProvider,
+  type PriceCalendarResult,
+} from "@/lib/price-calendar-provider";
 
-const monthCache = new Map<string, Map<number, number>>();
+const monthCache = new Map<string, PriceCalendarResult>();
 
 type UsePriceCalendarDataParams = {
   originCode?: string;
@@ -20,6 +23,9 @@ export const usePriceCalendarData = ({
 }: UsePriceCalendarDataParams) => {
   const [loading, setLoading] = useState(true);
   const [pricesByDay, setPricesByDay] = useState<Map<number, number>>(new Map());
+  const [source, setSource] = useState<PriceCalendarResult["source"]>("estimated");
+  const [error, setError] = useState<string | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   const key = useMemo(() => {
     if (!originCode || !destinationCode) return null;
@@ -30,31 +36,49 @@ export const usePriceCalendarData = ({
     if (!key || !originCode || !destinationCode) {
       setLoading(false);
       setPricesByDay(new Map());
+      setSource("estimated");
+      setError(null);
       return;
     }
 
     const cached = monthCache.get(key);
     if (cached) {
-      setPricesByDay(cached);
+      setPricesByDay(cached.pricesByDay);
+      setSource(cached.source);
+      setError(cached.error ?? null);
       setLoading(false);
       return;
     }
 
     setLoading(true);
+    setError(null);
     let cancelled = false;
 
     const load = async () => {
       try {
         const provider = getPriceCalendarProvider();
-        const generated = await provider.getMonthPrices({
+        const result = await provider.getMonthPrices({
           originCode,
           destinationCode,
           mode,
           month,
         });
         if (cancelled) return;
-        monthCache.set(key, generated);
-        setPricesByDay(generated);
+        if (result.source !== "estimated" || !result.error) {
+          monthCache.set(key, result);
+        }
+        setPricesByDay(result.pricesByDay);
+        setSource(result.source);
+        setError(result.error ?? null);
+      } catch (err) {
+        if (cancelled) return;
+        setPricesByDay(new Map());
+        setSource("estimated");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Não foi possível carregar o calendário de preços.",
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -65,7 +89,17 @@ export const usePriceCalendarData = ({
     return () => {
       cancelled = true;
     };
-  }, [key, originCode, destinationCode, mode, month]);
+  }, [key, originCode, destinationCode, mode, month, refreshVersion]);
 
-  return { loading, pricesByDay };
+  return {
+    loading,
+    pricesByDay,
+    source,
+    error,
+    isEstimated: source === "estimated",
+    retry: () => {
+      if (key) monthCache.delete(key);
+      setRefreshVersion((value) => value + 1);
+    },
+  };
 };

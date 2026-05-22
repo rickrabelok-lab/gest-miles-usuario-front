@@ -119,6 +119,7 @@ export const useGestor = (
           .from("cliente_gestores")
           .select("cliente_id")
           .in("gestor_id", supervisedGestorIds);
+        if (cgError) throw cgError;
         if (!cgError && cgData) {
           cgData.forEach((row) => {
             const id = row.cliente_id as string;
@@ -136,6 +137,7 @@ export const useGestor = (
         .from("cliente_gestores")
         .select("cliente_id")
         .eq("gestor_id", user.id);
+      if (cgErrorSelf) throw cgErrorSelf;
       if (!cgErrorSelf && cgDataSelf) {
         cgDataSelf.forEach((row) => {
           const id = row.cliente_id as string;
@@ -864,6 +866,7 @@ export const useGestor = (
     /** IDs dos clientes vinculados ao gestor (cliente_gestores), para filtrar lista "Clientes ativos". */
     linkedClientIds: clientsQuery.data ?? [],
     clientsIds: allClientIds,
+    refetchClientes: clientsQuery.refetch,
     resumoClientes,
     vencimentosTodosClientes,
     demandasGestor,

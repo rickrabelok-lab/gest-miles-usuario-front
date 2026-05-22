@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Search, UserMinus } from "lucide-react";
+import { AlertCircle, ArrowLeft, Search, UserMinus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGestor } from "@/hooks/useGestor";
 import { useVincularCliente } from "@/hooks/useVincularCliente";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BottomNav from "@/components/BottomNav";
@@ -20,10 +21,20 @@ const ClientePage = () => {
   const [pastedId, setPastedId] = useState("");
   const [searchByName, setSearchByName] = useState("");
 
-  const { resumoClientes } = useGestor(
+  const {
+    resumoClientes,
+    loading: clientesLoading,
+    error: clientesError,
+    refetchClientes,
+  } = useGestor(
     managerMode,
     useMemo(() => (user?.id ? [user.id] : []), [user?.id]),
   );
+
+  const clientesErrorMessage =
+    clientesError instanceof Error
+      ? clientesError.message
+      : "Não foi possível carregar os clientes da carteira.";
 
   const gestorClientOptions = useMemo(
     () =>
@@ -210,7 +221,27 @@ const ClientePage = () => {
                 </div>
               </div>
             )}
-            {clients.length === 0 ? (
+            {clientesLoading ? (
+              <p className="rounded-xl border border-dashed border-border bg-muted/30 py-8 text-center text-sm text-muted-foreground">
+                Carregando clientes da carteira...
+              </p>
+            ) : clientesError ? (
+              <Alert variant="destructive" className="rounded-xl">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Não foi possível carregar a carteira</AlertTitle>
+                <AlertDescription className="space-y-3">
+                  <p>{clientesErrorMessage}</p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void refetchClientes()}
+                  >
+                    Tentar novamente
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : clients.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border bg-muted/30 py-8 text-center text-sm text-muted-foreground">
                 Nenhum cliente vinculado. Use o campo acima para acessar por ID.
               </p>

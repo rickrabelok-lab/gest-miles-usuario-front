@@ -24,6 +24,7 @@ type AuthContextValue = {
   /** Quando definido, o usuário participa da estrutura por equipe (RLS no Supabase). */
   equipeId: string | null;
   roleLoading: boolean;
+  roleError: string | null;
   signInWithPassword: (email: string, password: string) => Promise<boolean>;
   signUpWithPassword: (email: string, password: string) => Promise<boolean>;
   signInWithMagicLink: (email: string) => Promise<void>;
@@ -35,6 +36,18 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 const ROLE_FETCH_TIMEOUT_MS = 8000;
 const ROLE_FETCH_TIMEOUT_ERROR = "role_fetch_timeout";
+const ROLE_LOAD_ERROR_MESSAGE =
+  "Nao foi possivel validar seu perfil agora. Tente novamente antes de concluir que a conta nao tem acesso.";
+
+function isMissingEquipeIdColumn(error: { code?: string; message?: string; details?: string } | null) {
+  if (!error) return false;
+  const text = [error.message, error.details].filter(Boolean).join(" ");
+  return (
+    error.code === "42703" ||
+    (/equipe_id/i.test(text) &&
+      /column|coluna|schema cache|not found|does not exist/i.test(text))
+  );
+}
 
 async function queryWithTimeout<T>(queryFactory: (signal: AbortSignal) => PromiseLike<T>) {
   let timedOut = false;
@@ -63,12 +76,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [role, setRole] = useState<AppRole | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  const [roleError, setRoleError] = useState<string | null>(null);
   const lastFetchedUserIdRef = useRef<string | null>(null);
 
   const fetchRole = useCallback(async (userId?: string | null) => {
     if (!userId) {
       setRole(null);
       setEquipeId(null);
+      setRoleError(null);
       setRoleLoading(false);
       lastFetchedUserIdRef.current = null;
       return;
@@ -77,6 +92,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     if (lastFetchedUserIdRef.current !== userId) {
       setRoleLoading(true);
     }
+    setRoleError(null);
     lastFetchedUserIdRef.current = userId;
     let data: { role?: string; equipe_id?: string | null } | null = null;
 
@@ -91,6 +107,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       );
 
       if (full.error) {
+        if (!isMissingEquipeIdColumn(full.error)) {
+          setRole(null);
+          setEquipeId(null);
+          setRoleError(ROLE_LOAD_ERROR_MESSAGE);
+          return;
+        }
+
         const legacy = await queryWithTimeout((signal) =>
           supabase
             .from("perfis")
@@ -102,6 +125,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         if (legacy.error) {
           setRole(null);
           setEquipeId(null);
+          setRoleError(ROLE_LOAD_ERROR_MESSAGE);
           return;
         }
         data = legacy.data;
@@ -111,6 +135,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     } catch {
       setRole(null);
       setEquipeId(null);
+      setRoleError(ROLE_LOAD_ERROR_MESSAGE);
       return;
     } finally {
       setRoleLoading(false);
@@ -118,6 +143,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
     setRole(mapPerfilRoleForOperationalUi(data?.role));
     setEquipeId((data?.equipe_id as string | null | undefined) ?? null);
+    setRoleError(null);
   }, []);
 
   useEffect(() => {
@@ -233,6 +259,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       role,
       equipeId,
       roleLoading,
+      roleError,
       signInWithPassword,
       signUpWithPassword,
       signInWithMagicLink,
@@ -247,6 +274,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       role,
       equipeId,
       roleLoading,
+      roleError,
       signInWithPassword,
       signUpWithPassword,
       signInWithMagicLink,

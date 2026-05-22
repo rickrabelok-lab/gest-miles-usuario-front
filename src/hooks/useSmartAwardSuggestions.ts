@@ -44,11 +44,26 @@ function routeMatchesDestino(regiaoDestino: string, destinos: string[]): boolean
   return destinos.some((d) => d === regiao || regiao.includes(d));
 }
 
+function toQueryError(err: unknown, fallback: string): Error {
+  if (err instanceof Error) return err;
+  if (err && typeof err === "object" && "message" in err) {
+    const message = String((err as { message?: unknown }).message ?? "").trim();
+    if (message) return new Error(message);
+  }
+  return new Error(fallback);
+}
+
 export const useSmartAwardSuggestions = (managerClientId?: string | null) => {
   const { user } = useAuth();
   const clientId = managerClientId ?? user?.id ?? null;
-  const { data: programas = [] } = useProgramasCliente(managerClientId);
-  const { preferencias } = usePreferenciasSugestoes(clientId);
+  const programasQuery = useProgramasCliente(managerClientId);
+  const {
+    preferencias,
+    loading: preferenciasLoading,
+    error: preferenciasError,
+    refetch: refetchPreferencias,
+  } = usePreferenciasSugestoes(clientId);
+  const programas = useMemo(() => programasQuery.data ?? [], [programasQuery.data]);
 
   const contasByPrograma = useMemo(() => {
     const map = new Map<string, { saldo: number; custo_medio_milheiro: number }>();
@@ -70,76 +85,79 @@ export const useSmartAwardSuggestions = (managerClientId?: string | null) => {
 
   const query = useQuery({
     queryKey: ["smart_award_suggestions", clientId, preferencias, programKey],
-    enabled: !!clientId,
+    enabled: !!clientId && !programasQuery.isLoading && !preferenciasLoading && !programasQuery.error && !preferenciasError,
     retry: false,
     queryFn: async (): Promise<SmartAwardSuggestion[]> => {
-      try {
-        const { data: rotas, error: rotasErr } = await supabase
-          .from("rotas_premium")
-          .select("id, origem, destino, programa, classe, milhas_necessarias, taxas_embarque, valor_tarifa_pagante, regiao_destino");
-        if (rotasErr) {
-          console.warn("[SmartAward] rotas_premium:", rotasErr.message);
-          return [];
-        }
-
-        const destinos = preferencias?.preferencia_destino ?? ["Todos"];
-        const classePref = preferencias?.preferencia_classe ?? "Todas";
-
-        const results: SmartAwardSuggestion[] = [];
-
-        (rotas ?? []).forEach((r) => {
-          if (!routeMatchesDestino(String(r.regiao_destino ?? ""), destinos)) return;
-          if (!routeMatchesClasse(String(r.classe ?? ""), classePref)) return;
-
-          const programaKey = normalizeProgramKey(String(r.programa ?? ""));
-          const conta = contasByPrograma.get(programaKey);
-          if (!conta) return;
-
-          const milhas = Number(r.milhas_necessarias ?? 0);
-          const saldo = conta.saldo;
-          if (saldo < milhas) return;
-
-          const custoMilheiro = conta.custo_medio_milheiro;
-          const taxas = Number(r.taxas_embarque ?? 0);
-          const tarifaPagante = Number(r.valor_tarifa_pagante ?? 0);
-          const custoMilhas = (milhas / 1000) * custoMilheiro;
-          const custoEmissao = custoMilhas + taxas;
-          const economia = tarifaPagante - custoEmissao;
-          if (economia <= 0) return;
-          const economiaPercentual = tarifaPagante > 0 ? (economia / tarifaPagante) * 100 : 0;
-
-          results.push({
-            id: `sug-${r.id}-${r.origem}-${r.destino}`,
-            origem: String(r.origem ?? ""),
-            destino: String(r.destino ?? ""),
-            programa: String(r.programa ?? ""),
-            classe: String(r.classe ?? ""),
-            milhas_necessarias: milhas,
-            custo_emissao: custoEmissao,
-            valor_tarifa_pagante: tarifaPagante,
-            economia,
-            economia_percentual: economiaPercentual,
-            regiao_destino: String(r.regiao_destino ?? ""),
-          });
-        });
-
-        results.sort((a, b) => {
-          if (b.economia !== a.economia) return b.economia - a.economia;
-          return b.economia_percentual - a.economia_percentual;
-        });
-
-        return results;
-      } catch (err) {
-        console.warn("[SmartAward] Erro ao carregar sugestões:", err);
-        return [];
+      const { data: rotas, error: rotasErr } = await supabase
+        .from("rotas_premium")
+        .select("id, origem, destino, programa, classe, milhas_necessarias, taxas_embarque, valor_tarifa_pagante, regiao_destino");
+      if (rotasErr) {
+        console.warn("[SmartAward] rotas_premium:", rotasErr.message);
+        throw toQueryError(rotasErr, "Nao foi possivel carregar as rotas premium agora.");
       }
+
+      const destinos = preferencias?.preferencia_destino ?? ["Todos"];
+      const classePref = preferencias?.preferencia_classe ?? "Todas";
+
+      const results: SmartAwardSuggestion[] = [];
+
+      (rotas ?? []).forEach((r) => {
+        if (!routeMatchesDestino(String(r.regiao_destino ?? ""), destinos)) return;
+        if (!routeMatchesClasse(String(r.classe ?? ""), classePref)) return;
+
+        const programaKey = normalizeProgramKey(String(r.programa ?? ""));
+        const conta = contasByPrograma.get(programaKey);
+        if (!conta) return;
+
+        const milhas = Number(r.milhas_necessarias ?? 0);
+        const saldo = conta.saldo;
+        if (saldo < milhas) return;
+
+        const custoMilheiro = conta.custo_medio_milheiro;
+        const taxas = Number(r.taxas_embarque ?? 0);
+        const tarifaPagante = Number(r.valor_tarifa_pagante ?? 0);
+        const custoMilhas = (milhas / 1000) * custoMilheiro;
+        const custoEmissao = custoMilhas + taxas;
+        const economia = tarifaPagante - custoEmissao;
+        if (economia <= 0) return;
+        const economiaPercentual = tarifaPagante > 0 ? (economia / tarifaPagante) * 100 : 0;
+
+        results.push({
+          id: `sug-${r.id}-${r.origem}-${r.destino}`,
+          origem: String(r.origem ?? ""),
+          destino: String(r.destino ?? ""),
+          programa: String(r.programa ?? ""),
+          classe: String(r.classe ?? ""),
+          milhas_necessarias: milhas,
+          custo_emissao: custoEmissao,
+          valor_tarifa_pagante: tarifaPagante,
+          economia,
+          economia_percentual: economiaPercentual,
+          regiao_destino: String(r.regiao_destino ?? ""),
+        });
+      });
+
+      results.sort((a, b) => {
+        if (b.economia !== a.economia) return b.economia - a.economia;
+        return b.economia_percentual - a.economia_percentual;
+      });
+
+      return results;
     },
   });
 
+  const refetch = async () => {
+    await Promise.allSettled([
+      programasQuery.refetch(),
+      refetchPreferencias(),
+      query.refetch(),
+    ]);
+  };
+
   return {
     suggestions: query.data ?? [],
-    loading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
+    loading: programasQuery.isLoading || preferenciasLoading || query.isLoading,
+    error: programasQuery.error ?? preferenciasError ?? query.error,
+    refetch,
   };
 };
