@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -69,6 +69,16 @@ function rethrowWithStage(stage: string, err: { message?: string } | null | unde
   if (!err) return;
   const m = typeof err.message === "string" && err.message ? err.message : "erro desconhecido";
   throw new Error(`${stage}: ${m}`);
+}
+
+function formatProfileLoadError(error: unknown): string {
+  console.warn("[ClientProfile] load failed", error);
+  return "Não foi possível carregar seu perfil agora. Tente novamente em instantes.";
+}
+
+function formatProfileSaveError(error: unknown): string {
+  console.warn("[ClientProfile] save failed", error);
+  return "Não foi possível salvar seu perfil agora. Revise sua conexão e tente novamente.";
 }
 
 /** Clona via JSON para remover `undefined` e garantir payload válido em `jsonb` (PostgREST). */
@@ -154,6 +164,12 @@ function buildClientePerfilPayload(
   return jsonSafeForDb(next);
 }
 
+function resolveContactEmail(inputEmail: string, existingEmail?: string | null, authEmail?: string | null): string | null {
+  const normalized = inputEmail.trim().toLowerCase();
+  if (normalized) return normalized;
+  return existingEmail ?? authEmail ?? null;
+}
+
 const ClientProfile = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -161,6 +177,7 @@ const ClientProfile = () => {
   const [fullName, setFullName] = useState("");
   const [perfilData, setPerfilData] = useState<ClientePerfilData>(defaultPerfilData);
   const [profileReady, setProfileReady] = useState(false);
+  const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
   const profileLoadSeqRef = useRef(0);
 
   const fallbackSlug = useMemo(() => {
@@ -168,22 +185,26 @@ const ClientProfile = () => {
     return slugify(fromEmail) || `user-${Date.now().toString().slice(-6)}`;
   }, [user?.email]);
 
-  useEffect(() => {
+  const loadProfile = useCallback(() => {
     if (!user?.id) {
       setProfileReady(false);
+      setProfileLoadError(null);
       return;
     }
     setProfileReady(false);
+    setProfileLoadError(null);
     const seq = ++profileLoadSeqRef.current;
     const load = async () => {
       try {
         const { data, error } = await supabase
           .from("perfis")
-          .select("nome_completo, configuracao_tema")
+          .select("nome_completo, email, configuracao_tema")
           .eq("usuario_id", user.id)
           .maybeSingle();
         if (error) {
-          toast.error(`Erro ao carregar perfil: ${error.message}`);
+          if (seq !== profileLoadSeqRef.current) return;
+          setProfileLoadError(formatProfileLoadError(error));
+          setProfileReady(false);
           return;
         }
         if (seq !== profileLoadSeqRef.current) return;
@@ -196,6 +217,7 @@ const ClientProfile = () => {
         setPerfilData({
           ...defaultPerfilData,
           ...existing,
+          emailContato: existing.emailContato || data?.email || user.email || "",
           planoAcao: {
             ...defaultPerfilData.planoAcao,
             ...(existing.planoAcao ?? {}),
@@ -204,13 +226,16 @@ const ClientProfile = () => {
         if (seq === profileLoadSeqRef.current) setProfileReady(true);
       } catch (err) {
         if (seq !== profileLoadSeqRef.current) return;
-        const msg = err instanceof Error ? err.message : "Erro ao carregar dados do perfil.";
-        toast.error(msg);
+        setProfileLoadError(formatProfileLoadError(err));
         setProfileReady(false);
       }
     };
     void load();
   }, [user?.id, user?.email]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   const togglePlano = (key: keyof ClientePerfilData["planoAcao"]) =>
     setPerfilData((prev) => ({
@@ -228,7 +253,7 @@ const ClientProfile = () => {
     try {
       const { data: existing, error: existingError } = await supabase
         .from("perfis")
-        .select("id, slug, configuracao_tema")
+        .select("id, slug, email, configuracao_tema")
         .eq("usuario_id", user.id)
         .maybeSingle();
       rethrowWithStage("Ler perfil", existingError);
@@ -247,7 +272,7 @@ const ClientProfile = () => {
       });
 
       const nomeGravar = fullName.trim();
-      const contactEmail = perfilData.emailContato.trim().toLowerCase() || null;
+      const contactEmail = resolveContactEmail(perfilData.emailContato, existing?.email, user.email);
 
       if (existing?.id) {
         const { error, data: updated } = await supabase
@@ -287,8 +312,7 @@ const ClientProfile = () => {
       await verifyPersistenciaPerfilCliente(user.id, nextClientePerfil);
       toast.success("Perfil do cliente salvo com sucesso.");
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Erro ao salvar perfil.";
-      toast.error(msg);
+      toast.error(formatProfileSaveError(error));
     } finally {
       setSaving(false);
     }
@@ -312,6 +336,15 @@ const ClientProfile = () => {
       <p className="mb-4 text-xs text-muted-foreground">
         Preencha os dados estratégicos e operacionais da conta.
       </p>
+
+      {profileLoadError ? (
+        <div className="mb-4 space-y-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          <p>{profileLoadError}</p>
+          <Button type="button" variant="outline" size="sm" onClick={loadProfile}>
+            Tentar novamente
+          </Button>
+        </div>
+      ) : null}
 
       <div className="space-y-4">
         <section className="space-y-2 rounded-xl border border-border bg-card p-3">
@@ -377,7 +410,7 @@ const ClientProfile = () => {
         </section>
 
         <Button type="button" className="w-full" onClick={handleSave} disabled={saving || !profileReady}>
-          {saving ? "Salvando..." : "Salvar perfil"}
+          {saving ? "Salvando..." : profileLoadError ? "Carregue o perfil para salvar" : "Salvar perfil"}
         </Button>
       </div>
     </div>

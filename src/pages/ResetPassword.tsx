@@ -16,6 +16,14 @@ function hashLooksLikeSupabaseRecovery(): boolean {
   return /type=recovery|type%3Drecovery/.test(h);
 }
 
+function formatResetPasswordError(error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  if (/failed to fetch|networkerror|load failed/i.test(message)) {
+    return "Não foi possível alterar sua senha agora. Verifique sua conexão e tente de novo.";
+  }
+  return "Não foi possível alterar sua senha agora. Peça um novo link e tente novamente.";
+}
+
 const ResetPassword = () => {
   const [params] = useSearchParams();
   const token = params.get("token") ?? "";
@@ -112,7 +120,8 @@ const ResetPassword = () => {
         })();
       }, 2000);
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Erro");
+      console.warn("[ResetPassword] submit:", e);
+      setMessage(formatResetPasswordError(e));
     } finally {
       setPending(false);
     }

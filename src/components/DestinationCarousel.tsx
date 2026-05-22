@@ -123,7 +123,7 @@ const DestinationCarousel = ({
   origins,
   onDestinationClick,
 }: DestinationCarouselProps) => {
-  const { loading, pricesByDestination } = useDestinationBestPrices({
+  const { error, loading, pricesByDestination, retry } = useDestinationBestPrices({
     destinations: DESTINATION_CODES,
     origins,
   });
@@ -209,10 +209,25 @@ const DestinationCarousel = ({
     <section className="px-5 py-4">
       <div className="mb-3">
         <h2 className="text-lg font-bold tracking-tight text-nubank-text">Destinos em destaque</h2>
-        <p className="mt-0.5 text-xs text-nubank-text-secondary">
-          Melhores preços por região com base nas origens habilitadas.
-        </p>
-      </div>
+      <p className="mt-0.5 text-xs text-nubank-text-secondary">
+        Melhores preços por região com base nas origens habilitadas.
+      </p>
+    </div>
+      {!loading && error ? (
+        <div className="mb-3 rounded-[14px] border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <p className="font-semibold">Preços indisponíveis agora</p>
+          <p className="mt-1 text-xs text-red-600">
+            Não foi possível atualizar os melhores preços. Os destinos continuam navegáveis, mas sem valores confiáveis.
+          </p>
+          <button
+            type="button"
+            onClick={retry}
+            className="mt-2 rounded-[10px] bg-white px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      ) : null}
       {renderRow(REGION_DESTINATIONS)}
       <div className="mt-4">{renderRow(INTERNATIONAL_DESTINATIONS)}</div>
     </section>

@@ -40,7 +40,8 @@ const Me = () => {
         .maybeSingle();
 
       if (existingError) {
-        setError(existingError.message);
+        console.warn("[Me] perfil inicial:", existingError.message);
+        setError("Não foi possível preparar sua conta agora. Tente novamente em alguns instantes.");
         return;
       }
 
@@ -75,7 +76,8 @@ const Me = () => {
       });
 
       if (insertError) {
-        setError(insertError.message);
+        console.warn("[Me] criar perfil inicial:", insertError.message);
+        setError("Não foi possível preparar sua conta agora. Tente novamente em alguns instantes.");
         return;
       }
 
@@ -125,15 +127,19 @@ const Me = () => {
         <>
           <p className="text-center font-medium text-destructive">Erro ao configurar perfil</p>
           <p className="text-center text-muted-foreground">{error}</p>
-          <p className="max-w-xs text-center text-xs text-muted-foreground">
-            Verifique se o e-mail está confirmado no Supabase (Auth → Users) e se existe um perfil com role &quot;cliente&quot; na tabela perfis.
-          </p>
           <button
             type="button"
             className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-            onClick={() => navigate("/")}
+            onClick={() => window.location.reload()}
           >
-            Voltar para a tela inicial
+            Tentar novamente
+          </button>
+          <button
+            type="button"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground"
+            onClick={() => navigate("/auth")}
+          >
+            Voltar para o login
           </button>
         </>
       ) : (

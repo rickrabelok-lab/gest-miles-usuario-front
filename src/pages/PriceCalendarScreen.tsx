@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -44,20 +44,27 @@ const PriceCalendarScreen = () => {
   });
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
-  const { loading, pricesByDay } = usePriceCalendarData({
+  const { loading, pricesByDay, error, isEstimated, retry } = usePriceCalendarData({
     originCode: origin?.code,
     destinationCode: destination?.code,
     mode,
     month: currentMonth,
   });
+  const hasRoute = !!origin && !!destination;
+  const firstAllowedMonth = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }, []);
+  const canGoToPreviousMonth = currentMonth > firstAllowedMonth;
 
   const monthLabel = `${MONTH_NAMES[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 
   const routeLabel = useMemo(() => {
+    if (!origin || !destination) return "Rota nao escolhida";
     const from = origin?.city ?? "Origem";
     const to = destination?.city ?? "Destino";
     return `${from} ✈ ${to}`;
-  }, [origin?.city, destination?.city]);
+  }, [origin, destination]);
 
   const displayedAirline = useMemo(() => {
     const fromQuery = searchParams.get("airline");
@@ -66,7 +73,8 @@ const PriceCalendarScreen = () => {
     return AIRLINE_OPTIONS[hash(seed) % AIRLINE_OPTIONS.length];
   }, [searchParams, origin?.code, destination?.code, mode]);
 
-  const canSearch = !!selectedDay;
+  const hasPriceLoadError = hasRoute && !!error;
+  const canSearch = hasRoute && !!selectedDay && !hasPriceLoadError;
 
   return (
     <div className="mx-auto min-h-screen max-w-[480px] bg-nubank-bg">
@@ -88,12 +96,18 @@ const PriceCalendarScreen = () => {
           <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-2">
             <div className="min-w-0">
               <p className="truncate text-[17px] font-medium text-nubank-text">{routeLabel}</p>
-              <div className="mt-1 inline-flex items-center gap-1.5 rounded-[10px] bg-white px-2.5 py-1.5 shadow-nubank">
-                <AirlineLogo airline={displayedAirline} size={14} />
-                <span className="text-[11px] font-medium text-slate-600">
-                  Companhia: {displayedAirline}
-                </span>
-              </div>
+              {hasRoute ? (
+                <div className="mt-1 inline-flex items-center gap-1.5 rounded-[10px] bg-white px-2.5 py-1.5 shadow-nubank">
+                  <AirlineLogo airline={displayedAirline} size={14} />
+                  <span className="text-[11px] font-medium text-slate-600">
+                    Companhia: {displayedAirline}
+                  </span>
+                </div>
+              ) : (
+                <p className="mt-1 text-[12px] font-medium text-slate-500">
+                  Selecione origem e destino para ver os precos.
+                </p>
+              )}
             </div>
             <div className="rounded-[14px] bg-white px-3 py-2 text-right shadow-nubank">
               <p className="text-[11px] text-nubank-text-secondary">Histórico de preços</p>
@@ -107,13 +121,16 @@ const PriceCalendarScreen = () => {
         <div className="mb-5 flex items-center justify-between">
           <button
             type="button"
+            disabled={!canGoToPreviousMonth}
             onClick={() => {
+              if (!canGoToPreviousMonth) return;
               setSelectedDay(null);
               setCurrentMonth(
                 (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1),
               );
             }}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 disabled:cursor-not-allowed disabled:opacity-35"
+            aria-label="Mes anterior"
           >
             <ChevronLeft size={18} />
           </button>
@@ -132,22 +149,75 @@ const PriceCalendarScreen = () => {
           </button>
         </div>
 
-        <PriceCalendar
-          month={currentMonth}
-          mode={mode}
-          loading={loading}
-          pricesByDay={pricesByDay}
-          selectedDay={selectedDay}
-          onSelectDay={setSelectedDay}
-        />
+        {!hasRoute ? (
+          <div className="rounded-[16px] border border-amber-200 bg-amber-50 p-4 text-amber-950 shadow-nubank">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold">Escolha origem e destino</p>
+                <p className="mt-1 text-[12px] leading-5">
+                  O calendario precisa de uma rota para buscar precos. Volte para a busca e selecione os aeroportos.
+                </p>
+                <Button
+                  type="button"
+                  className="mt-3 h-9 rounded-[12px] px-4 text-sm"
+                  onClick={() => navigate("/search-flights")}
+                >
+                  Escolher rota
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <PriceCalendar
+            month={currentMonth}
+            mode={mode}
+            loading={loading}
+            pricesByDay={pricesByDay}
+            selectedDay={selectedDay}
+            onSelectDay={setSelectedDay}
+          />
+        )}
+
+        {hasRoute && !loading && (error || isEstimated) && (
+          <div className="mt-4 rounded-[12px] border border-amber-200 bg-amber-50 p-3 text-amber-900">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold">
+                  {error ? "Preços reais indisponíveis" : "Preços estimados"}
+                </p>
+                <p className="mt-1 text-[12px] leading-5">
+                  {error
+                    ? "Mostramos uma estimativa para você continuar navegando. Tente recarregar para buscar os valores reais."
+                    : "Ainda não temos histórico real para esta rota e mês."}
+                </p>
+              </div>
+              {error && (
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-amber-900 shadow-sm"
+                  aria-label="Recarregar preços"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center bg-gradient-to-t from-nubank-bg via-nubank-bg to-transparent pt-6">
         <div className="w-full max-w-[480px] px-4 pb-5">
           <Button
             className="h-14 w-full rounded-[16px] gradient-primary text-base font-semibold text-white shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover active:scale-[0.98]"
-            disabled={!canSearch}
+            disabled={hasPriceLoadError ? loading : !canSearch}
             onClick={() => {
+              if (hasPriceLoadError) {
+                retry();
+                return;
+              }
               if (!selectedDay) return;
               const travelers = passengers.adult + passengers.child + passengers.baby;
               toast.success(
@@ -155,7 +225,7 @@ const PriceCalendarScreen = () => {
               );
             }}
           >
-            Buscar voos
+            {hasPriceLoadError ? "Recarregar preços reais" : "Buscar voos"}
           </Button>
         </div>
       </div>

@@ -36,6 +36,8 @@ const PriceCalendar = ({
   const days = getMonthDays(month);
   const offset = getWeekdayOffsetMondayFirst(month);
   const monthPrices = [...pricesByDay.values()];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   return (
     <div className="rounded-[16px] bg-white p-5 shadow-nubank">
@@ -56,13 +58,19 @@ const PriceCalendar = ({
           const day = index + 1;
           const price = pricesByDay.get(day);
           const selected = selectedDay === day;
+          const cellDate = new Date(month.getFullYear(), month.getMonth(), day);
+          const isPast = cellDate < today;
 
           return (
             <button
               key={`day-${day}`}
               type="button"
-              onClick={() => onSelectDay(day)}
-              className="group flex min-h-[66px] flex-col items-center justify-start rounded-[12px] px-1 py-1 transition-all duration-300 ease-out active:scale-95"
+              onClick={() => {
+                if (!isPast) onSelectDay(day);
+              }}
+              disabled={isPast}
+              aria-disabled={isPast}
+              className={`group flex min-h-[66px] flex-col items-center justify-start rounded-[12px] px-1 py-1 transition-all duration-300 ease-out active:scale-95 ${isPast ? "cursor-not-allowed opacity-35" : ""}`}
             >
               <span
                 className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-medium transition-all duration-150 ${

@@ -9,9 +9,16 @@ type SmartRedemptionSuggestionsProps = {
   clientId?: string | null;
 };
 
+function getSuggestionsErrorMessage(error: unknown): string {
+  if (error) {
+    console.warn("[SmartRedemptionSuggestions] load failed", error);
+  }
+  return "Não foi possível carregar suas sugestões agora. Tente novamente em instantes.";
+}
+
 const SmartRedemptionSuggestions = ({ clientId }: SmartRedemptionSuggestionsProps) => {
   const navigate = useNavigate();
-  const { suggestions, loading, error } = useSmartAwardSuggestions(clientId);
+  const { suggestions, loading, error, refetch } = useSmartAwardSuggestions(clientId);
 
   return (
     <section className="space-y-4 px-4 py-3">
@@ -36,9 +43,19 @@ const SmartRedemptionSuggestions = ({ clientId }: SmartRedemptionSuggestionsProp
         <p className="text-xs text-muted-foreground">Buscando sugestões...</p>
       )}
       {error && (
-        <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-          {error instanceof Error ? error.message : "Erro ao carregar sugestões."}
-        </p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <p>{getSuggestionsErrorMessage(error)}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-2 h-7 rounded-full border-destructive/30 text-xs text-destructive hover:bg-destructive/10"
+            onClick={() => void refetch()}
+            disabled={loading}
+          >
+            Tentar novamente
+          </Button>
+        </div>
       )}
       {!loading && !error && suggestions.length === 0 && (
         <div className="rounded-xl border border-border/80 bg-card p-4 text-center shadow-nubank">
@@ -46,7 +63,7 @@ const SmartRedemptionSuggestions = ({ clientId }: SmartRedemptionSuggestionsProp
             Nenhuma sugestão no momento.
           </p>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Ajuste suas preferências ou confira se há rotas premium e saldo nos programas. Se as tabelas do Smart Award ainda não foram criadas, execute a migration no Supabase.
+            Ajuste suas preferências ou confira seus saldos, programas e rotas desejadas.
           </p>
           <Button
             type="button"

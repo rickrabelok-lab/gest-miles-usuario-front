@@ -12,7 +12,7 @@ const MAIN_PROGRAMS = ["LATAM Pass", "Azul Fidelidade", "Livelo", "Smiles"] as c
 
 const BonusOffersSection = () => {
   const navigate = useNavigate();
-  const { offers, loading, error } = useBonusOffers();
+  const { offers, loading, error, retry } = useBonusOffers();
   const cardsRowRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef({
     isDown: false,
@@ -99,10 +99,33 @@ const BonusOffersSection = () => {
         {!loading && error && (
           <div className="rounded-[16px] bg-white p-4 text-center shadow-nubank">
             <p className="text-sm text-nubank-text-secondary">Não foi possível carregar as ofertas.</p>
+            <button
+              type="button"
+              onClick={retry}
+              className="mt-3 rounded-[12px] bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-all duration-200 hover:opacity-95"
+            >
+              Tentar novamente
+            </button>
           </div>
         )}
 
-        {!loading && !error && (
+        {!loading && !error && offers.length === 0 && (
+          <div className="rounded-[16px] bg-white p-4 text-center shadow-nubank">
+            <p className="text-sm font-semibold text-nubank-text">Nenhuma oferta ativa agora.</p>
+            <p className="mt-1 text-xs text-nubank-text-secondary">
+              Assim que entrar uma campanha nova, ela aparece aqui.
+            </p>
+            <button
+              type="button"
+              onClick={retry}
+              className="mt-3 rounded-[12px] bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-all duration-200 hover:opacity-95"
+            >
+              Atualizar ofertas
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && offers.length > 0 && (
           <div
             ref={cardsRowRef}
             className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide touch-pan-x select-none [-webkit-overflow-scrolling:touch]"

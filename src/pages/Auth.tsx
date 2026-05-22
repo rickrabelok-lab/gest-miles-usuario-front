@@ -27,16 +27,14 @@ const Auth = () => {
   const canSubmit = isValidEmail && password.length >= 6;
 
   const formatAuthError = (error: unknown): string => {
-    const msg = error instanceof Error ? error.message : "Falha no login.";
-    if (/failed to fetch/i.test(msg)) {
-      return [
-        "Não foi possível contactar o Supabase (rede ou URL).",
-        "Confira no .env.local: VITE_SUPABASE_URL (https://….supabase.co) e VITE_SUPABASE_ANON_KEY;",
-        "reinicie o npm run dev após alterar o .env;",
-        "no painel Supabase, confirme se o projeto não está pausado.",
-      ].join(" ");
+    const msg = error instanceof Error ? error.message : String(error ?? "");
+    if (/failed to fetch|networkerror|load failed|timeout/i.test(msg)) {
+      return "Não foi possível entrar agora. Verifique sua conexão e tente de novo em alguns instantes.";
     }
-    return msg;
+    if (/invalid login credentials|invalid credentials|email not confirmed|email.*confirm|otp|token|expired|unauthorized|forbidden|auth|supabase|jwt|rls|permission/i.test(msg)) {
+      return "Não foi possível entrar com esses dados. Confira e-mail, senha e confirmação da conta.";
+    }
+    return "Não foi possível entrar agora. Tente novamente em alguns instantes.";
   };
 
   if (!loading && user) {
@@ -59,6 +57,7 @@ const Auth = () => {
     try {
       await signInWithGoogle();
     } catch (error) {
+      console.warn("[Auth] login Google:", error);
       setMessage(formatAuthError(error));
       setPending(false);
       setPendingAction(null);
@@ -75,6 +74,7 @@ const Auth = () => {
       setMessage("Login realizado com sucesso.");
       if (ok) navigate("/me");
     } catch (error) {
+      console.warn("[Auth] login senha:", error);
       setMessage(formatAuthError(error));
     } finally {
       setPending(false);
@@ -88,9 +88,7 @@ const Auth = () => {
     <AuthFlowShell title="Login" description="Entre com as suas credenciais para aceder ao sistema.">
       {!isSupabaseConfigured && (
         <p className="rounded-[14px] border border-amber-500/40 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-800/50 dark:bg-amber-950/50 dark:text-amber-100">
-          Supabase não configurado: edite <span className="font-mono">.env.local</span> na raiz do projeto com{" "}
-          <span className="font-mono">VITE_SUPABASE_URL</span> e <span className="font-mono">VITE_SUPABASE_ANON_KEY</span>{" "}
-          (valores em Supabase → Project Settings → API) e reinicie o servidor de desenvolvimento.
+          Login indisponível agora. Tente novamente em alguns minutos.
         </p>
       )}
       {fromInvite && (

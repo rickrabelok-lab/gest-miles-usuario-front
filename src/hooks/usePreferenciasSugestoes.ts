@@ -8,6 +8,9 @@ export type PreferenciasSugestoes = {
   preferencia_classe: ClassePreferencia;
 };
 
+export const PREFERENCIAS_SUGESTOES_SAVE_ERROR_MESSAGE =
+  "Nao foi possivel salvar suas preferencias agora. Confira a conexao e tente novamente.";
+
 const defaultPreferencias: PreferenciasSugestoes = {
   preferencia_destino: ["Todos"],
   preferencia_classe: "Todas",
@@ -31,7 +34,9 @@ export const usePreferenciasSugestoes = (overrideUsuarioId?: string | null) => {
         .maybeSingle();
       if (error) {
         console.warn("[PreferenciasSugestoes] preferencias_usuario:", error.message);
-        return defaultPreferencias;
+        throw new Error(
+          "Nao foi possivel carregar suas preferencias agora. Confira a conexao e tente novamente.",
+        );
       }
       const dest = (data?.preferencia_destino ?? []) as string[];
       const destinos = dest.length === 0 ? ["Todos"] : (dest as DestinoPreferencia[]);
@@ -54,7 +59,10 @@ export const usePreferenciasSugestoes = (overrideUsuarioId?: string | null) => {
       const { error } = await supabase
         .from("preferencias_usuario")
         .upsert(payload, { onConflict: "usuario_id" });
-      if (error) throw error;
+      if (error) {
+        console.warn("[PreferenciasSugestoes] save preferencias_usuario:", error.message);
+        throw new Error(PREFERENCIAS_SUGESTOES_SAVE_ERROR_MESSAGE);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["preferencias_usuario", userId] });

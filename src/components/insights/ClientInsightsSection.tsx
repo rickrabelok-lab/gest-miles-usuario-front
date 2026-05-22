@@ -88,6 +88,37 @@ function suggestedActionFor(tipo: ClientInsightEnriched["tipo_insight"]) {
   }
 }
 
+function clientInsightsUiError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error ?? "").toLowerCase();
+
+  if (message.includes("timeout") || message.includes("demorou")) {
+    return "Os insights demoraram para responder. Recarregue antes de tratar esta lista como vazia.";
+  }
+
+  if (
+    message.includes("permission") ||
+    message.includes("permiss") ||
+    message.includes("rls") ||
+    message.includes("policy") ||
+    message.includes("jwt") ||
+    message.includes("auth")
+  ) {
+    return "Não foi possível confirmar sua permissão para ver estes insights. Recarregue ou acione o suporte se continuar.";
+  }
+
+  if (
+    message.includes("network") ||
+    message.includes("failed to fetch") ||
+    message.includes("fetch") ||
+    message.includes("supabase") ||
+    message.includes("insights_cliente")
+  ) {
+    return "Não foi possível carregar os insights agora. Recarregue antes de concluir que não há recomendações.";
+  }
+
+  return "Não foi possível carregar os insights agora. Tente novamente em instantes.";
+}
+
 export default function ClientInsightsSection({
   clienteId,
   enabled,
@@ -113,7 +144,10 @@ export default function ClientInsightsSection({
     syncedRef.current = clienteId;
     void syncMutation
       .mutateAsync({ clienteId })
-      .catch((e) => toast.error(e instanceof Error ? e.message : "Falha ao sincronizar insights."));
+      .catch((e) => {
+        console.warn("[ClientInsightsSection] sync failed", e);
+        toast.error(clientInsightsUiError(e));
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- syncMutation e estavel via hook; syncedRef impede repetir para o mesmo cliente
   }, [enabled, clienteId]);
 
@@ -159,9 +193,7 @@ export default function ClientInsightsSection({
 
         {error && (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
-            <p className="text-sm text-destructive">
-              {error instanceof Error ? error.message : "Erro ao carregar insights."}
-            </p>
+            <p className="text-sm text-destructive">{clientInsightsUiError(error)}</p>
             <Button
               type="button"
               size="sm"
@@ -235,9 +267,10 @@ export default function ClientInsightsSection({
                               void triggerTaskMutation
                                 .mutateAsync({ insightId: ins.id })
                                 .then(() => toast.success("Tarefa gerada a partir do insight."))
-                                .catch((e) =>
-                                  toast.error(e instanceof Error ? e.message : "Falha ao gerar tarefa."),
-                                );
+                                .catch((e) => {
+                                  console.warn("[ClientInsightsSection] trigger task failed", e);
+                                  toast.error("Não foi possível gerar a tarefa agora. Tente novamente em instantes.");
+                                });
                             }}
                           >
                             <ClipboardList className="h-3 w-3" />
@@ -256,9 +289,10 @@ export default function ClientInsightsSection({
                               void resolveMutation
                                 .mutateAsync({ insightId: ins.id })
                                 .then(() => toast.success("Insight marcado como resolvido."))
-                                .catch((e) =>
-                                  toast.error(e instanceof Error ? e.message : "Falha ao resolver insight."),
-                                );
+                                .catch((e) => {
+                                  console.warn("[ClientInsightsSection] resolve insight failed", e);
+                                  toast.error("Não foi possível resolver este insight agora. Tente novamente.");
+                                });
                             }}
                           >
                             <CheckCircle2 className="h-3 w-3" />

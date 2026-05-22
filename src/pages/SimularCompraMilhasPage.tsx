@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Info, TrendingUp, XCircle } from "lucide-react";
+import { ArrowLeft, Info, RefreshCw, TrendingUp, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -36,9 +36,15 @@ type PrecoCompra = {
   bonus_percentual: number;
 };
 
-const SIMULAR_COMPRA_META_TIMEOUT_MS = 8000;
-const SIMULAR_COMPRA_META_TIMEOUT_ERROR = "simular_compra_meta_timeout";
 const PRECO_COMPRA_MILHAS_RECENT_LIMIT = 100;
+
+function formatMetaLoadError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  if (/abort|timeout|network|fetch/i.test(message)) {
+    return "A busca de rotas e preços falhou por conexão ou demora na resposta. Tente carregar novamente.";
+  }
+  return "Não foi possível carregar rotas e preços agora. Confira sua conexão e tente novamente.";
+}
 
 const SimularCompraMilhasPage = () => {
   const navigate = useNavigate();
@@ -48,6 +54,8 @@ const SimularCompraMilhasPage = () => {
   const [rotas, setRotas] = useState<RotaPremium[]>([]);
   const [precos, setPrecos] = useState<PrecoCompra[]>([]);
   const [loadingMeta, setLoadingMeta] = useState(true);
+  const [metaError, setMetaError] = useState<string | null>(null);
+  const [metaReloadKey, setMetaReloadKey] = useState(0);
   const [loadingSimulacao, setLoadingSimulacao] = useState(false);
 
   const [programa, setPrograma] = useState<string>("");
@@ -76,27 +84,23 @@ const SimularCompraMilhasPage = () => {
 
   useEffect(() => {
     let isMounted = true;
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      controller.abort();
-    }, SIMULAR_COMPRA_META_TIMEOUT_MS);
 
     const loadMeta = async () => {
       try {
+        setLoadingMeta(true);
+        setMetaError(null);
         const [{ data: rotasData, error: rotasErr }, { data: precosData, error: precosErr }] =
           await Promise.all([
             supabase
               .from("rotas_premium")
               .select(
                 "id, origem, destino, programa, classe, milhas_necessarias, taxas_embarque, valor_tarifa_pagante",
-              )
-              .abortSignal(controller.signal),
+              ),
             supabase
               .from("preco_compra_milhas")
               .select("programa, preco_milheiro, bonus_percentual, data_promocao")
               .order("data_promocao", { ascending: false })
-              .limit(PRECO_COMPRA_MILHAS_RECENT_LIMIT)
-              .abortSignal(controller.signal),
+              .limit(PRECO_COMPRA_MILHAS_RECENT_LIMIT),
           ]);
         if (!isMounted) return;
         if (rotasErr) {
@@ -104,6 +108,9 @@ const SimularCompraMilhasPage = () => {
         }
         if (precosErr) {
           console.warn("[SimularCompra] preco_compra_milhas:", precosErr.message);
+        }
+        if (rotasErr || precosErr) {
+          setMetaError(formatMetaLoadError(rotasErr ?? precosErr));
         }
         setRotas(
           (rotasData ?? []).map((r) => ({
@@ -134,14 +141,10 @@ const SimularCompraMilhasPage = () => {
         if (!isMounted) return;
         console.warn(
           "[SimularCompra] meta:",
-          controller.signal.aborted
-            ? SIMULAR_COMPRA_META_TIMEOUT_ERROR
-            : error instanceof Error
-              ? error.message
-              : error,
+          error instanceof Error ? error.message : error,
         );
+        setMetaError(formatMetaLoadError(error));
       } finally {
-        window.clearTimeout(timeoutId);
         if (isMounted) {
           setLoadingMeta(false);
         }
@@ -151,10 +154,8 @@ const SimularCompraMilhasPage = () => {
 
     return () => {
       isMounted = false;
-      window.clearTimeout(timeoutId);
-      controller.abort();
     };
-  }, []);
+  }, [metaReloadKey]);
 
   const programasComSaldo = useMemo(
     () => programas.map((p) => p.program_name ?? p.program_id),
@@ -330,11 +331,29 @@ const SimularCompraMilhasPage = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <form className="space-y-3" onSubmit={handleSimular}>
+              {metaError ? (
+                <div className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[11px] text-destructive">
+                  <p className="font-semibold">Não carregamos os dados da simulação.</p>
+                  <p className="mt-0.5">{metaError}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 h-8 rounded-[12px] text-[11px]"
+                    disabled={loadingMeta}
+                    onClick={() => setMetaReloadKey((key) => key + 1)}
+                  >
+                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                    Tentar novamente
+                  </Button>
+                </div>
+              ) : null}
               <div className="space-y-1.5">
                 <Label className="text-xs">Programa</Label>
                 <Select
                   value={programa || undefined}
                   onValueChange={setPrograma}
+                  disabled={loadingMeta || Boolean(metaError)}
                 >
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue placeholder={loadingMeta ? "Carregando..." : "Selecione"} />
@@ -342,7 +361,9 @@ const SimularCompraMilhasPage = () => {
                   <SelectContent className="z-[100]">
                     {programasList.length === 0 ? (
                       <SelectItem value="__nenhuma_rota__" disabled className="text-muted-foreground">
-                        Nenhuma rota cadastrada. Cadastre em rotas_premium no Supabase.
+                        {metaError
+                          ? "Carregue novamente para escolher uma rota."
+                          : "Nenhuma rota disponível para simulação agora. Ajuste as preferências ou acione o suporte."}
                       </SelectItem>
                     ) : (
                       programasList.map((p) => (
@@ -359,7 +380,7 @@ const SimularCompraMilhasPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Origem</Label>
-                  <Select value={origem} onValueChange={setOrigem} disabled={!programa}>
+                  <Select value={origem} onValueChange={setOrigem} disabled={!programa || loadingMeta || Boolean(metaError)}>
                     <SelectTrigger className="h-9 text-xs">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
@@ -374,7 +395,7 @@ const SimularCompraMilhasPage = () => {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Destino</Label>
-                  <Select value={destino} onValueChange={setDestino} disabled={!origem}>
+                  <Select value={destino} onValueChange={setDestino} disabled={!origem || loadingMeta || Boolean(metaError)}>
                     <SelectTrigger className="h-9 text-xs">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
@@ -391,7 +412,7 @@ const SimularCompraMilhasPage = () => {
 
               <div className="space-y-1.5">
                 <Label className="text-xs">Classe</Label>
-                <Select value={classe} onValueChange={setClasse} disabled={!destino}>
+                <Select value={classe} onValueChange={setClasse} disabled={!destino || loadingMeta || Boolean(metaError)}>
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
@@ -408,7 +429,7 @@ const SimularCompraMilhasPage = () => {
               <Button
                 type="submit"
                 className="mt-1 w-full rounded-[14px] text-sm font-semibold"
-                disabled={loadingMeta || loadingSimulacao}
+                disabled={loadingMeta || loadingSimulacao || Boolean(metaError)}
               >
                 {loadingSimulacao ? "Calculando..." : "Simular emissão com compra de milhas"}
               </Button>

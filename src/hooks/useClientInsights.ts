@@ -113,21 +113,17 @@ export function useClientInsights(clienteId: string | null, enabled: boolean, fi
         return list.map((r) => ({ ...r, gestorNome: "—" }));
       }
 
-      const { data: perfis, error: pErr } = await withClientInsightsTimeout(
-        (signal) =>
-          supabase
-            .from("perfis")
-            .select("usuario_id, nome_completo")
-            .in("usuario_id", gestorIds)
-            .abortSignal(signal),
-        "O carregamento dos gestores demorou demais. Tente novamente.",
-      );
-      if (pErr) throw toQueryError(pErr, "Não foi possível carregar nomes de gestores.");
+      const { data: perfis, error: pErr } = await supabase
+        .from("perfis")
+        .select("usuario_id, nome_completo")
+        .in("usuario_id", gestorIds);
 
       const nomeById: Record<string, string> = {};
-      (perfis ?? []).forEach((p: { usuario_id: string; nome_completo: string | null }) => {
-        nomeById[p.usuario_id] = (p.nome_completo ?? "").trim() || "—";
-      });
+      if (!pErr) {
+        (perfis ?? []).forEach((p: { usuario_id: string; nome_completo: string | null }) => {
+          nomeById[p.usuario_id] = (p.nome_completo ?? "").trim() || "—";
+        });
+      }
 
       return list.map((r) => ({
         ...r,

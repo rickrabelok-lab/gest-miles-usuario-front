@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -164,6 +164,20 @@ type DemandGestorOption = {
   id: string;
   nome: string;
   perfil: "nacional" | "internacional";
+};
+
+const getDemandGestoresErrorMessage = (error: unknown) => {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string"
+  ) {
+    const message = (error as { message: string }).message.trim();
+    if (message) return message;
+  }
+  return "Nao foi possivel carregar os gestores desta demanda.";
 };
 
 type VencimentoItem = {
@@ -703,6 +717,8 @@ const Index = () => {
   const [isDemandDialogOpen, setIsDemandDialogOpen] = useState(false);
   const [demandSubmitting, setDemandSubmitting] = useState(false);
   const [demandaGestores, setDemandaGestores] = useState<DemandGestorOption[]>([]);
+  const [demandGestoresLoading, setDemandGestoresLoading] = useState(false);
+  const [demandGestoresError, setDemandGestoresError] = useState<string | null>(null);
   const [actionPlanProgramKeys, setActionPlanProgramKeys] = useState<ActionPlanProgramKey[]>([]);
   const [actionPlanDemands, setActionPlanDemands] = useState<ActionPlanDemandItem[]>([]);
   const [actionPlanError, setActionPlanError] = useState<string | null>(null);
@@ -1078,7 +1094,9 @@ const Index = () => {
 
   const visiblePrograms = showAll ? programs : programs.slice(0, 4);
 
-  useEffect(() => {
+  const loadDemandGestores = useCallback(async () => {
+    if (!isDemandDialogOpen || !demandTargetClientId) return;
+
     const inferPerfil = (nome: string, tema: Record<string, unknown>) => {
       const raw = String(tema?.gestorPerfilDemanda ?? tema?.especialidadeGestor ?? "")
         .trim()
@@ -1089,15 +1107,16 @@ const Index = () => {
       return /internacional/i.test(nome) ? "internacional" : "nacional";
     };
 
-    const loadDemandGestores = async () => {
-      if (!isDemandDialogOpen || !demandTargetClientId) return;
+    setDemandGestoresLoading(true);
+    setDemandGestoresError(null);
+
+    try {
       const { data: links, error: linksErr } = await supabase
         .from("cliente_gestores")
         .select("gestor_id")
         .eq("cliente_id", demandTargetClientId);
       if (linksErr) {
-        setDemandaGestores([]);
-        return;
+        throw linksErr;
       }
       const gestorIds = [...new Set((links ?? []).map((l) => l.gestor_id as string).filter(Boolean))];
       if (gestorIds.length === 0) {
@@ -1110,8 +1129,7 @@ const Index = () => {
         .select("usuario_id, nome_completo, configuracao_tema")
         .in("usuario_id", gestorIds);
       if (perfisErr) {
-        setDemandaGestores([]);
-        return;
+        throw perfisErr;
       }
 
       const options = (perfis ?? [])
@@ -1128,10 +1146,17 @@ const Index = () => {
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
       setDemandaGestores(options);
-    };
-
-    void loadDemandGestores();
+    } catch (error) {
+      setDemandaGestores([]);
+      setDemandGestoresError(getDemandGestoresErrorMessage(error));
+    } finally {
+      setDemandGestoresLoading(false);
+    }
   }, [isDemandDialogOpen, demandTargetClientId]);
+
+  useEffect(() => {
+    void loadDemandGestores();
+  }, [loadDemandGestores]);
 
   const actionPlanSelectedPrograms = useMemo(() => {
     return actionPlanProgramKeys.map((key) => {
@@ -2497,6 +2522,9 @@ const Index = () => {
           </DialogHeader>
           <SolicitarCotacaoWizard
             gestores={demandaGestores}
+            gestoresLoading={demandGestoresLoading}
+            gestoresError={demandGestoresError}
+            onRetryGestores={loadDemandGestores}
             submitting={demandSubmitting}
             onSubmit={handleSubmitDemand}
           />
