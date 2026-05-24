@@ -46,8 +46,6 @@ export const useProgramasCliente = (managerClientId?: string | null) => {
     mutationFn: async (input: SaveProgramInput) => {
       if (!clientId) throw new Error("Usuário sem cliente selecionado.");
       const payload = {
-        cliente_id: clientId,
-        program_id: input.programId,
         program_name: input.programName,
         logo: input.logo ?? null,
         logo_color: input.logoColor ?? null,
@@ -57,12 +55,14 @@ export const useProgramasCliente = (managerClientId?: string | null) => {
         custo_medio_milheiro: input.state.custoMedioMilheiro,
         custo_saldo: input.state.custoSaldo,
         state: stripPersistedMetaForServer(input.state),
-        updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase
-        .from("programas_cliente")
-        .upsert(payload, { onConflict: "cliente_id,program_id" });
+      const { error } = await supabase.rpc("save_programa_cliente", {
+        p_cliente_id: clientId,
+        p_program_id: input.programId,
+        p_payload: payload,
+        p_only_clube_nome: false,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
