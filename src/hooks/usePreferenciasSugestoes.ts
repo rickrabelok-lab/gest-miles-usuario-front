@@ -39,7 +39,7 @@ export const usePreferenciasSugestoes = (overrideUsuarioId?: string | null) => {
         );
       }
       const dest = (data?.preferencia_destino ?? []) as string[];
-      const destinos = dest.length === 0 ? ["Todos"] : (dest as DestinoPreferencia[]);
+      const destinos = (dest.length === 0 ? ["Todos"] : dest) as DestinoPreferencia[];
       return {
         preferencia_destino: destinos,
         preferencia_classe: (data?.preferencia_classe as ClassePreferencia) ?? "Todas",
@@ -50,17 +50,12 @@ export const usePreferenciasSugestoes = (overrideUsuarioId?: string | null) => {
   const saveMutation = useMutation({
     mutationFn: async (pref: PreferenciasSugestoes) => {
       if (!user?.id) throw new Error("Usuário não autenticado.");
-      const payload = {
-        usuario_id: user.id,
-        preferencia_destino: pref.preferencia_destino,
-        preferencia_classe: pref.preferencia_classe,
-        updated_at: new Date().toISOString(),
-      };
-      const { error } = await supabase
-        .from("preferencias_usuario")
-        .upsert(payload, { onConflict: "usuario_id" });
+      const { error } = await supabase.rpc("cliente_preferencias_sugestoes_save_self", {
+        p_preferencia_destino: pref.preferencia_destino,
+        p_preferencia_classe: pref.preferencia_classe,
+      });
       if (error) {
-        console.warn("[PreferenciasSugestoes] save preferencias_usuario:", error.message);
+        console.warn("[PreferenciasSugestoes] cliente_preferencias_sugestoes_save_self:", error.message);
         throw new Error(PREFERENCIAS_SUGESTOES_SAVE_ERROR_MESSAGE);
       }
     },
