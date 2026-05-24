@@ -75,11 +75,9 @@ export function useNotificacoesMarkRead(enabled: boolean, usuarioId: string | nu
     mutationFn: async (input: { id: string; tipo: NotificacaoTipo; mensagem: string }) => {
       if (!usuarioId) return;
 
-      const { error } = await supabase
-        .from("notificacoes")
-        .update({ lida: true })
-        .eq("id", input.id)
-        .eq("usuario_id", usuarioId);
+      const { error } = await supabase.rpc("marcar_notificacao_lida", {
+        p_notificacao_id: input.id,
+      });
 
       if (error) throw toQueryError(error, "Não foi possível marcar como lida.");
     },
@@ -110,11 +108,7 @@ export function useNotificacoesMarkAllRead(enabled: boolean, usuarioId: string |
   return useMutation({
     mutationFn: async () => {
       if (!usuarioId) return;
-      const { error } = await supabase
-        .from("notificacoes")
-        .update({ lida: true })
-        .eq("usuario_id", usuarioId)
-        .eq("lida", false);
+      const { error } = await supabase.rpc("marcar_todas_notificacoes_lidas");
       if (error) throw toQueryError(error, "Não foi possível marcar todas como lidas.");
     },
     onSuccess: async () => {

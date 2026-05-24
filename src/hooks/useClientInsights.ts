@@ -138,11 +138,9 @@ export function useResolveClientInsight() {
 
   return useMutation({
     mutationFn: async (input: { insightId: string }) => {
-      const { error } = await supabase
-        .from("insights_cliente")
-        .update({ status: "resolvido" })
-        .eq("id", input.insightId)
-        .eq("status", "ativo");
+      const { error } = await supabase.rpc("resolver_insight_cliente", {
+        p_insight_id: input.insightId,
+      });
       if (error) throw toQueryError(error, "Não foi possível marcar o insight como resolvido.");
     },
     onSuccess: async () => {
