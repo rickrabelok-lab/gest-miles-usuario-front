@@ -1,17 +1,55 @@
 /**
  * Edge Function: pedido de reset de senha (Brevo + password_reset_tokens).
- * Segredos: SUPABASE_SERVICE_ROLE_KEY, BREVO_API_KEY, BREVO_SENDER_EMAIL, PUBLIC_APP_URL
+ * Segredos: SUPABASE_SERVICE_ROLE_KEY, BREVO_API_KEY, BREVO_SENDER_EMAIL, PUBLIC_APP_URL, PASSWORD_RESET_ALLOWED_ORIGINS
  * Deploy: supabase functions deploy request-password-reset --no-verify-jwt
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const cors: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  Vary: "Origin",
 };
 
+const genericMessage =
+  "Se o email for cadastrado na Gest Miles, enviaremos instruções.";
+
+function getAllowedOrigins(): string[] {
+  const appUrl = Deno.env.get("PUBLIC_APP_URL");
+  const configured = Deno.env.get("PASSWORD_RESET_ALLOWED_ORIGINS");
+  return [appUrl, configured, "http://localhost:3080"]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(","))
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+}
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("origin")?.replace(/\/$/, "");
+  const allowed = getAllowedOrigins();
+  const allowOrigin =
+    origin && allowed.includes(origin) ? origin : allowed[0] || "";
+  return allowOrigin
+    ? { ...cors, "Access-Control-Allow-Origin": allowOrigin }
+    : cors;
+}
+
+function getClientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return (
+    req.headers.get("cf-connecting-ip") ||
+    forwarded ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
 async function sha256Hex(token: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(token),
+  );
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -29,14 +67,20 @@ async function getPrimeiroNomeCliente(
   admin: ReturnType<typeof createClient>,
   userId: string,
 ): Promise<string | null> {
-  const { data: perfil } = await admin.from("perfis").select("nome_completo").eq("usuario_id", userId).maybeSingle();
+  const { data: perfil } = await admin
+    .from("perfis")
+    .select("nome_completo")
+    .eq("usuario_id", userId)
+    .maybeSingle();
   const full = perfil?.nome_completo?.trim();
   if (full) {
     const first = full.split(/\s+/)[0];
     if (first) return escapeHtml(first);
   }
   const { data: authData } = await admin.auth.admin.getUserById(userId);
-  const meta = authData?.user?.user_metadata as Record<string, unknown> | undefined;
+  const meta = authData?.user?.user_metadata as
+    | Record<string, unknown>
+    | undefined;
   const raw = meta?.full_name ?? meta?.name ?? meta?.given_name;
   if (typeof raw === "string" && raw.trim()) {
     const first = raw.trim().split(/\s+/)[0];
@@ -46,11 +90,13 @@ async function getPrimeiroNomeCliente(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const corsHeaders = getCorsHeaders(req);
+  if (req.method === "OPTIONS")
+    return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: { ...cors, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
@@ -62,7 +108,7 @@ Deno.serve(async (req) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
       return new Response(JSON.stringify({ error: "E-mail inválido" }), {
         status: 400,
-        headers: { ...cors, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -70,22 +116,56 @@ Deno.serve(async (req) => {
     const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const brevoKey = Deno.env.get("BREVO_API_KEY");
     const sender = Deno.env.get("BREVO_SENDER_EMAIL");
-    const appUrl = (Deno.env.get("PUBLIC_APP_URL") || "http://localhost:3080").replace(/\/$/, "");
+    const appUrl = (
+      Deno.env.get("PUBLIC_APP_URL") || "http://localhost:3080"
+    ).replace(/\/$/, "");
 
     if (!brevoKey || !sender) {
-      return new Response(JSON.stringify({ error: "Brevo não configurado na função" }), {
-        status: 503,
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Brevo não configurado na função" }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: uid, error: uidErr } = await admin.rpc("get_user_id_by_email_for_service", { p_email: em });
+    const admin = createClient(url, service, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const [emailHash, ipHash] = await Promise.all([
+      sha256Hex(em),
+      sha256Hex(getClientIp(req)),
+    ]);
+    const { data: allowed, error: rateErr } = await admin.rpc(
+      "check_password_reset_rate_limit",
+      {
+        p_email_hash: emailHash,
+        p_ip_hash: ipHash,
+      },
+    );
+    if (rateErr) throw rateErr;
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ ok: true, message: genericMessage }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const { data: uid, error: uidErr } = await admin.rpc(
+      "get_user_id_by_email_for_service",
+      { p_email: em },
+    );
     if (uidErr) throw uidErr;
     if (!uid) {
-      return new Response(JSON.stringify({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." }), {
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ ok: true, message: genericMessage }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const bytes = new Uint8Array(32);
@@ -135,9 +215,16 @@ ${saudacao}
 
     const r = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": brevoKey },
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "api-key": brevoKey,
+      },
       body: JSON.stringify({
-        sender: { name: Deno.env.get("BREVO_SENDER_NAME") || "Gest Miles", email: sender },
+        sender: {
+          name: Deno.env.get("BREVO_SENDER_NAME") || "Gest Miles",
+          email: sender,
+        },
         to: [{ email: em }],
         subject: "Recuperação de senha — Gest Miles",
         htmlContent: html,
@@ -145,11 +232,19 @@ ${saudacao}
     });
     if (!r.ok) throw new Error(await r.text());
 
-    return new Response(JSON.stringify({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." }), {
-      headers: { ...cors, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ ok: true, message: genericMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
+    console.error("[request-password-reset]", e);
+    return new Response(
+      JSON.stringify({
+        error: "Não foi possível processar a solicitação agora.",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
