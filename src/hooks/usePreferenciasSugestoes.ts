@@ -29,7 +29,7 @@ export const usePreferenciasSugestoes = (overrideUsuarioId?: string | null) => {
     queryFn: async (): Promise<PreferenciasSugestoes> => {
       const { data, error } = await supabase
         .from("preferencias_usuario")
-        .select("preferencia_destino, preferencia_classe")
+        .select("preferencias")
         .eq("usuario_id", userId!)
         .maybeSingle();
       if (error) {
@@ -38,11 +38,12 @@ export const usePreferenciasSugestoes = (overrideUsuarioId?: string | null) => {
           "Nao foi possivel carregar suas preferencias agora. Confira a conexao e tente novamente.",
         );
       }
-      const dest = (data?.preferencia_destino ?? []) as string[];
+      const raw = (data?.preferencias ?? {}) as Partial<PreferenciasSugestoes>;
+      const dest = (raw.preferencia_destino ?? []) as string[];
       const destinos = (dest.length === 0 ? ["Todos"] : dest) as DestinoPreferencia[];
       return {
         preferencia_destino: destinos,
-        preferencia_classe: (data?.preferencia_classe as ClassePreferencia) ?? "Todas",
+        preferencia_classe: (raw.preferencia_classe as ClassePreferencia) ?? "Todas",
       };
     },
   });
