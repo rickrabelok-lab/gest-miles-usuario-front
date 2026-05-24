@@ -266,47 +266,18 @@ const ClientProfile = () => {
 
       const nextClientePerfil = buildClientePerfilPayload(existingClientePerfil, perfilData);
 
-      const nextConfig = jsonSafeForDb({
-        ...existingConfig,
-        clientePerfil: nextClientePerfil,
-      });
-
       const nomeGravar = fullName.trim();
       const contactEmail = resolveContactEmail(perfilData.emailContato, existing?.email, user.email);
 
-      if (existing?.id) {
-        const { error, data: updated } = await supabase
-          .from("perfis")
-          .update({
-            nome_completo: nomeGravar,
-            configuracao_tema: nextConfig,
-            email: contactEmail,
-          })
-          .eq("usuario_id", user.id)
-          .select("id")
-          .maybeSingle();
-        rethrowWithStage("Gravar perfil no Supabase", error);
-        if (!updated?.id) {
-          throw new Error(
-            "Gravar perfil: nenhuma linha atualizada (permissões ou sessão). Verifique se tem acesso a este perfil.",
-          );
-        }
-      } else {
-        const { error, data: inserted } = await supabase
-          .from("perfis")
-          .insert({
-            usuario_id: user.id,
-            slug: `${fallbackSlug}-${user.id.slice(0, 8)}`,
-            nome_completo: nomeGravar,
-            configuracao_tema: nextConfig,
-            email: contactEmail,
-          })
-          .select("id")
-          .maybeSingle();
-        rethrowWithStage("Criar perfil no Supabase", error);
-        if (!inserted?.id) {
-          throw new Error("Criar perfil: registo não devolvido após inserção.");
-        }
+      const { data: saved, error: saveError } = await supabase.rpc("cliente_perfil_save_self", {
+        p_nome_completo: nomeGravar,
+        p_email_contato: contactEmail,
+        p_slug: existing?.slug ?? `${fallbackSlug}-${user.id.slice(0, 8)}`,
+        p_cliente_perfil: nextClientePerfil,
+      });
+      rethrowWithStage("Gravar perfil no Supabase", saveError);
+      if (!saved || typeof saved !== "object" || !(saved as { ok?: unknown }).ok) {
+        throw new Error("Gravar perfil: confirmação inválida retornada pelo servidor.");
       }
 
       await verifyPersistenciaPerfilCliente(user.id, nextClientePerfil);
