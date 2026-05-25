@@ -6,6 +6,13 @@ function isPostgrestError(e: unknown): e is { code: string; message: string } {
   return !!e && typeof e === "object" && "code" in e && "message" in e;
 }
 
+const USER_SAFE_LINK_CLIENT_ERRORS = new Set([
+  "ID inválido. Use o UUID completo do cliente (ex: 8c69e773-a81e-4710-82a3-9a1b716471ba).",
+  "Faça login novamente para vincular clientes.",
+  "ID do cliente inválido. Use o UUID completo.",
+  "Faça login novamente para desvincular.",
+]);
+
 export const useVincularCliente = (gestorUserId: string | undefined) => {
   const queryClient = useQueryClient();
 
@@ -70,9 +77,16 @@ export const useVincularCliente = (gestorUserId: string | undefined) => {
           return "Sem permissão para vincular este cliente.";
         }
         if (err.code === "23503") return "ID do cliente não encontrado. Confira se o UUID está correto.";
+        console.warn("[useVincularCliente] cliente link RPC failed", err);
+        return "Não foi possível atualizar o vínculo do cliente agora.";
+      }
+      if (err instanceof Error && USER_SAFE_LINK_CLIENT_ERRORS.has(err.message)) {
         return err.message;
       }
-      return err instanceof Error ? err.message : "Não foi possível vincular.";
+      if (err instanceof Error) {
+        console.warn("[useVincularCliente] cliente link failed", err);
+      }
+      return "Não foi possível atualizar o vínculo do cliente agora.";
     },
   };
 };
