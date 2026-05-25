@@ -28,6 +28,7 @@ const AIRLINE_COLORS: Record<string, { bg: string; text: string }> = {
 const fmtMoney  = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 const fmtPoints = (v: number) => v.toLocaleString("pt-BR")
 const fmtDur    = (min: number) => `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, "0")}m`
+const SIMULATED_SOURCE_LABEL = "Fonte simulada"
 
 export default function FlightResultsScreen() {
   const navigate   = useNavigate()
@@ -150,7 +151,7 @@ export default function FlightResultsScreen() {
 
       <div className="overflow-y-auto pb-40">
         <div className="mx-4 mt-3 rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-4 text-amber-900">
-          Resultados simulados para estimativa. Confirme disponibilidade, milhas e tarifas antes de emitir.
+          Resultados, datas e pagamentos simulados para estimativa. Confirme disponibilidade, milhas e tarifas antes de emitir.
         </div>
 
         {/* Date navigator */}
@@ -172,6 +173,9 @@ export default function FlightResultsScreen() {
                 </div>
                 <div className={`text-[10px] font-semibold mt-0.5 ${dp.isCheapest ? "text-green-600" : "text-nubank-text-secondary"}`}>
                   {dp.cheapestMoney ? `${dp.isCheapest ? "★ " : ""}R$${dp.cheapestMoney}` : "—"}
+                </div>
+                <div className="mt-0.5 text-[9px] font-semibold text-amber-700">
+                  estimado
                 </div>
                 {active && (
                   <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-t-sm bg-nubank-primary" />
@@ -246,7 +250,7 @@ export default function FlightResultsScreen() {
           <div className="flex items-center gap-3">
             <span className="text-[12px] text-nubank-text-secondary">{currentFlights.length} voos</span>
             <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-              Fonte simulada
+              {SIMULATED_SOURCE_LABEL}
             </span>
             <span className="text-[10px] font-bold text-nubank-primary">✓ Dica Gest Miles</span>
           </div>
@@ -314,6 +318,9 @@ export default function FlightResultsScreen() {
                       }`}>
                         {flight.stops === 0 ? "Direto" : `${flight.stops} escala`}
                       </span>
+                      <span className="rounded-[5px] bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">
+                        Simulado
+                      </span>
                     </div>
                   </div>
                   <div className="flex-1 text-right">
@@ -347,6 +354,9 @@ export default function FlightResultsScreen() {
                 </p>
                 <p className="text-[10px] text-nubank-text-secondary">
                   {selectedDepartFlight.airline} · {fmtDur(selectedDepartFlight.durationMinutes)} · {selectedDepartFlight.stops === 0 ? "Direto" : `${selectedDepartFlight.stops} escala`}
+                </p>
+                <p className="mt-1 text-[10px] font-semibold text-amber-700">
+                  Voo simulado, disponibilidade nao confirmada
                 </p>
               </div>
               <div className="text-right">
@@ -385,7 +395,7 @@ export default function FlightResultsScreen() {
               Como quer usar seus pontos?
             </DrawerTitle>
             <DrawerDescription className="mt-1 text-[12px] text-nubank-text-secondary">
-              Selecione a combinação ideal para você
+              Opcoes estimadas com dados simulados. Confirme valores reais antes de emitir.
             </DrawerDescription>
           </DrawerHeader>
           <div className="space-y-3 px-5 pb-6">
@@ -413,6 +423,9 @@ export default function FlightResultsScreen() {
                       )}
                     </div>
                     <div className="mt-0.5 text-[11px] text-nubank-text-secondary">{opt.label}</div>
+                    <div className="mt-1 text-[10px] font-semibold text-amber-700">
+                      Pagamento simulado
+                    </div>
                   </div>
                   {i === 0 && (
                     <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700">
@@ -447,7 +460,7 @@ export default function FlightResultsScreen() {
               className="w-full rounded-[14px] py-4 text-[14px] font-semibold text-white shadow-md disabled:opacity-40"
               style={{ background: "linear-gradient(135deg,#8A05BE,#9E2FD4)" }}
             >
-              Confirmar seleção →
+              Continuar com simulação →
             </button>
           </div>
         </DrawerContent>
