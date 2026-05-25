@@ -25,6 +25,9 @@ export interface BonusPromotion {
   rules?: string
 }
 
+export const BONUS_PROMOTIONS_SOURCE_NOTICE =
+  'Promocoes de referencia local. Confira validade, regras e elegibilidade no programa antes de agir.'
+
 export const BONUS_PROMOTIONS: BonusPromotion[] = [
   {
     id: 'tudoazul-120-transfer',

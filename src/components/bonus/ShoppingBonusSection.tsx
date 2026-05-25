@@ -2,6 +2,7 @@
 import { RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
+import { BONUS_PROMOTIONS_SOURCE_NOTICE } from '@/lib/bonusMockData'
 
 const PROGRAM_EMOJI: Record<string, string> = {
   Livelo: '💗',
@@ -52,6 +53,9 @@ export function ShoppingBonusSection({ sectionRef }: Props) {
               {promo.bonusValue}
             </p>
             <p className="text-[8px] text-nubank-text-secondary">{promo.bonusLabel}</p>
+            <p className="mt-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[8px] font-semibold text-amber-700">
+              Demo
+            </p>
           </button>
         ))}
 
@@ -65,6 +69,9 @@ export function ShoppingBonusSection({ sectionRef }: Props) {
           </span>
         </div>
       </div>
+      <p className="mt-2 text-[10px] leading-snug text-nubank-text-secondary">
+        {BONUS_PROMOTIONS_SOURCE_NOTICE}
+      </p>
     </div>
   )
 }

@@ -1,7 +1,11 @@
 // src/pages/BonusOfferDetailScreen.tsx
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { BONUS_PROMOTIONS, BonusPromotion } from '@/lib/bonusMockData'
+import {
+  BONUS_PROMOTIONS,
+  BONUS_PROMOTIONS_SOURCE_NOTICE,
+  BonusPromotion,
+} from '@/lib/bonusMockData'
 import { CATEGORY_CONFIG } from '@/lib/bonusUtils'
 
 type ActiveTab = 'promotion' | 'rules'
@@ -150,15 +154,20 @@ export default function BonusOfferDetailScreen() {
 
             {/* CTA */}
             {promo.ctaUrl && (
-              <a
-                href={promo.ctaUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full rounded-2xl py-4 text-center text-[13px] font-bold text-white shadow-[0_4px_16px_rgba(138,5,190,0.3)]"
-                style={{ background: 'linear-gradient(135deg, #8A05BE, #B56CFF)' }}
-              >
-                Cadastrar-se na promoção →
-              </a>
+              <div className="space-y-2">
+                <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-snug text-amber-800">
+                  {BONUS_PROMOTIONS_SOURCE_NOTICE}
+                </p>
+                <a
+                  href={promo.ctaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full rounded-2xl py-4 text-center text-[13px] font-bold text-white shadow-[0_4px_16px_rgba(138,5,190,0.3)]"
+                  style={{ background: 'linear-gradient(135deg, #8A05BE, #B56CFF)' }}
+                >
+                  Conferir no programa →
+                </a>
+              </div>
             )}
           </>
         ) : (
