@@ -1077,7 +1077,7 @@ const Index = () => {
     } catch (err) {
       const rawMsg = err instanceof Error ? err.message : "Erro ao enviar demanda.";
       const msg = /row-level security|permission denied|new row violates/i.test(rawMsg)
-        ? "Sem permissão para abrir demanda para este cliente. Verifique o vínculo do gestor e as policies de RLS."
+        ? "Sem permissão para abrir demanda para este cliente. Verifique o vínculo do gestor com a equipe."
         : rawMsg;
       toast.error(msg);
     } finally {
