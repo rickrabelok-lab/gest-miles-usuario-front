@@ -442,7 +442,10 @@ const LoyaltyProgramDetails = () => {
         error instanceof Error ? error.message : "Não foi possível atualizar o plano de ação.";
       const message = /row-level security|permission denied|violates/i.test(rawMessage)
         ? "Sem permissão para atualizar o plano de ação deste cliente."
-        : rawMessage;
+        : "Não foi possível atualizar o plano de ação agora. Tente novamente em instantes.";
+      if (message !== rawMessage) {
+        console.warn("Falha ao atualizar plano de ação do cliente", error);
+      }
       toast.error(message);
     } finally {
       setActionPlanFollowupSaving(false);
