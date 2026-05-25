@@ -149,8 +149,12 @@ export default function FlightResultsScreen() {
       </div>
 
       <div className="overflow-y-auto pb-40">
+        <div className="mx-4 mt-3 rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-4 text-amber-900">
+          Resultados simulados para estimativa. Confirme disponibilidade, milhas e tarifas antes de emitir.
+        </div>
+
         {/* Date navigator */}
-        <div className="flex overflow-x-auto border-b border-nubank-border bg-white scrollbar-hide">
+        <div className="mt-3 flex overflow-x-auto border-b border-nubank-border bg-white scrollbar-hide">
           {datePrices.map((dp, i) => {
             const key = format(dp.date, "yyyy-MM-dd")
             const active = key === format(selectedDate, "yyyy-MM-dd")
@@ -241,6 +245,9 @@ export default function FlightResultsScreen() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[12px] text-nubank-text-secondary">{currentFlights.length} voos</span>
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+              Fonte simulada
+            </span>
             <span className="text-[10px] font-bold text-nubank-primary">✓ Dica Gest Miles</span>
           </div>
         </div>
