@@ -85,11 +85,7 @@ const PreferenciasSugestoesPage = () => {
 
         {error && (
           <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-            <p>
-              {error instanceof Error
-                ? error.message
-                : "Nao foi possivel carregar suas preferencias agora."}
-            </p>
+            <p>{PREFERENCIAS_SUGESTOES_SAVE_ERROR_MESSAGE}</p>
             <Button
               type="button"
               variant="outline"
