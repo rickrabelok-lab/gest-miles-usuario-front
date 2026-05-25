@@ -1080,9 +1080,10 @@ const Index = () => {
       setIsDemandDialogOpen(false);
     } catch (err) {
       const rawMsg = err instanceof Error ? err.message : "Erro ao enviar demanda.";
+      console.warn("[Index] Falha ao enviar demanda", err);
       const msg = /row-level security|permission denied|new row violates/i.test(rawMsg)
         ? "Sem permissão para abrir demanda para este cliente. Verifique o vínculo do gestor com a equipe."
-        : rawMsg;
+        : "Não foi possível enviar a demanda agora. Tente novamente em instantes.";
       toast.error(msg);
     } finally {
       setDemandSubmitting(false);
