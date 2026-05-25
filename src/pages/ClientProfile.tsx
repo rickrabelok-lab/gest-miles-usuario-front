@@ -375,8 +375,8 @@ const ClientProfile = () => {
         <section className="space-y-2 rounded-xl border border-border bg-card p-3">
           <p className="text-xs font-semibold text-muted-foreground">Acessos (programas e companhias)</p>
           <p className="text-xs text-muted-foreground">
-            Credenciais foram removidas deste formulario por seguranca. A gestao deve acontecer somente pelo cofre
-            seguro do backend, com criptografia, permissao e auditoria.
+            Acessos e senhas seguem disponiveis para quem tem permissao. A gestao deve acontecer no cofre seguro,
+            com criptografia, permissoes por perfil e auditoria.
           </p>
         </section>
 
