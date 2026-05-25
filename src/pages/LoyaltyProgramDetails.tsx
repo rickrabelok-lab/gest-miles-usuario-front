@@ -125,6 +125,7 @@ const SALDO_BASE_INICIAL = 0;
 const CUSTO_MEDIO_BASE_INICIAL = 0;
 const CUSTO_SALDO_BASE_INICIAL = 0;
 const STORAGE_PREFIX = "mile-manager:program-state:";
+type SaveSyncState = "local_only" | "saving" | "synced";
 
 const ACTION_PLAN_LABEL_BY_KEY = {
   latam: "Latam Pass",
@@ -374,6 +375,9 @@ const LoyaltyProgramDetails = () => {
   const [custoMedioMilheiro, setCustoMedioMilheiro] = useState<number>(
     persistedState?.custoMedioMilheiro ?? CUSTO_MEDIO_BASE_INICIAL,
   );
+  const [saveSyncState, setSaveSyncState] = useState<SaveSyncState>(
+    programId && effectiveClientId ? "saving" : "local_only",
+  );
   const custoTotal = custoSaldo;
   const [actionPlanFollowupOpen, setActionPlanFollowupOpen] = useState(false);
   const [actionPlanFollowupSaving, setActionPlanFollowupSaving] = useState(false);
@@ -575,6 +579,8 @@ const LoyaltyProgramDetails = () => {
     };
     window.localStorage.setItem(storageKey, JSON.stringify(stateToPersist));
     if (programId && effectiveClientId) {
+      let cancelled = false;
+      setSaveSyncState("saving");
       void saveProgramState({
         programId,
         programName,
@@ -582,8 +588,20 @@ const LoyaltyProgramDetails = () => {
         logoColor: program?.logoColor ?? null,
         logoImageUrl: program?.logoImageUrl ?? null,
         state: stripPersistedMetaForServer(stateToPersist),
-      });
+      })
+        .then(() => {
+          if (!cancelled) setSaveSyncState("synced");
+        })
+        .catch(() => {
+          if (!cancelled) setSaveSyncState("local_only");
+        });
+
+      return () => {
+        cancelled = true;
+      };
     }
+
+    setSaveSyncState("local_only");
   }, [
     storageKey,
     saldo,
@@ -1004,6 +1022,20 @@ const LoyaltyProgramDetails = () => {
             {programId && (
               <span className="text-[10px] text-header-foreground/70">
                 #{programId}
+              </span>
+            )}
+            {saveSyncState !== "synced" && (
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] ring-1",
+                  saveSyncState === "saving"
+                    ? "bg-header-foreground/15 text-header-foreground ring-header-foreground/25"
+                    : "bg-amber-100 text-amber-800 ring-amber-200",
+                )}
+              >
+                {saveSyncState === "saving"
+                  ? "Sincronizando"
+                  : "Salvo só neste aparelho"}
               </span>
             )}
           </div>
