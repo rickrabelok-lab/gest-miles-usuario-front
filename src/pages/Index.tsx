@@ -167,16 +167,20 @@ type DemandGestorOption = {
 };
 
 const getDemandGestoresErrorMessage = (error: unknown) => {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  ) {
-    const message = (error as { message: string }).message.trim();
-    if (message) return message;
+  const rawMessage =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" &&
+          error !== null &&
+          "message" in error &&
+          typeof (error as { message: unknown }).message === "string"
+        ? (error as { message: string }).message
+        : "";
+
+  if (rawMessage.trim()) {
+    console.warn("[Index] Falha ao carregar gestores da demanda", error);
   }
+
   return "Nao foi possivel carregar os gestores desta demanda.";
 };
 
