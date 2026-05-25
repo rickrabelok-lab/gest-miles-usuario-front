@@ -2,6 +2,7 @@
 import { RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
+import { BONUS_PROMOTIONS_SOURCE_NOTICE } from '@/lib/bonusMockData'
 import { isExpiringToday } from '@/lib/bonusUtils'
 
 interface Props {
@@ -56,6 +57,9 @@ export function TransferBonusSection({ sectionRef }: Props) {
               {isExpiringToday(promo.expiresAt) && (
                 <p className="mt-1.5 text-[9px] font-semibold text-red-500">⏰ Encerra hoje</p>
               )}
+              <p className="mt-1.5 text-[9px] font-semibold text-amber-700">
+                Referencia local, confira no programa
+              </p>
             </div>
 
             <div
@@ -68,6 +72,9 @@ export function TransferBonusSection({ sectionRef }: Props) {
           </button>
         ))}
       </div>
+      <p className="mt-2 text-[10px] leading-snug text-nubank-text-secondary">
+        {BONUS_PROMOTIONS_SOURCE_NOTICE}
+      </p>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 // src/components/bonus/BonusPromotionsSection.tsx
 import { useNavigate } from 'react-router-dom'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
-import { BonusPromotion } from '@/lib/bonusMockData'
+import { BONUS_PROMOTIONS_SOURCE_NOTICE, BonusPromotion } from '@/lib/bonusMockData'
 import { CATEGORY_CONFIG, isExpiringToday } from '@/lib/bonusUtils'
 
 function QuickItem({ promo }: { promo: BonusPromotion }) {
@@ -97,6 +97,9 @@ export default function BonusPromotionsSection() {
                 ⏰ Encerra hoje às 23:59
               </span>
             )}
+            <span className="mt-2 inline-block rounded-lg bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">
+              Referencia local
+            </span>
           </div>
         </button>
       )}
@@ -107,6 +110,9 @@ export default function BonusPromotionsSection() {
           <QuickItem key={promo.id} promo={promo} />
         ))}
       </div>
+      <p className="mt-2 text-[10px] leading-snug text-nubank-text-secondary">
+        {BONUS_PROMOTIONS_SOURCE_NOTICE}
+      </p>
     </section>
   )
 }

@@ -2,6 +2,7 @@
 import { RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
+import { BONUS_PROMOTIONS_SOURCE_NOTICE } from '@/lib/bonusMockData'
 
 interface Props {
   sectionRef?: RefObject<HTMLDivElement>
@@ -36,6 +37,9 @@ export function CardBonusSection({ sectionRef }: Props) {
               </p>
               <p className="mt-0.5 text-sm font-bold text-nubank-text">{promo.targetProgram}</p>
               <p className="mt-0.5 text-[9px] text-nubank-text-secondary">{promo.bonusLabel}</p>
+              <p className="mt-1.5 text-[9px] font-semibold text-amber-700">
+                Referencia local, confira no programa
+              </p>
             </div>
 
             <div
@@ -48,6 +52,9 @@ export function CardBonusSection({ sectionRef }: Props) {
           </button>
         ))}
       </div>
+      <p className="mt-2 text-[10px] leading-snug text-nubank-text-secondary">
+        {BONUS_PROMOTIONS_SOURCE_NOTICE}
+      </p>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 // src/pages/BonusOffersScreen.tsx
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BonusCategory } from '@/lib/bonusMockData'
+import { BONUS_PROMOTIONS_SOURCE_NOTICE, BonusCategory } from '@/lib/bonusMockData'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
 import { TransferBonusSection } from '@/components/bonus/TransferBonusSection'
 import { ShoppingBonusSection } from '@/components/bonus/ShoppingBonusSection'
@@ -84,6 +84,11 @@ export default function BonusOffersScreen() {
 
       {/* Content */}
       <div className="px-4 pt-4 pb-24">
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+          <p className="text-[11px] font-semibold leading-snug text-amber-800">
+            {BONUS_PROMOTIONS_SOURCE_NOTICE}
+          </p>
+        </div>
         <TransferBonusSection sectionRef={transferRef} />
         <ShoppingBonusSection sectionRef={shoppingRef} />
         <MilesBonusSection sectionRef={milesRef} />
