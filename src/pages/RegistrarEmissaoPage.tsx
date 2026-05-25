@@ -119,8 +119,8 @@ const RegistrarEmissaoPage = () => {
       setObservacoes("");
       setSobrenomeEmissao("");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro ao salvar emissão.";
-      toast.error(msg);
+      console.warn("Falha ao registrar emissão", err);
+      toast.error("Não foi possível salvar a emissão agora. Tente novamente em alguns instantes.");
     } finally {
       setSaving(false);
     }
