@@ -184,6 +184,11 @@ const DestinationCarousel = ({
                   </div>
 
                   <div className="mt-1.5 rounded-lg bg-nubank-bg px-2 py-1.5">
+                    <div className="mb-1 flex justify-end">
+                      <span className="rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold uppercase text-nubank-text-secondary">
+                        estimado
+                      </span>
+                    </div>
                     <div className="flex items-center justify-between">
                       <p className="text-[11px] font-semibold text-nubank-text">
                         {formatMiles(miles?.bestPrice ?? null)}
@@ -210,7 +215,7 @@ const DestinationCarousel = ({
       <div className="mb-3">
         <h2 className="text-lg font-bold tracking-tight text-nubank-text">Destinos em destaque</h2>
       <p className="mt-0.5 text-xs text-nubank-text-secondary">
-        Melhores preços por região com base nas origens habilitadas.
+        Referências estimadas por região com base nas origens habilitadas.
       </p>
     </div>
       {!loading && error ? (
