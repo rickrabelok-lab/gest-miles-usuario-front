@@ -1,13 +1,13 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 type Props = { children: ReactNode };
-type State = { hasError: boolean; message: string };
+type State = { hasError: boolean };
 
 class AppErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, message: "" };
+  state: State = { hasError: false };
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, message: error.message || "Erro inesperado" };
+  static getDerivedStateFromError(): State {
+    return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -24,7 +24,6 @@ class AppErrorBoundary extends Component<Props, State> {
         <p className="mt-2 text-sm text-muted-foreground">
           Tente recarregar a página. Se continuar, limpe o cache do navegador.
         </p>
-        <p className="mt-2 break-all text-xs text-destructive">{this.state.message}</p>
         <button
           type="button"
           className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
