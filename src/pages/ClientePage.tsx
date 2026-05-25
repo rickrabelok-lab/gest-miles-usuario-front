@@ -41,6 +41,7 @@ const ClientePage = () => {
       resumoClientes.map((c) => ({
         id: c.clienteId,
         name: c.nome,
+        source: "backend" as const,
       })),
     [resumoClientes],
   );
@@ -65,6 +66,7 @@ const ClientePage = () => {
       ...onlyAccessed.map((a) => ({
         id: a.id,
         name: a.name ?? `Cliente ${a.id.slice(0, 8)}`,
+        source: "local-cache" as const,
       })),
     ];
   }, [user?.id, gestorClientOptions]);
@@ -203,7 +205,7 @@ const ClientePage = () => {
 
           <section>
             <p className="mb-2 text-xs font-medium text-muted-foreground">
-              Clientes na sua carteira
+              Clientes sob gestão
             </p>
             {clients.length > 0 && (
               <div className="mb-3">
@@ -264,8 +266,17 @@ const ClientePage = () => {
                             : "text-foreground hover:bg-muted/50"
                         }`}
                       >
-                        <span className="truncate">{client.name}</span>
-                        {isSelected && <span className="text-primary">✓</span>}
+                        <span className="min-w-0 flex-1 truncate">{client.name}</span>
+                        <span
+                          className={`ml-3 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                            client.source === "backend"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
+                          }`}
+                        >
+                          {client.source === "backend" ? "Carteira" : "Cache local"}
+                        </span>
+                        {isSelected && <span className="ml-2 shrink-0 text-primary">✓</span>}
                       </button>
                     </li>
                   );
