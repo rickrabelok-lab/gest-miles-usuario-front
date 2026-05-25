@@ -17,6 +17,16 @@ import { submitCsatAvaliacao, useCsatCliente } from "@/hooks/useCsatCliente";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+const CSAT_ALREADY_SUBMITTED_MESSAGE = "Este mês já foi avaliado para este gestor.";
+const CSAT_SUBMIT_ERROR_MESSAGE = "Não foi possível enviar sua avaliação agora. Tente novamente em instantes.";
+
+function getCsatSubmitErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message === CSAT_ALREADY_SUBMITTED_MESSAGE) {
+    return CSAT_ALREADY_SUBMITTED_MESSAGE;
+  }
+  return CSAT_SUBMIT_ERROR_MESSAGE;
+}
+
 function pendingKey(gestorId: string, mesRef: string) {
   return `${gestorId}|${mesRef}`;
 }
@@ -76,7 +86,8 @@ export default function CsatClientePrompt() {
       setOpen(false);
       await refetch();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao enviar avaliação.");
+      console.warn("[CsatClientePrompt] submit failed", e);
+      toast.error(getCsatSubmitErrorMessage(e));
     } finally {
       setSubmitting(false);
     }
