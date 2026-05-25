@@ -16,6 +16,8 @@ import { submitNpsAvaliacao, useNpsCliente } from "@/hooks/useNpsCliente";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+const NPS_SUBMIT_ERROR_MESSAGE = "Não foi possível enviar sua avaliação agora. Tente novamente em instantes.";
+
 /**
  * Modal de NPS para cliente_gestao quando existir convite pendente.
  * RLS e triggers no Supabase validam vínculo e equipe.
@@ -71,7 +73,8 @@ export default function NpsClientePrompt() {
       setOpen(false);
       await refetch();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao enviar avaliação.");
+      console.warn("[NpsClientePrompt] submit failed", e);
+      toast.error(NPS_SUBMIT_ERROR_MESSAGE);
     } finally {
       setSubmitting(false);
     }
