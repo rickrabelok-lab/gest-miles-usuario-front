@@ -6,14 +6,14 @@ type Props = {
   children: JSX.Element;
 };
 
-/** Dentro de `RequireAuth`: só utilizadores com `perfis.role === 'admin'`. */
+/** Dentro de `RequireAuth`: só usuários com `perfis.role === 'admin'`. */
 const RequireAdmin = ({ children }: Props) => {
   const { role, roleLoading, roleError, refreshRole } = useAuth();
 
   if (roleLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        A carregar perfil...
+        Carregando perfil...
       </div>
     );
   }

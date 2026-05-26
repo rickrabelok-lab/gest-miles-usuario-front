@@ -14,7 +14,7 @@ const HomeGate = () => {
   if (loading || roleLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        A carregar...
+        Carregando...
       </div>
     );
   }
@@ -49,7 +49,7 @@ const HomeGate = () => {
     }
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        A redirecionar para o painel admin…
+        Redirecionando para o painel admin...
       </div>
     );
   }
