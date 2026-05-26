@@ -37,10 +37,14 @@ function formatSubscriptionError(error: unknown, fallback: string): string {
       message,
     )
   ) {
+    console.warn("[AssinaturaCliente] subscription:", error);
     return fallback;
   }
 
-  return message.trim() || fallback;
+  if (message.trim()) {
+    console.warn("[AssinaturaCliente] subscription:", error);
+  }
+  return fallback;
 }
 
 const MANAGED_SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due", "unpaid", "paused"]);
