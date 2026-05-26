@@ -16,6 +16,7 @@ const EMPTY_DATA: BrandingConfigData = {
   brandAssets: {},
   programCardLogos: {},
 };
+const BRANDING_CONFIG_LOAD_ERROR = "Nao foi possivel carregar a identidade visual agora.";
 let brandingConfigCache: BrandingConfigData | null = null;
 let brandingConfigInFlight: Promise<BrandingConfigData> | null = null;
 
@@ -94,7 +95,8 @@ export function useBrandingConfig(): {
     try {
       setData(await fetchBrandingConfig(force));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      console.warn("[useBrandingConfig] pesquisa_passagens_config:", e);
+      setError(BRANDING_CONFIG_LOAD_ERROR);
       setData(brandingConfigCache ?? EMPTY_DATA);
     } finally {
       setLoading(false);
