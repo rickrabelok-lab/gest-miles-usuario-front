@@ -204,7 +204,7 @@ const SimularCompraMilhasPage = () => {
   const handleSimular = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) {
-      toast.error("Faça login para simular.");
+      toast.error("Faça login para consultar a compra de milhas.");
       return;
     }
     const rota = rotas.find(
@@ -313,7 +313,7 @@ const SimularCompraMilhasPage = () => {
           >
             <ArrowLeft size={20} strokeWidth={1.5} />
           </button>
-          <h1 className="text-base font-semibold tracking-tight">Simular Compra de Milhas</h1>
+          <h1 className="text-base font-semibold tracking-tight">Compra de Milhas</h1>
           <div className="w-9" />
         </div>
       </header>
@@ -322,7 +322,7 @@ const SimularCompraMilhasPage = () => {
         <Card className="rounded-[18px] border-border/80">
           <CardHeader className="pb-2">
             <p className="text-xs font-semibold text-foreground">
-              Escolha a rota que deseja simular
+              Escolha a rota para consultar
             </p>
             <p className="text-[11px] text-muted-foreground">
               Usaremos seu saldo atual, o custo médio do milheiro e o preço de compra para calcular
@@ -333,7 +333,7 @@ const SimularCompraMilhasPage = () => {
             <form className="space-y-3" onSubmit={handleSimular}>
               {metaError ? (
                 <div className="rounded-[14px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[11px] text-destructive">
-                  <p className="font-semibold">Não carregamos os dados da simulação.</p>
+                  <p className="font-semibold">Não carregamos os dados da consulta.</p>
                   <p className="mt-0.5">{metaError}</p>
                   <Button
                     type="button"
@@ -363,7 +363,7 @@ const SimularCompraMilhasPage = () => {
                       <SelectItem value="__nenhuma_rota__" disabled className="text-muted-foreground">
                         {metaError
                           ? "Carregue novamente para escolher uma rota."
-                          : "Nenhuma rota disponível para simulação agora. Ajuste as preferências ou acione o suporte."}
+                          : "Nenhuma rota disponível para consulta agora. Ajuste as preferências ou acione o suporte."}
                       </SelectItem>
                     ) : (
                       programasList.map((p) => (
@@ -431,7 +431,7 @@ const SimularCompraMilhasPage = () => {
                 className="mt-1 w-full rounded-[14px] text-sm font-semibold"
                 disabled={loadingMeta || loadingSimulacao || Boolean(metaError)}
               >
-                {loadingSimulacao ? "Calculando..." : "Simular emissão com compra de milhas"}
+                {loadingSimulacao ? "Calculando..." : "Consultar emissão com compra de milhas"}
               </Button>
             </form>
           </CardContent>
@@ -442,7 +442,7 @@ const SimularCompraMilhasPage = () => {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold text-foreground">
-                  Resultado da simulação
+                  Estimativa da compra de milhas
                 </p>
                 <div className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold">
                   {resultado.economia > 0 ? (
