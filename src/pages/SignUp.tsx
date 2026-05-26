@@ -50,7 +50,7 @@ const SignUp = () => {
     return (
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-3 bg-nubank-bg p-5">
         <p className="font-display text-[1.35rem] font-bold tracking-tight text-nubank-primary">Gest Miles</p>
-        <p className="text-sm text-nubank-text-secondary">A carregar…</p>
+        <p className="text-sm text-nubank-text-secondary">Carregando...</p>
       </div>
     );
   }
@@ -94,7 +94,7 @@ const SignUp = () => {
   const signUpQuery = fromInvite ? "?fromInvite=1" : "";
 
   return (
-    <AuthFlowShell title="Criar conta" description="Preencha os dados abaixo para se registar no Gest Miles.">
+    <AuthFlowShell title="Criar conta" description="Preencha os dados abaixo para se cadastrar no Gest Miles.">
       {!isSupabaseConfigured && (
         <p className="rounded-[14px] border border-amber-500/40 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-800/50 dark:bg-amber-950/50 dark:text-amber-100">
           Cadastro indisponível agora. Tente novamente em alguns minutos.
@@ -160,7 +160,7 @@ const SignUp = () => {
         disabled={!canSubmit || pending}
         onClick={() => void handleSignUp()}
       >
-        {pendingAction === "signup" ? "A criar conta…" : "Criar conta"}
+        {pendingAction === "signup" ? "Criando conta..." : "Criar conta"}
       </Button>
       <div className="border-t border-nubank-border pt-5">
         <Button
