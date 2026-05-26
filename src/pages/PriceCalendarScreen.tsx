@@ -60,7 +60,7 @@ const PriceCalendarScreen = () => {
   const monthLabel = `${MONTH_NAMES[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 
   const routeLabel = useMemo(() => {
-    if (!origin || !destination) return "Rota nao escolhida";
+    if (!origin || !destination) return "Rota não escolhida";
     const from = origin?.city ?? "Origem";
     const to = destination?.city ?? "Destino";
     return `${from} ✈ ${to}`;
@@ -156,7 +156,7 @@ const PriceCalendarScreen = () => {
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] font-semibold">Escolha origem e destino</p>
                 <p className="mt-1 text-[12px] leading-5">
-                  O calendario precisa de uma rota para buscar precos. Volte para a busca e selecione os aeroportos.
+                  O calendário precisa de uma rota para buscar preços. Volte para a busca e selecione os aeroportos.
                 </p>
                 <Button
                   type="button"
