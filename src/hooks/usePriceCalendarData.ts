@@ -72,13 +72,10 @@ export const usePriceCalendarData = ({
         setError(result.error ?? null);
       } catch (err) {
         if (cancelled) return;
+        console.warn("Price calendar provider failed", err);
         setPricesByDay(new Map());
         setSource("estimated");
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Não foi possível carregar o calendário de preços.",
-        );
+        setError("Não foi possível carregar o calendário de preços.");
       } finally {
         if (!cancelled) setLoading(false);
       }
