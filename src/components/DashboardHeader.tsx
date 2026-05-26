@@ -261,7 +261,7 @@ const DashboardHeader = () => {
                           onClick={() => navigate("/simular-compra-milhas")}
                         >
                           <Calculator className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Simular Compra de Milhas</span>
+                          <span>Compra de Milhas</span>
                         </button>
                       </SheetClose>
                       <SheetClose asChild>
