@@ -9,7 +9,7 @@ type Props = {
 
 /**
  * Dentro de RequireAuth: só clientes (cliente / cliente_gestao) ficam na app.
- * Equipa interna é enviada para Manager ou Admin.
+ * Equipe interna é enviada para Manager ou Admin.
  */
 const RequireClienteApp = ({ children }: Props) => {
   const { role, roleLoading, roleError, refreshRole } = useAuth();
@@ -23,7 +23,7 @@ const RequireClienteApp = ({ children }: Props) => {
   if (roleLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        A carregar perfil...
+        Carregando perfil...
       </div>
     );
   }
@@ -51,7 +51,7 @@ const RequireClienteApp = ({ children }: Props) => {
   if (!role) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        A carregar perfil...
+        Carregando perfil...
       </div>
     );
   }
@@ -59,7 +59,7 @@ const RequireClienteApp = ({ children }: Props) => {
   if (staffAppEntryUrl(role)) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        A redirecionar...
+        Redirecionando...
       </div>
     );
   }
@@ -68,7 +68,7 @@ const RequireClienteApp = ({ children }: Props) => {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
         <p>Acesso reservado a clientes.</p>
-        <p className="max-w-md">Utiliza o painel da equipa no endereço indicado pela tua organização.</p>
+        <p className="max-w-md">Use o painel da equipe no endereço indicado pela sua organização.</p>
       </div>
     );
   }

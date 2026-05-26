@@ -97,7 +97,7 @@ const Me = () => {
             sessionStorage.removeItem(PENDING_INVITE_TOKEN_KEY);
             await refreshRole();
           } catch {
-            /* convite inválido ou e-mail diferente — utilizador pode corrigir depois */
+            /* convite inválido ou e-mail diferente; usuário pode corrigir depois */
           }
         }
 

@@ -131,7 +131,7 @@ const ResetPassword = () => {
     return (
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-3 bg-nubank-bg p-5">
         <p className="font-display text-[1.35rem] font-bold tracking-tight text-nubank-primary">Gest Miles</p>
-        <p className="text-sm text-nubank-text-secondary">A carregar…</p>
+        <p className="text-sm text-nubank-text-secondary">Carregando...</p>
       </div>
     );
   }
