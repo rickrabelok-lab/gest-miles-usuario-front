@@ -9,7 +9,7 @@ export type PreferenciasSugestoes = {
 };
 
 export const PREFERENCIAS_SUGESTOES_SAVE_ERROR_MESSAGE =
-  "Nao foi possivel salvar suas preferencias agora. Confira a conexao e tente novamente.";
+  "Não foi possível salvar suas preferências agora. Confira a conexão e tente novamente.";
 
 const defaultPreferencias: PreferenciasSugestoes = {
   preferencia_destino: ["Todos"],
@@ -35,7 +35,7 @@ export const usePreferenciasSugestoes = (overrideUsuarioId?: string | null) => {
       if (error) {
         console.warn("[PreferenciasSugestoes] preferencias_usuario:", error.message);
         throw new Error(
-          "Nao foi possivel carregar suas preferencias agora. Confira a conexao e tente novamente.",
+          "Não foi possível carregar suas preferências agora. Confira a conexão e tente novamente.",
         );
       }
       const raw = (data?.preferencias ?? {}) as Partial<PreferenciasSugestoes>;
