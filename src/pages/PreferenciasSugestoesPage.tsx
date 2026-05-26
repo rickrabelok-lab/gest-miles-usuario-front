@@ -22,6 +22,7 @@ const PreferenciasSugestoesPage = () => {
   const { preferencias, loading, error, save, saving, refetch } = usePreferenciasSugestoes();
   const [destinos, setDestinos] = useState<DestinoPreferencia[]>(preferencias.preferencia_destino);
   const [classe, setClasse] = useState<ClassePreferencia>(preferencias.preferencia_classe);
+  const formDisabled = loading || saving || !!error;
 
   useEffect(() => {
     setDestinos(preferencias.preferencia_destino);
@@ -47,7 +48,7 @@ const PreferenciasSugestoesPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (error) {
-      toast.error("Recarregue as preferencias antes de salvar.");
+      toast.error("Recarregue as preferências antes de salvar.");
       return;
     }
     try {
@@ -80,7 +81,9 @@ const PreferenciasSugestoesPage = () => {
 
       <main className="px-4 py-6">
         {loading && (
-          <p className="text-sm text-muted-foreground">Carregando preferências...</p>
+          <p className="text-sm text-muted-foreground">
+            Carregando preferências antes de editar...
+          </p>
         )}
 
         {error && (
@@ -112,10 +115,15 @@ const PreferenciasSugestoesPage = () => {
               {DESTINO_OPCOES.map((opcao) => (
                 <label
                   key={opcao}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-border/60 bg-card/50 px-3 py-2.5 transition-colors hover:bg-muted/40"
+                  className={`flex items-center gap-3 rounded-lg border border-border/60 bg-card/50 px-3 py-2.5 transition-colors ${
+                    formDisabled
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer hover:bg-muted/40"
+                  }`}
                 >
                   <Checkbox
                     checked={destinos.includes(opcao)}
+                    disabled={formDisabled}
                     onCheckedChange={() => handleDestinoToggle(opcao)}
                   />
                   <span className="text-sm font-medium">{opcao}</span>
@@ -134,15 +142,20 @@ const PreferenciasSugestoesPage = () => {
               {CLASSE_OPCOES.map((opcao) => (
                 <label
                   key={opcao}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-border/60 bg-card/50 px-3 py-2.5 transition-colors hover:bg-muted/40"
+                  className={`flex items-center gap-3 rounded-lg border border-border/60 bg-card/50 px-3 py-2.5 transition-colors ${
+                    formDisabled
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer hover:bg-muted/40"
+                  }`}
                 >
                   <input
                     type="radio"
                     name="classe"
                     value={opcao}
                     checked={classe === opcao}
+                    disabled={formDisabled}
                     onChange={() => setClasse(opcao)}
-                    className="h-4 w-4 border-border text-[#8A05BE] focus:ring-[#8A05BE]"
+                    className="h-4 w-4 border-border text-[#8A05BE] focus:ring-[#8A05BE] disabled:cursor-not-allowed disabled:opacity-50"
                   />
                   <span className="text-sm font-medium">{opcao}</span>
                 </label>
@@ -153,7 +166,7 @@ const PreferenciasSugestoesPage = () => {
           <Button
             type="submit"
             className="w-full rounded-xl font-semibold"
-            disabled={saving || loading || !!error}
+            disabled={formDisabled}
           >
             {saving ? "Salvando…" : "Salvar preferências"}
           </Button>
