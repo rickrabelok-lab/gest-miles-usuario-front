@@ -24,6 +24,8 @@ const bestPricesCache = new Map<
     expiresAt: number;
   }
 >();
+const DESTINATION_BEST_PRICES_ERROR_MESSAGE =
+  "Nao foi possivel carregar os precos dos destinos agora.";
 
 export const useDestinationBestPrices = ({
   destinations,
@@ -108,12 +110,9 @@ export const useDestinationBestPrices = ({
         setPricesByDestination(next);
       } catch (loadError) {
         if (!cancelled) {
+          console.warn("[useDestinationBestPrices] load:", loadError);
           setPricesByDestination({});
-          setError(
-            loadError instanceof Error && loadError.message.trim()
-              ? loadError.message
-              : "Não foi possível carregar os preços dos destinos.",
-          );
+          setError(DESTINATION_BEST_PRICES_ERROR_MESSAGE);
         }
       } finally {
         if (!cancelled) {
