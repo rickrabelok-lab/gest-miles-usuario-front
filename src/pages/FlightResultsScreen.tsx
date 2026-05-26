@@ -28,7 +28,7 @@ const AIRLINE_COLORS: Record<string, { bg: string; text: string }> = {
 const fmtMoney  = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 const fmtPoints = (v: number) => v.toLocaleString("pt-BR")
 const fmtDur    = (min: number) => `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, "0")}m`
-const SIMULATED_SOURCE_LABEL = "Fonte simulada"
+const SIMULATED_SOURCE_LABEL = "Consulta estimada"
 
 export default function FlightResultsScreen() {
   const navigate   = useNavigate()
@@ -151,7 +151,7 @@ export default function FlightResultsScreen() {
 
       <div className="overflow-y-auto pb-40">
         <div className="mx-4 mt-3 rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-4 text-amber-900">
-          Resultados, datas e pagamentos simulados para estimativa. Confirme disponibilidade, milhas e tarifas antes de emitir.
+          Resultados, datas e pagamento estimados para consulta previa. Confirme disponibilidade, milhas e tarifas antes de emitir.
         </div>
 
         {/* Date navigator */}
@@ -319,7 +319,7 @@ export default function FlightResultsScreen() {
                         {flight.stops === 0 ? "Direto" : `${flight.stops} escala`}
                       </span>
                       <span className="rounded-[5px] bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">
-                        Simulado
+                        Estimado
                       </span>
                     </div>
                   </div>
@@ -356,7 +356,7 @@ export default function FlightResultsScreen() {
                   {selectedDepartFlight.airline} · {fmtDur(selectedDepartFlight.durationMinutes)} · {selectedDepartFlight.stops === 0 ? "Direto" : `${selectedDepartFlight.stops} escala`}
                 </p>
                 <p className="mt-1 text-[10px] font-semibold text-amber-700">
-                  Voo simulado, disponibilidade nao confirmada
+                  Consulta previa, disponibilidade nao confirmada
                 </p>
               </div>
               <div className="text-right">
@@ -395,7 +395,7 @@ export default function FlightResultsScreen() {
               Como quer usar seus pontos?
             </DrawerTitle>
             <DrawerDescription className="mt-1 text-[12px] text-nubank-text-secondary">
-              Opcoes estimadas com dados simulados. Confirme valores reais antes de emitir.
+              Opcoes estimadas para consulta previa. Confirme valores reais antes de emitir.
             </DrawerDescription>
           </DrawerHeader>
           <div className="space-y-3 px-5 pb-6">
@@ -424,7 +424,7 @@ export default function FlightResultsScreen() {
                     </div>
                     <div className="mt-0.5 text-[11px] text-nubank-text-secondary">{opt.label}</div>
                     <div className="mt-1 text-[10px] font-semibold text-amber-700">
-                      Pagamento simulado
+                      Pagamento estimado
                     </div>
                   </div>
                   {i === 0 && (
@@ -460,7 +460,7 @@ export default function FlightResultsScreen() {
               className="w-full rounded-[14px] py-4 text-[14px] font-semibold text-white shadow-md disabled:opacity-40"
               style={{ background: "linear-gradient(135deg,#8A05BE,#9E2FD4)" }}
             >
-              Continuar com simulação →
+              Continuar com consulta →
             </button>
           </div>
         </DrawerContent>
