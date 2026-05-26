@@ -9,13 +9,14 @@ import { getApiUrl, hasAbsoluteApiUrl } from "@/services/api";
 
 function friendlyNetworkError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
+  console.warn("[ForgotPassword] request:", err);
   if (/failed to fetch|networkerror|load failed/i.test(msg)) {
     return "Não conseguimos enviar o link agora. Tente novamente em instantes.";
   }
   if (/api não encontrada|404|vite_api_url|supabase_service_role_key|brevo|backend|express|env/i.test(msg)) {
     return "A recuperação de senha está indisponível no momento. Tente novamente em instantes.";
   }
-  return msg || "Não conseguimos enviar o link agora. Tente novamente em instantes.";
+  return "Não conseguimos enviar o link agora. Tente novamente em instantes.";
 }
 
 const ForgotPassword = () => {
