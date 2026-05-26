@@ -51,7 +51,7 @@ const ForgotPassword = () => {
               : res.statusText;
           throw new Error(apiErr ?? hint404);
         }
-        setMessage((body as { message?: string }).message ?? "Se o e-mail for cadastrado na Gest Miles, enviaremos instruções.");
+        setMessage("Se o e-mail for cadastrado na Gest Miles, enviaremos instruções.");
         return;
       }
 
