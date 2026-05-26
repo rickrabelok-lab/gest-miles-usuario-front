@@ -33,7 +33,7 @@ const ClientePage = () => {
 
   const clientesErrorMessage =
     clientesError instanceof Error
-      ? clientesError.message
+      ? "Não foi possível carregar os clientes da carteira agora. Tente novamente em instantes."
       : "Não foi possível carregar os clientes da carteira.";
 
   const gestorClientOptions = useMemo(
@@ -274,7 +274,7 @@ const ClientePage = () => {
                               : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
                           }`}
                         >
-                          {client.source === "backend" ? "Carteira" : "Cache local"}
+                          {client.source === "backend" ? "Carteira" : "Acesso recente"}
                         </span>
                         {isSelected && <span className="ml-2 shrink-0 text-primary">✓</span>}
                       </button>
