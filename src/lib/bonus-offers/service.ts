@@ -55,30 +55,38 @@ async function withBonusOffersTimeout<T>(
   run: (signal: AbortSignal) => PromiseLike<T>,
   externalSignal?: AbortSignal,
 ): Promise<T> {
-  let timedOut = false;
   const controller = new AbortController();
-  const abortFromExternalSignal = () => controller.abort();
+  let rejectExternalAbort: ((reason: DOMException) => void) | undefined;
+  const externalAbortPromise = new Promise<never>((_, reject) => {
+    rejectExternalAbort = reject;
+  });
+  const abortFromExternalSignal = () => {
+    controller.abort();
+    rejectExternalAbort?.(new DOMException("Aborted", "AbortError"));
+  };
+
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      reject(new Error(BONUS_OFFERS_TIMEOUT_ERROR));
+    }, BONUS_OFFERS_TIMEOUT_MS);
+  });
 
   if (externalSignal?.aborted) {
-    controller.abort();
+    abortFromExternalSignal();
   } else {
     externalSignal?.addEventListener("abort", abortFromExternalSignal, { once: true });
   }
 
-  const timeoutId = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, BONUS_OFFERS_TIMEOUT_MS);
-
   try {
-    return await run(controller.signal);
-  } catch (error) {
-    if (timedOut) {
-      throw new Error(BONUS_OFFERS_TIMEOUT_ERROR);
-    }
-    throw error;
+    return await Promise.race([
+      Promise.resolve(run(controller.signal)),
+      timeoutPromise,
+      externalAbortPromise,
+    ]);
   } finally {
-    clearTimeout(timeoutId);
+    clearTimeout(timeoutId!);
     externalSignal?.removeEventListener("abort", abortFromExternalSignal);
   }
 }
