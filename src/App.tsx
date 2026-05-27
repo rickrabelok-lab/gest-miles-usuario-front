@@ -275,6 +275,14 @@ const App = () => {
                     </ClienteOnly>
                   }
                 />
+                <Route
+                  path="/cliente/:id"
+                  element={
+                    <ClienteOnly>
+                      <Navigate to="timeline" replace />
+                    </ClienteOnly>
+                  }
+                />
                 <Route path="/cliente/:id/insights" element={<ClienteInsightsPage />} />
                 <Route path="/cliente/:id/timeline" element={<ClienteTimelinePage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
