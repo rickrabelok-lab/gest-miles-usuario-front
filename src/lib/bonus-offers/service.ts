@@ -3,6 +3,13 @@ import { hasApiUrl } from "@/services/api";
 import { fetchBonusOffers } from "@/services/bonusOffersService";
 import type { BonusOffer, LoyaltyProgram } from "@/lib/bonus-offers/types";
 
+const BONUS_OFFERS_TIMEOUT_MS = 8000;
+const BONUS_OFFERS_TIMEOUT_ERROR = "bonus_offers_timeout";
+
+type GetActiveBonusOffersOptions = {
+  signal?: AbortSignal;
+};
+
 function mapBonusRow(row: Record<string, unknown>): BonusOffer {
   const vu = row.valid_until;
   const validUntil =
@@ -44,11 +51,47 @@ function normalizeApiBonusOffer(raw: unknown): BonusOffer | null {
   };
 }
 
+async function withBonusOffersTimeout<T>(
+  run: (signal: AbortSignal) => PromiseLike<T>,
+  externalSignal?: AbortSignal,
+): Promise<T> {
+  let timedOut = false;
+  const controller = new AbortController();
+  const abortFromExternalSignal = () => controller.abort();
+
+  if (externalSignal?.aborted) {
+    controller.abort();
+  } else {
+    externalSignal?.addEventListener("abort", abortFromExternalSignal, { once: true });
+  }
+
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, BONUS_OFFERS_TIMEOUT_MS);
+
+  try {
+    return await run(controller.signal);
+  } catch (error) {
+    if (timedOut) {
+      throw new Error(BONUS_OFFERS_TIMEOUT_ERROR);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+    externalSignal?.removeEventListener("abort", abortFromExternalSignal);
+  }
+}
+
 export const getActiveBonusOffers = async (
   program?: LoyaltyProgram,
+  options: GetActiveBonusOffersOptions = {},
 ): Promise<BonusOffer[]> => {
   if (hasApiUrl()) {
-    const raw = await fetchBonusOffers(program);
+    const raw = await withBonusOffersTimeout(
+      (signal) => fetchBonusOffers(program, { signal }),
+      options.signal,
+    );
     if (!Array.isArray(raw)) {
       throw new Error("Resposta inválida ao carregar ofertas de bônus.");
     }
@@ -60,7 +103,10 @@ export const getActiveBonusOffers = async (
     if (program) {
       q = q.eq("program", program);
     }
-    const result = await q.order("program", { ascending: true });
+    const result = await withBonusOffersTimeout(
+      (signal) => q.order("program", { ascending: true }).abortSignal(signal),
+      options.signal,
+    );
     const { data, error } = result;
     if (error) throw error;
     return (data ?? [])
