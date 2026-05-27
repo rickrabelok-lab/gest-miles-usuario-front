@@ -2,54 +2,49 @@ import { useCallback, useEffect, useState } from "react";
 import { getActiveBonusOffers } from "@/lib/bonus-offers/service";
 import type { BonusOffer, LoyaltyProgram } from "@/lib/bonus-offers/types";
 
+const BONUS_OFFERS_ERROR_MESSAGE = "Não foi possível carregar as ofertas no momento.";
+
 export const useBonusOffers = (program?: LoyaltyProgram) => {
   const [offers, setOffers] = useState<BonusOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const loadOffers = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
 
     try {
-      const result = await getActiveBonusOffers(program);
+      const result = await getActiveBonusOffers(program, { signal });
+      if (signal?.aborted) return;
       setOffers(result);
     } catch {
-      setError("Não foi possível carregar as ofertas no momento.");
+      if (signal?.aborted) return;
+      setError(BONUS_OFFERS_ERROR_MESSAGE);
       setOffers([]);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [program]);
 
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setError(null);
+  const retry = useCallback(() => {
+    void loadOffers();
+  }, [loadOffers]);
 
-    getActiveBonusOffers(program)
-      .then((result) => {
-        if (!mounted) return;
-        setOffers(result);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setError("Não foi possível carregar as ofertas no momento.");
-        setOffers([]);
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadOffers(controller.signal);
 
     return () => {
-      mounted = false;
+      controller.abort();
     };
-  }, [program]);
+  }, [loadOffers]);
 
   return {
     offers,
     loading,
     error,
-    retry: load,
+    retry,
   };
 };
