@@ -13,6 +13,7 @@ import demoFlightsRoutes from "./routes/demoFlights.js";
 import stripeBillingRoutes from "./routes/stripeBilling.js";
 import auditLogsRoutes from "./routes/auditLogs.js";
 import programAccessRoutes from "./routes/programAccess.js";
+import contactRoutes from "./routes/contact.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -73,6 +74,7 @@ routes.use("/api/demo-flights", demoFlightsRoutes);
 routes.use("/api/stripe", stripeBillingRoutes);
 routes.use("/api/audit-logs", auditLogsRoutes);
 routes.use("/api/program-access", programAccessRoutes);
+routes.use("/api/contact", contactRoutes);
 
 routes.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
