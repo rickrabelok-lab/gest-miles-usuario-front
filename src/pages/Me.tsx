@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { homePathForRole } from "@/lib/homeRoute";
 import { staffAppEntryUrl } from "@/lib/staffAppUrls";
-import { PENDING_INVITE_TOKEN_KEY } from "@/lib/authFlowStorage";
+import { PENDING_INVITE_TOKEN_KEY, PENDING_REFERRAL_CODE_KEY } from "@/lib/authFlowStorage";
 import { apiFetch, hasApiUrl } from "@/services/api";
 
 const slugify = (value: string) =>
@@ -46,6 +46,9 @@ const Me = () => {
       }
 
       if (existing?.slug) {
+        // Usuário já existente não atribui indicação; limpa o ref pra não vazar
+        // para uma sessão futura.
+        sessionStorage.removeItem(PENDING_REFERRAL_CODE_KEY);
         await refreshRole();
         const mapped = mapPerfilRoleForOperationalUi(existing.role);
         const entry = staffAppEntryUrl(mapped);
@@ -82,6 +85,19 @@ const Me = () => {
       }
 
       await refreshRole();
+
+      // Atribuição de indicação (Convide Amigos): só roda aqui, no ramo de
+      // usuário novo, garantindo que apenas cadastros novos são atribuídos.
+      // A RPC reforça no-self-ref + idempotência no servidor.
+      const refCode = sessionStorage.getItem(PENDING_REFERRAL_CODE_KEY);
+      if (refCode) {
+        try {
+          await supabase.rpc("indicacao_registrar_self", { p_codigo: refCode });
+        } catch {
+          /* código inválido / já atribuído — não bloqueia o onboarding */
+        }
+        sessionStorage.removeItem(PENDING_REFERRAL_CODE_KEY);
+      }
 
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
