@@ -119,7 +119,7 @@ export const getActiveBonusOffers = async (
     if (error) throw error;
     return (data ?? [])
       .map((row) => mapBonusRow(row as Record<string, unknown>))
-      .filter(isCurrentBonusOffer);
+      .filter((offer) => isCurrentBonusOffer(offer));
   }
 
   return [];
