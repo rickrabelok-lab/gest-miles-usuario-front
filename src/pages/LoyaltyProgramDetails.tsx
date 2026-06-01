@@ -906,6 +906,12 @@ const LoyaltyProgramDetails = () => {
       toast.error("Informe o sobrenome na emissão (como na bilheteira) para localizar a reserva.");
       return;
     }
+    if (emitMilhas > saldo) {
+      toast.error(
+        `Saldo insuficiente. Disponível: ${saldo.toLocaleString("pt-BR")} milhas.`,
+      );
+      return;
+    }
     const milhasSaida = Math.min(emitMilhas, saldo);
     const novoSaldo = Math.max(saldo - milhasSaida, 0);
     const custoRemovido = (milhasSaida / 1000) * custoMedioMilheiro;
