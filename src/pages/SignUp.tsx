@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { AuthFlowShell } from "@/components/auth/AuthFlowShell";
@@ -7,12 +7,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { PENDING_REFERRAL_CODE_KEY } from "@/lib/authFlowStorage";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromInvite = searchParams.get("fromInvite") === "1";
+  const refCode = searchParams.get("ref");
   const { user, loading, signUpWithPassword, signInWithGoogle } = useAuth();
+
+  // Captura o código de indicação (?ref=) antes do cadastro/OAuth; a atribuição
+  // acontece após /me (só para conta nova). Ver Me.tsx + indicacao_registrar_self.
+  useEffect(() => {
+    const code = refCode?.trim();
+    if (code) {
+      sessionStorage.setItem(PENDING_REFERRAL_CODE_KEY, code);
+    }
+  }, [refCode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
