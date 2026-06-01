@@ -13,6 +13,7 @@ import demoFlightsRoutes from "./routes/demoFlights.js";
 import stripeBillingRoutes from "./routes/stripeBilling.js";
 import auditLogsRoutes from "./routes/auditLogs.js";
 import programAccessRoutes from "./routes/programAccess.js";
+import contactRoutes from "./routes/contact.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,9 +37,14 @@ const allowedCorsOrigins = [
     .filter(Boolean),
 ];
 
+// Em dev (fora da Vercel), libera qualquer porta localhost/127.0.0.1 — o front Vite
+// pega a 1ª porta livre a partir de :3081, então fixar portas na allowlist gera drift.
+const isDevLocalhostOrigin = (origin) =>
+  !process.env.VERCEL && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedCorsOrigins.includes(origin)) {
+    if (!origin || allowedCorsOrigins.includes(origin) || isDevLocalhostOrigin(origin)) {
       return callback(null, true);
     }
     return callback(new Error("Origin not allowed by CORS."));
@@ -73,6 +79,7 @@ routes.use("/api/demo-flights", demoFlightsRoutes);
 routes.use("/api/stripe", stripeBillingRoutes);
 routes.use("/api/audit-logs", auditLogsRoutes);
 routes.use("/api/program-access", programAccessRoutes);
+routes.use("/api/contact", contactRoutes);
 
 routes.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
