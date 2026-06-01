@@ -102,8 +102,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           .from("perfis")
           .select("role, equipe_id")
           .eq("usuario_id", userId)
-          .maybeSingle()
-          .abortSignal(signal),
+          .abortSignal(signal)
+          .maybeSingle(),
       );
 
       if (full.error) {
@@ -119,8 +119,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             .from("perfis")
             .select("role")
             .eq("usuario_id", userId)
-            .maybeSingle()
-            .abortSignal(signal),
+            .abortSignal(signal)
+            .maybeSingle(),
         );
         if (legacy.error) {
           setRole(null);
