@@ -489,6 +489,7 @@ const LoyaltyProgramDetails = () => {
 
     setSaldo(0);
     setMovimentos([]);
+    setLotes([]);
     setCustoSaldo(0);
     setCustoMedioMilheiro(0);
     setUpdatedAtDisplay("Resetado agora");
