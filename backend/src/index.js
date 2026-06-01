@@ -37,9 +37,14 @@ const allowedCorsOrigins = [
     .filter(Boolean),
 ];
 
+// Em dev (fora da Vercel), libera qualquer porta localhost/127.0.0.1 — o front Vite
+// pega a 1ª porta livre a partir de :3081, então fixar portas na allowlist gera drift.
+const isDevLocalhostOrigin = (origin) =>
+  !process.env.VERCEL && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedCorsOrigins.includes(origin)) {
+    if (!origin || allowedCorsOrigins.includes(origin) || isDevLocalhostOrigin(origin)) {
       return callback(null, true);
     }
     return callback(new Error("Origin not allowed by CORS."));
