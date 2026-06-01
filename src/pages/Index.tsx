@@ -40,6 +40,7 @@ import { useProgramasCliente } from "@/hooks/useProgramasCliente";
 import { useBrandingConfig } from "@/hooks/useBrandingConfig";
 import { supabase } from "@/lib/supabase";
 import { CARD_DESTINATION_TO_AIRPORT_CODE } from "@/lib/airports";
+import type { PersistedProgramState } from "@/lib/program-state";
 import airlineLatamLogo from "@/assets/airline-latam.png";
 import airlineAzulLogo from "@/assets/airline-azul.png";
 import airlineGolLogo from "@/assets/airline-gol.png";
@@ -72,41 +73,6 @@ type ProgramCardData = {
 };
 
 type MovimentoTipo = "entrada" | "saida";
-
-type PersistedProgramState = {
-  saldo?: number;
-  custoMedioMilheiro?: number;
-  movimentos?: Array<{
-    id?: string;
-    data?: string;
-    tipo?: MovimentoTipo;
-    descricao?: string;
-    lucrativa?: boolean;
-    validadeLote?: string;
-    milhas?: number;
-    valorPago?: number;
-    taxas?: number;
-    tarifaPagante?: number;
-    economiaReal?: number;
-    custoMilheiroBase?: number;
-    origem?: string;
-    destino?: string;
-    dataIda?: string;
-    dataVolta?: string;
-    dataEmissao?: string;
-    classe?: string;
-    passageiros?: number;
-    entradaTipo?: string;
-    codigoReserva?: string;
-    sobrenomeEmissao?: string;
-    emissaoFornecedor?: boolean;
-    custoFornecedor?: number;
-  }>;
-  lotes?: Array<{
-    validadeLote?: string;
-    quantidade?: number;
-  }>;
-};
 
 type ProgramMeta = {
   slug: string;

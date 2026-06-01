@@ -33,7 +33,7 @@ describe("getActiveBonusOffers timeout", () => {
       return new Promise(() => {});
     });
 
-    const result = getActiveBonusOffers("smiles");
+    const result = getActiveBonusOffers("Smiles");
     const rejection = expect(result).rejects.toThrow("bonus_offers_timeout");
 
     await vi.advanceTimersByTimeAsync(7999);

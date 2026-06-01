@@ -13,7 +13,7 @@ vi.mock("@/lib/bonus-offers/service", () => ({
 
 const offer: BonusOffer = {
   id: "offer-1",
-  program: "smiles",
+  program: "Smiles",
   store: "Loja teste",
   multiplier: 4,
   validUntil: "2099-12-31",
@@ -30,7 +30,7 @@ describe("useBonusOffers", () => {
   it("sai de loading para erro amigavel quando o carregamento falha", async () => {
     mocks.getActiveBonusOffers.mockRejectedValueOnce(new Error("bonus_offers_timeout"));
 
-    const { result } = renderHook(() => useBonusOffers("smiles"));
+    const { result } = renderHook(() => useBonusOffers("Smiles"));
 
     expect(result.current.loading).toBe(true);
 
@@ -46,7 +46,7 @@ describe("useBonusOffers", () => {
       .mockRejectedValueOnce(new Error("bonus_offers_timeout"))
       .mockResolvedValueOnce([offer]);
 
-    const { result } = renderHook(() => useBonusOffers("smiles"));
+    const { result } = renderHook(() => useBonusOffers("Smiles"));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -78,7 +78,7 @@ describe("useBonusOffers", () => {
       });
     });
 
-    const { unmount } = renderHook(() => useBonusOffers("smiles"));
+    const { unmount } = renderHook(() => useBonusOffers("Smiles"));
 
     await waitFor(() => {
       expect(requestSignal).toBeDefined();
