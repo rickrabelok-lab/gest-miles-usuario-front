@@ -405,7 +405,19 @@ export const useGestor = (
 
     const grouped = new Map<
       string,
-      GestorClienteResumo & {
+      Omit<
+        GestorClienteResumo,
+        | "gestoresResponsaveis"
+        | "cpf"
+        | "dataNascimento"
+        | "email"
+        | "endereco"
+        | "passaporte"
+        | "telefone"
+        | "planoAcaoAtivo"
+        | "demandasPendentes"
+        | "demandasAndamento"
+      > & {
         milhasPorPrograma: Map<string, number>;
         economiaSoma: number;
         roiSoma: number;
