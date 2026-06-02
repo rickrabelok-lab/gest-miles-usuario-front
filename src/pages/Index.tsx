@@ -1569,7 +1569,7 @@ const Index = () => {
     }
 
     const dataArquivo = new Date().toISOString().slice(0, 10);
-    pdf.save(`analise-economia-12m-${dataArquivo}.pdf`);
+    pdf.save(`analise-economia-${economiaPeriodoMeses}m-${dataArquivo}.pdf`);
   };
 
   return (
