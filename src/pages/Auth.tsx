@@ -151,7 +151,7 @@ const Auth = () => {
           disabled={pending && pendingAction !== "google"}
           onClick={() => void handleGoogle()}
         >
-          {pendingAction === "google" ? "A abrir…" : "Entrar com Google"}
+          {pendingAction === "google" ? "Abrindo…" : "Entrar com Google"}
         </Button>
       </div>
       {message && (

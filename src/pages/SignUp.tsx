@@ -181,7 +181,7 @@ const SignUp = () => {
           disabled={pending && pendingAction !== "google"}
           onClick={() => void handleGoogle()}
         >
-          {pendingAction === "google" ? "A abrir…" : "Continuar com Google"}
+          {pendingAction === "google" ? "Abrindo…" : "Continuar com Google"}
         </Button>
       </div>
       {message && (
