@@ -37,7 +37,7 @@ export function LoginNavLink({ children, className }: LoginNavLinkProps) {
         })();
       }}
     >
-      {busy ? "A sair…" : children}
+      {busy ? "Saindo…" : children}
     </button>
   );
 }
