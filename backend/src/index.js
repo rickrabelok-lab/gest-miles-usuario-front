@@ -15,6 +15,7 @@ import auditLogsRoutes from "./routes/auditLogs.js";
 import programAccessRoutes from "./routes/programAccess.js";
 import contactRoutes from "./routes/contact.js";
 import referralsRoutes from "./routes/referrals.js";
+import invitesRoutes from "./routes/invites.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -82,6 +83,7 @@ routes.use("/api/audit-logs", auditLogsRoutes);
 routes.use("/api/program-access", programAccessRoutes);
 routes.use("/api/contact", contactRoutes);
 routes.use("/api/referrals", referralsRoutes);
+routes.use("/api/invites", invitesRoutes);
 
 routes.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
