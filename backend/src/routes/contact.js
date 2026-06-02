@@ -10,6 +10,10 @@ const ASSUNTO_MAX = 120;
 const MSG_MIN = 5;
 const MSG_MAX = 2000;
 
+// Rate-limit por usuário (evita flood do inbox de suporte + linhas no DB).
+const CONTACT_MAX_PER_HOUR = 5;
+const CONTACT_MAX_PER_DAY = 20;
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -61,6 +65,24 @@ router.post("/", requireAuth, async (req, res) => {
     }
 
     const sbAdmin = assertSupabaseService();
+
+    // Rate-limit (contagem no DB; serverless-safe — in-memory não persiste na Vercel).
+    const nowMs = Date.now();
+    const umaHoraMs = nowMs - 60 * 60 * 1000;
+    const since24h = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentes } = await sbAdmin
+      .from("mensagens_contato")
+      .select("created_at")
+      .eq("cliente_usuario_id", user.id)
+      .gte("created_at", since24h);
+    const lista = recentes ?? [];
+    if (lista.filter((r) => new Date(r.created_at).getTime() >= umaHoraMs).length >= CONTACT_MAX_PER_HOUR) {
+      return res.status(429).json({ error: "Muitas mensagens em pouco tempo. Tente novamente mais tarde." });
+    }
+    if (lista.length >= CONTACT_MAX_PER_DAY) {
+      return res.status(429).json({ error: "Limite diário de mensagens atingido. Tente novamente amanhã." });
+    }
+
     const { data: perfil } = await sbAdmin
       .from("perfis")
       .select("nome_completo, email, equipe_id")
