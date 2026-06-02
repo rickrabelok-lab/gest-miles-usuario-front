@@ -19,7 +19,7 @@ export function managerOperationalRoles(): AppRole[] {
 
 /**
  * Se o papel deve usar outro front (não o app de clientes), devolve a base URL (sem barra final).
- * `null` = pode usar o app de utilizadores (cliente / cliente_gestao).
+ * `null` = pode usar o app de usuários (cliente / cliente_gestao).
  */
 export function staffWebAppBaseUrlForRole(role: AppRole | null): string | null {
   if (!role) return null;

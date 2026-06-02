@@ -31,7 +31,7 @@ export function LoginNavLink({ children, className }: LoginNavLinkProps) {
           try {
             await signOut();
           } catch {
-            // Mesmo com erro, tentamos mostrar o ecrã de login
+            // Mesmo com erro, tentamos mostrar a tela de login
           }
           navigate("/auth", { replace: true });
         })();
