@@ -16,7 +16,6 @@ type SaveProgramInput = {
   logo?: string | null;
   logoColor?: string | null;
   logoImageUrl?: string | null;
-  clubeNome?: string | null;
   state: PersistedProgramState;
 };
 
@@ -45,12 +44,16 @@ export const useProgramasCliente = (managerClientId?: string | null) => {
   const saveMutation = useMutation({
     mutationFn: async (input: SaveProgramInput) => {
       if (!clientId) throw new Error("Usuário sem cliente selecionado.");
+      // Não enviar `categoria`/`clube_nome`/`clube_plano` aqui: o app cliente
+      // não edita esses campos. A RPC `save_programa_cliente` só preserva o
+      // valor existente quando a chave está AUSENTE do payload — mandar
+      // `clube_nome: null` fazia `v_payload ? 'clube_nome'` = true e apagava
+      // a categoria definida pelo gestor/CS a cada save de saldo do cliente.
       const payload = {
         program_name: input.programName,
         logo: input.logo ?? null,
         logo_color: input.logoColor ?? null,
         logo_image_url: input.logoImageUrl ?? null,
-        clube_nome: input.clubeNome ?? null,
         saldo: input.state.saldo,
         custo_medio_milheiro: input.state.custoMedioMilheiro,
         custo_saldo: input.state.custoSaldo,
