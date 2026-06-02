@@ -11,7 +11,7 @@ type AuthFlowShellProps = {
 };
 
 /**
- * Shell comum aos ecrãs de recuperação / redefinição — paleta Gest Miles (roxo #8A05BE, fundo #F7F7F8).
+ * Shell comum às telas de recuperação / redefinição — paleta Gest Miles (roxo #8A05BE, fundo #F7F7F8).
  */
 export function AuthFlowShell({ title, description, children, className }: AuthFlowShellProps) {
   return (
