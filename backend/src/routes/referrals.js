@@ -7,6 +7,10 @@ const router = Router();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Rate-limit por usuário (anti relay de spam — envia e-mail a destinatário arbitrário).
+const REFERRAL_MAX_PER_HOUR = 10;
+const REFERRAL_MAX_PER_DAY = 30;
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -65,6 +69,28 @@ router.post("/invite", requireAuth, async (req, res) => {
     if (remetenteEmail && remetenteEmail === email) {
       return res.status(400).json({ error: "Você não pode convidar a si mesmo." });
     }
+
+    // Rate-limit (contagem no DB; serverless-safe — in-memory não persiste na Vercel).
+    const nowMs = Date.now();
+    const umaHoraMs = nowMs - 60 * 60 * 1000;
+    const since24h = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentes } = await sbAdmin
+      .from("indicacoes")
+      .select("created_at, indicado_email")
+      .eq("indicador_usuario_id", user.id)
+      .eq("origem", "email") // só convites por e-mail (não atribuições orgânicas via ?ref=)
+      .gte("created_at", since24h);
+    const lista = recentes ?? [];
+    if (lista.filter((r) => new Date(r.created_at).getTime() >= umaHoraMs).length >= REFERRAL_MAX_PER_HOUR) {
+      return res.status(429).json({ error: "Muitos convites em pouco tempo. Tente novamente mais tarde." });
+    }
+    if (lista.length >= REFERRAL_MAX_PER_DAY) {
+      return res.status(429).json({ error: "Limite diário de convites atingido. Tente novamente amanhã." });
+    }
+    if (lista.some((r) => String(r.indicado_email ?? "").toLowerCase() === email)) {
+      return res.status(429).json({ error: "Você já convidou este e-mail recentemente." });
+    }
+
     const nome = (perfil?.nome_completo || "").trim() || null;
 
     // get-or-create do código do remetente (deriva do user.id; não confia no body).
