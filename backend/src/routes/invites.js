@@ -268,6 +268,13 @@ router.post("/accept", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Convite expirado." });
     }
 
+    // Defesa em profundidade: o convite só vincula se o e-mail autenticado bate com
+    // o do convite. A FORÇA desse match depende da confirmação de e-mail global
+    // (GoTrue "Confirm email") estar ON — só aí `user.email` prova posse do inbox.
+    // Hoje ela está OFF (auto-confirm), então NÃO adianta checar `user.email_confirmed_at`
+    // aqui: o auto-confirm sempre o preenche, o guard seria no-op (segurança-teatro).
+    // O controle real do aceite é a posse do token (segredo enviado só a este e-mail);
+    // o fix de verdade é ligar a confirmação global (decisão de produto, cross-app).
     const userEmail = String(user.email ?? "").trim().toLowerCase();
     if (!userEmail || userEmail !== String(invite.email).trim().toLowerCase()) {
       return res.status(403).json({ error: "Este convite é para outro e-mail." });
