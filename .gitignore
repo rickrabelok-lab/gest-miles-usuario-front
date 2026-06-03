@@ -48,3 +48,6 @@ supabase/.temp/
 # Untrackados em 2026-06-03 (mantidos no disco local). Não versionar dados de cliente.
 supabase/RUN_EQUIPES_1_E_2_GESTORES.sql
 supabase/RUN_EQUIPE_CS_TRES_RESPONSAVEIS_AMBAS_EQUIPES.sql
+
+# Scratch local da skill de brainstorming (mockups HTML + server.pid) — não versionar.
+.superpowers/
