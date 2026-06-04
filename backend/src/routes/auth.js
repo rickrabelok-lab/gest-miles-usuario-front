@@ -127,7 +127,7 @@ router.get("/user", requireAuth, async (req, res) => {
   }
 });
 
-/** POST /api/auth/request-password-reset - Envia reset custom por Brevo */
+/** POST /api/auth/request-password-reset - Envia reset custom por Resend */
 router.post("/request-password-reset", async (req, res) => {
   try {
     const em = String(req.body?.email || "")
@@ -137,11 +137,10 @@ router.post("/request-password-reset", async (req, res) => {
       return res.status(400).json({ error: "E-mail inválido." });
     }
 
-    const brevoKey = process.env.BREVO_API_KEY;
-    const sender = process.env.BREVO_SENDER_EMAIL;
+    const resendKey = process.env.RESEND_API_KEY;
     const appUrl = (process.env.PUBLIC_APP_URL || "http://localhost:3080").replace(/\/$/, "");
-    if (!brevoKey || !sender) {
-      return res.status(503).json({ error: "Brevo não configurado no backend." });
+    if (!resendKey) {
+      return res.status(503).json({ error: "Resend não configurado no backend." });
     }
 
     const sbAdmin = assertSupabaseService();
@@ -190,14 +189,14 @@ ${saudacao}
 </td></tr>
 </table></td></tr></table></body></html>`;
 
-    const r = await fetch("https://api.brevo.com/v3/smtp/email", {
+    const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": brevoKey },
+      headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        sender: { name: process.env.BREVO_SENDER_NAME || "Gest Miles", email: sender },
-        to: [{ email: em }],
+        from: "Gest Miles <nao-responda@mail.gestmiles.com.br>",
+        to: [em],
         subject: "Recuperação de senha — Gest Miles",
-        htmlContent: html,
+        html: html,
       }),
     });
     if (!r.ok) throw new Error(await r.text());
@@ -208,7 +207,7 @@ ${saudacao}
   }
 });
 
-/** POST /api/auth/request-password-reset-manager - Envia reset custom (gestor) por Brevo */
+/** POST /api/auth/request-password-reset-manager - Envia reset custom (gestor) por Resend */
 router.post("/request-password-reset-manager", async (req, res) => {
   try {
     const em = String(req.body?.email || "")
@@ -218,11 +217,10 @@ router.post("/request-password-reset-manager", async (req, res) => {
       return res.status(400).json({ error: "E-mail inválido." });
     }
 
-    const brevoKey = process.env.BREVO_API_KEY;
-    const sender = process.env.BREVO_SENDER_EMAIL;
+    const resendKey = process.env.RESEND_API_KEY;
     const managerUrl = (process.env.PUBLIC_MANAGER_URL || "http://localhost:3002").replace(/\/$/, "");
-    if (!brevoKey || !sender) {
-      return res.status(503).json({ error: "Brevo não configurado no backend." });
+    if (!resendKey) {
+      return res.status(503).json({ error: "Resend não configurado no backend." });
     }
 
     const sbAdmin = assertSupabaseService();
@@ -283,14 +281,14 @@ ${saudacao}
 </td></tr>
 </table></td></tr></table></body></html>`;
 
-    const r = await fetch("https://api.brevo.com/v3/smtp/email", {
+    const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": brevoKey },
+      headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        sender: { name: process.env.BREVO_SENDER_NAME || "Gest Miles", email: sender },
-        to: [{ email: em }],
+        from: "Gest Miles <nao-responda@mail.gestmiles.com.br>",
+        to: [em],
         subject: "Recuperação de acesso — Painel de Gestão Gest Miles",
-        htmlContent: html,
+        html: html,
       }),
     });
     if (!r.ok) throw new Error(await r.text());
