@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sendEmail, mailerConfigured } from "../lib/mailer.js";
 
 const router = Router();
 
@@ -47,37 +48,6 @@ function maskEmail(email) {
     return `${maskPart(local)}@${maskPart(domain.slice(0, dot))}${domain.slice(dot)}`;
   }
   return `${maskPart(local)}@${maskPart(domain)}`;
-}
-
-const brevoConfigured = () =>
-  Boolean(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL);
-
-/** Envia e-mail via Brevo. Retorna {ok} — nunca lança (best-effort). */
-async function sendBrevoEmail({ to, subject, html }) {
-  if (!brevoConfigured()) return { ok: false, reason: "not-configured" };
-  try {
-    const r = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        "api-key": process.env.BREVO_API_KEY,
-      },
-      body: JSON.stringify({
-        sender: {
-          name: process.env.BREVO_SENDER_NAME || "Gest Miles",
-          email: process.env.BREVO_SENDER_EMAIL,
-        },
-        to: [{ email: to }],
-        subject,
-        htmlContent: html,
-      }),
-    });
-    if (!r.ok) return { ok: false, reason: (await r.text().catch(() => "")) || "brevo-error" };
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, reason: err?.message || "brevo-exception" };
-  }
 }
 
 function buildInviteEmailHtml({ link, deNome }) {
@@ -137,7 +107,7 @@ ${saudacao}
 /**
  * POST /api/invites — cria um convite (autor precisa ser admin_equipe com equipe).
  * Gera token (só hash no banco), supersede convites antigos do mesmo e-mail e envia
- * o link por e-mail (Brevo). Em dev (sem VERCEL) retorna o devToken para testes.
+ * o link por e-mail (Resend). Em dev (sem VERCEL) retorna o devToken para testes.
  */
 router.post("/", requireAuth, async (req, res) => {
   try {
@@ -164,9 +134,9 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Apenas um administrador de equipe pode convidar." });
     }
 
-    // Em produção, sem Brevo não há como entregar o convite.
-    if (!brevoConfigured() && process.env.VERCEL) {
-      return res.status(503).json({ error: "E-mail (Brevo) não configurado no backend." });
+    // Em produção, sem e-mail configurado não há como entregar o convite.
+    if (!mailerConfigured() && process.env.VERCEL) {
+      return res.status(503).json({ error: "Serviço de e-mail não configurado no backend." });
     }
 
     // Supersede: invalida convites anteriores ainda válidos do mesmo e-mail.
@@ -193,13 +163,13 @@ router.post("/", requireAuth, async (req, res) => {
 
     const appUrl = (process.env.PUBLIC_APP_URL || "http://localhost:3080").replace(/\/$/, "");
     const link = `${appUrl}/auth/accept-invite?token=${encodeURIComponent(rawToken)}`;
-    const mail = await sendBrevoEmail({
+    const mail = await sendEmail({
       to: email,
       subject: "Convite — Gest Miles",
       html: buildInviteEmailHtml({ link, deNome: autor.nome_completo }),
     });
     if (!mail.ok && mail.reason !== "not-configured") {
-      console.warn("[invites] Brevo falhou ao enviar convite:", mail.reason);
+      console.warn("[invites] e-mail falhou ao enviar convite:", mail.reason);
     }
 
     const body = { ok: true };
@@ -330,13 +300,13 @@ router.post("/welcome", requireAuth, async (req, res) => {
     let sentOk = false;
     if (isValidEmail(to)) {
       const primeiroNome = firstNameEscaped(perfil?.nome_completo || user.user_metadata?.full_name);
-      const mail = await sendBrevoEmail({
+      const mail = await sendEmail({
         to,
         subject: "Bem-vindo à Gest Miles",
         html: buildWelcomeEmailHtml({ primeiroNome }),
       });
       if (!mail.ok && mail.reason !== "not-configured") {
-        console.warn("[invites] welcome Brevo falhou:", mail.reason);
+        console.warn("[invites] welcome e-mail falhou:", mail.reason);
       }
       sentOk = mail.ok;
     }
