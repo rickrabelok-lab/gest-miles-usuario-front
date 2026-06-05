@@ -219,7 +219,8 @@ ${saudacao}
 
     return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao enviar reset." });
+    console.error("[auth] request-password-reset falhou:", err?.message ?? err);
+    return res.status(500).json({ error: "Não foi possível enviar o e-mail de redefinição agora." });
   }
 });
 
@@ -309,7 +310,8 @@ ${saudacao}
 
     return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao enviar reset." });
+    console.error("[auth] request-password-reset-manager falhou:", err?.message ?? err);
+    return res.status(500).json({ error: "Não foi possível enviar o e-mail de redefinição agora." });
   }
 });
 
