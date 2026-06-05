@@ -99,6 +99,16 @@ if (process.env.VERCEL) {
 }
 app.use(routes);
 
+// Error-handler global: safety net pra erros não-tratados (4 args = middleware de erro).
+// Loga o erro real e responde genérico (não vaza err.message). WS3 pluga Sentry aqui.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error("[backend] erro não-tratado:", err?.stack || err?.message || err);
+  // TODO(WS3): Sentry.captureException(err)
+  if (res.headersSent) return next(err);
+  res.status(err?.status || 500).json({ error: "Erro interno. Tente novamente." });
+});
+
 export default app;
 
 if (!process.env.VERCEL) {
