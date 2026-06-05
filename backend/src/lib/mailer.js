@@ -3,21 +3,26 @@
 // então o backend e os testes definem as variáveis antes de enviar.
 //
 // Env (só backend — nunca em VITE_*):
-//   RESEND_API_KEY   chave da API Resend.
-//   RESEND_FROM      remetente verificado. Aceita "Nome <email@dominio>" OU só "email@dominio".
+//   RESEND_API_KEY   chave da API Resend (obrigatória).
+//   RESEND_FROM      (opcional) remetente. Aceita "Nome <email@dominio>" OU só "email@dominio".
+//                    Default: o remetente já verificado no Resend (DEFAULT_FROM abaixo).
 //   RESEND_FROM_NAME (opcional) nome usado quando RESEND_FROM é só o e-mail. Default "Gest Miles".
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
-/** true quando há chave + remetente configurados. */
+// Remetente com domínio verificado no Resend (ver commit c717e3c no main). Usado por default
+// para que o backend funcione só com RESEND_API_KEY — sem precisar setar RESEND_FROM.
+const DEFAULT_FROM = "Gest Miles <nao-responda@mail.gestmiles.com.br>";
+
+/** true quando a chave da API está configurada (o remetente tem default verificado). */
 export function mailerConfigured() {
-  return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM);
+  return Boolean(process.env.RESEND_API_KEY);
 }
 
 /** Monta o campo `from` no formato que o Resend espera. */
 export function resendFrom() {
   const from = String(process.env.RESEND_FROM || "").trim();
-  if (!from) return "";
+  if (!from) return DEFAULT_FROM;
   if (from.includes("<")) return from;
   const name = (process.env.RESEND_FROM_NAME || "Gest Miles").trim();
   return `${name} <${from}>`;

@@ -6,7 +6,7 @@ const ORIGINAL_FETCH = globalThis.fetch;
 
 beforeEach(() => {
   process.env.RESEND_API_KEY = "re_test_key";
-  process.env.RESEND_FROM = "no-reply@gestmiles.com.br";
+  delete process.env.RESEND_FROM;
   delete process.env.RESEND_FROM_NAME;
 });
 
@@ -17,16 +17,16 @@ afterEach(() => {
   delete process.env.RESEND_FROM_NAME;
 });
 
-test("mailerConfigured: false sem chave ou sem remetente", () => {
+test("mailerConfigured: depende só da RESEND_API_KEY (remetente tem default)", () => {
+  assert.equal(mailerConfigured(), true);
   delete process.env.RESEND_API_KEY;
-  assert.equal(mailerConfigured(), false);
-  process.env.RESEND_API_KEY = "re_test_key";
-  delete process.env.RESEND_FROM;
   assert.equal(mailerConfigured(), false);
 });
 
-test("resendFrom: envolve e-mail puro com nome default; respeita formato completo", () => {
-  assert.equal(resendFrom(), "Gest Miles <no-reply@gestmiles.com.br>");
+test("resendFrom: usa remetente verificado por default; respeita override", () => {
+  assert.equal(resendFrom(), "Gest Miles <nao-responda@mail.gestmiles.com.br>");
+  process.env.RESEND_FROM = "ola@gestmiles.com.br";
+  assert.equal(resendFrom(), "Gest Miles <ola@gestmiles.com.br>");
   process.env.RESEND_FROM = "Time <ola@gestmiles.com.br>";
   assert.equal(resendFrom(), "Time <ola@gestmiles.com.br>");
 });
@@ -57,7 +57,7 @@ test("sendEmail: POST no Resend com Bearer + corpo correto", async () => {
   assert.equal(captured.opts.method, "POST");
   assert.equal(captured.opts.headers.Authorization, "Bearer re_test_key");
   const body = JSON.parse(captured.opts.body);
-  assert.equal(body.from, "Gest Miles <no-reply@gestmiles.com.br>");
+  assert.equal(body.from, "Gest Miles <nao-responda@mail.gestmiles.com.br>");
   assert.deepEqual(body.to, ["cliente@b.com"]);
   assert.equal(body.subject, "Assunto");
   assert.equal(body.html, "<p>oi</p>");
