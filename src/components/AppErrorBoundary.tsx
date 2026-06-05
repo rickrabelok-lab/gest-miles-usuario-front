@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Sentry } from "@/lib/sentry";
 
 type Props = { children: ReactNode };
 type State = { hasError: boolean };
@@ -13,6 +14,9 @@ class AppErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Keep a trail in console for faster debugging in production/dev.
     console.error("App crash:", error, errorInfo);
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: errorInfo.componentStack } },
+    });
   }
 
   render() {
