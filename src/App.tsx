@@ -42,6 +42,9 @@ const RadarOportunidadesPage = lazy(() => import("./pages/RadarOportunidadesPage
 const ClienteInsightsPage = lazy(() => import("./pages/ClienteInsightsPage"));
 const ClienteTimelinePage = lazy(() => import("./pages/ClienteTimelinePage"));
 const AssinaturaClientePage = lazy(() => import("./pages/AssinaturaClientePage"));
+const TermosPage = lazy(() => import("./pages/legal/TermosPage"));
+const PrivacidadePage = lazy(() => import("./pages/legal/PrivacidadePage"));
+const CookiesPage = lazy(() => import("./pages/legal/CookiesPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -122,6 +125,9 @@ const App = () => {
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
                 <Route path="/auth/accept-invite" element={<AcceptInvite />} />
                 <Route path="/me" element={<Me />} />
+                <Route path="/termos" element={<TermosPage />} />
+                <Route path="/privacidade" element={<PrivacidadePage />} />
+                <Route path="/cookies" element={<CookiesPage />} />
                 <Route
                   path="/search-flights"
                   element={
