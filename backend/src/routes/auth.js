@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { supabase, createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sendEmail, mailerConfigured } from "../lib/mailer.js";
 
 const router = Router();
 
@@ -127,7 +128,7 @@ router.get("/user", requireAuth, async (req, res) => {
   }
 });
 
-/** POST /api/auth/request-password-reset - Envia reset custom por Brevo */
+/** POST /api/auth/request-password-reset - Envia reset custom por Resend */
 router.post("/request-password-reset", async (req, res) => {
   try {
     const em = String(req.body?.email || "")
@@ -137,11 +138,9 @@ router.post("/request-password-reset", async (req, res) => {
       return res.status(400).json({ error: "E-mail inválido." });
     }
 
-    const brevoKey = process.env.BREVO_API_KEY;
-    const sender = process.env.BREVO_SENDER_EMAIL;
     const appUrl = (process.env.PUBLIC_APP_URL || "http://localhost:3080").replace(/\/$/, "");
-    if (!brevoKey || !sender) {
-      return res.status(503).json({ error: "Brevo não configurado no backend." });
+    if (!mailerConfigured()) {
+      return res.status(503).json({ error: "Serviço de e-mail não configurado no backend." });
     }
 
     const sbAdmin = assertSupabaseService();
@@ -190,17 +189,12 @@ ${saudacao}
 </td></tr>
 </table></td></tr></table></body></html>`;
 
-    const r = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": brevoKey },
-      body: JSON.stringify({
-        sender: { name: process.env.BREVO_SENDER_NAME || "Gest Miles", email: sender },
-        to: [{ email: em }],
-        subject: "Recuperação de senha — Gest Miles",
-        htmlContent: html,
-      }),
+    const mail = await sendEmail({
+      to: em,
+      subject: "Recuperação de senha — Gest Miles",
+      html,
     });
-    if (!r.ok) throw new Error(await r.text());
+    if (!mail.ok) throw new Error(mail.reason || "Falha ao enviar e-mail.");
 
     return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
   } catch (err) {
@@ -208,7 +202,7 @@ ${saudacao}
   }
 });
 
-/** POST /api/auth/request-password-reset-manager - Envia reset custom (gestor) por Brevo */
+/** POST /api/auth/request-password-reset-manager - Envia reset custom (gestor) por Resend */
 router.post("/request-password-reset-manager", async (req, res) => {
   try {
     const em = String(req.body?.email || "")
@@ -218,11 +212,9 @@ router.post("/request-password-reset-manager", async (req, res) => {
       return res.status(400).json({ error: "E-mail inválido." });
     }
 
-    const brevoKey = process.env.BREVO_API_KEY;
-    const sender = process.env.BREVO_SENDER_EMAIL;
     const managerUrl = (process.env.PUBLIC_MANAGER_URL || "http://localhost:3002").replace(/\/$/, "");
-    if (!brevoKey || !sender) {
-      return res.status(503).json({ error: "Brevo não configurado no backend." });
+    if (!mailerConfigured()) {
+      return res.status(503).json({ error: "Serviço de e-mail não configurado no backend." });
     }
 
     const sbAdmin = assertSupabaseService();
@@ -283,17 +275,12 @@ ${saudacao}
 </td></tr>
 </table></td></tr></table></body></html>`;
 
-    const r = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": brevoKey },
-      body: JSON.stringify({
-        sender: { name: process.env.BREVO_SENDER_NAME || "Gest Miles", email: sender },
-        to: [{ email: em }],
-        subject: "Recuperação de acesso — Painel de Gestão Gest Miles",
-        htmlContent: html,
-      }),
+    const mail = await sendEmail({
+      to: em,
+      subject: "Recuperação de acesso — Painel de Gestão Gest Miles",
+      html,
     });
-    if (!r.ok) throw new Error(await r.text());
+    if (!mail.ok) throw new Error(mail.reason || "Falha ao enviar e-mail.");
 
     return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
   } catch (err) {
