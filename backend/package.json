@@ -13,6 +13,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@sentry/node": "^10.56.0",
     "@supabase/supabase-js": "^2.98.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

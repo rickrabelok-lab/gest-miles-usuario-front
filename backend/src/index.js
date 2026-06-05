@@ -1,6 +1,7 @@
 import "./load-env.js";
 import express from "express";
 import cors from "cors";
+import { initSentry, captureException } from "./lib/sentry.js";
 
 import { handleStripeWebhook } from "./routes/stripeWebhook.js";
 import authRoutes from "./routes/auth.js";
@@ -16,6 +17,8 @@ import programAccessRoutes from "./routes/programAccess.js";
 import contactRoutes from "./routes/contact.js";
 import referralsRoutes from "./routes/referrals.js";
 import invitesRoutes from "./routes/invites.js";
+
+initSentry();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -105,7 +108,7 @@ app.use(routes);
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error("[backend] erro não-tratado:", err?.stack || err?.message || err);
-  // TODO(WS3): Sentry.captureException(err)
+  captureException(err);
   if (res.headersSent) return next(err);
   res.status(err?.status || 500).json({ error: "Erro interno. Tente novamente." });
 });
