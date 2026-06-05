@@ -21,6 +21,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const STATIC_ALLOWED_ORIGINS = [
+  "https://app.gestmiles.com.br",
   "https://manager.gestmiles.com.br",
   "http://localhost:3002",
   "http://localhost:3080",

@@ -1,6 +1,26 @@
 # Checklist de Go-Live — Gest Miles
 
-> Última atualização: 2026-04-12 (Prompt 4)
+> Última atualização: 2026-06-05 (launch-readiness do app do cliente)
+
+## 0. Launch-readiness do app do cliente (2026-06-05)
+
+Auditoria em `docs/superpowers/specs/2026-06-05-launch-readiness-cliente-design.md`.
+
+**Feito (no `main`):**
+- **WS2** — e-mail do backend migrado de Brevo → **Resend** (`backend/src/lib/mailer.js`). Pré-cutover: `RESEND_API_KEY` no Vercel (remetente verificado `nao-responda@mail.gestmiles.com.br` é o default no código).
+- **WS4 / WS4b** — hardening: rate-limit nos endpoints de reset, error-handler global, CSP **Report-Only** no front, e respostas `500` não vazam mais `err.message` (helper `serverError`).
+- **WS1** — LGPD mínimo: aceite de Termos+Privacidade no cadastro + aviso de cookies. URLs em `VITE_LEGAL_*` (default `https://gestmiles.com.br/...`).
+
+**Pendente (precisa de ação do owner):**
+- **WS3 — Observabilidade:** instalar Sentry (front + backend). Precisa `SENTRY_DSN` (2 projetos ou reuso do manager). Hoje só o manager tem Sentry.
+- **WS5 — Smoke E2E:** Playwright do caminho feliz do cliente. Precisa conta de teste.
+- **CSP:** hoje é `Report-Only`. Migrar pra enforce depois de validar (confirmar origem do BFF + ingest do Sentry).
+
+### Backup do Storage — bucket `contratos`
+
+- O bucket `contratos` (privado) **existe mas está vazio** (0 objetos em 2026-06-05). **Não é blocker de launch.**
+- **Antes do primeiro upload de contrato:** configurar estratégia de backup do Storage (o PITR do Postgres **não** cobre objetos do Storage — é S3-backed). Avaliar export agendado / replicação do bucket.
+- Outros buckets: `branding-assets` (público) e `logo` (privado).
 
 ## 1. Pré-Deploy
 
@@ -9,7 +29,7 @@
 - [ ] **Rotação de chaves Supabase:** Gerar novas `anon` key e `service_role` key no dashboard Supabase (Settings → API)
 - [ ] **Atualizar segredos no Vercel:** `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL` nos 3 projetos (usuario, manager, admin) + backend
 - [ ] **Stripe keys:** Confirmar que `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` estão configuradas no backend de produção (Vercel env)
-- [ ] **Brevo API key:** Validar `BREVO_API_KEY` no backend
+- [ ] **Resend API key:** Validar `RESEND_API_KEY` no backend (substituiu o Brevo — ver seção 0)
 - [ ] **Nunca expor `service_role` no browser:** Verificar que apenas `anon` key está em variáveis `VITE_*`
 - [ ] **`.env.local` / `.env`:** Não commitados (confirmar `.gitignore`)
 
