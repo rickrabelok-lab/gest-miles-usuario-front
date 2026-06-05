@@ -141,7 +141,7 @@ export function ProgramSelectionSheet({
           {/* Busca */}
           <div
             className={cn(
-              "flex items-center gap-2 rounded-xl border bg-[#0f0f1a] px-3 py-2.5 transition-colors",
+              "flex items-center gap-2 rounded-xl border bg-[#0f0f1a] px-3 py-2.5 transition-colors focus-within:ring-2 focus-within:ring-purple-500/40",
               search ? "border-purple-500" : "border-white/10",
             )}
           >
