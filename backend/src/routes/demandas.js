@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.get("/", requireAuth, async (req, res) => {
     }
     return res.json(data ?? []);
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao listar demandas" });
+    return serverError(res, "Erro ao listar demandas", err, "[demandas]");
   }
 });
 
@@ -55,7 +56,7 @@ router.post("/", requireAuth, async (req, res) => {
     }
     return res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao criar demanda" });
+    return serverError(res, "Erro ao criar demanda", err, "[demandas]");
   }
 });
 
@@ -77,7 +78,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
     }
     return res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao atualizar demanda" });
+    return serverError(res, "Erro ao atualizar demanda", err, "[demandas]");
   }
 });
 

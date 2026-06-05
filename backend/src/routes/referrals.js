@@ -3,6 +3,7 @@ import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
 import { sendEmail, mailerConfigured } from "../lib/mailer.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -110,7 +111,7 @@ router.post("/invite", requireAuth, async (req, res) => {
       origem: "email",
     });
     if (insErr) {
-      return res.status(500).json({ error: insErr.message || "Erro ao registrar o convite." });
+      return serverError(res, "Erro ao registrar o convite.", insErr, "[referrals]");
     }
 
     // E-mail best-effort: nunca derruba o sucesso (a linha já foi salva).
@@ -135,7 +136,7 @@ router.post("/invite", requireAuth, async (req, res) => {
 
     return res.json({ ok: true });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao enviar convite." });
+    return serverError(res, "Erro ao enviar convite.", err, "[referrals]");
   }
 });
 

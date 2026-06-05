@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { supabase } from "../lib/supabase.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -23,7 +24,7 @@ router.get("/", async (req, res) => {
     const destinationCode = req.query.destination ? String(req.query.destination).toUpperCase() : null;
     const { data, error } = await supabase.from("demo_flights").select("*").order("external_id");
     if (error) {
-      return res.status(500).json({ error: error.message || "Erro ao listar voos demo" });
+      return serverError(res, "Erro ao listar voos demo", error, "[demo-flights]");
     }
     const rows = data ?? [];
     const mapped = rows.map((r) => mapDemoFlightRow(r));
@@ -34,7 +35,7 @@ router.get("/", async (req, res) => {
     }
     return res.json(out.slice(0, 6));
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Erro ao listar voos demo" });
+    return serverError(res, "Erro ao listar voos demo", err, "[demo-flights]");
   }
 });
 

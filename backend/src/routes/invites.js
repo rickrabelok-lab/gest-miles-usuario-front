@@ -4,6 +4,7 @@ import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
 import { sendEmail, mailerConfigured } from "../lib/mailer.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -177,7 +178,7 @@ router.post("/", requireAuth, async (req, res) => {
     if (!process.env.VERCEL) body.devToken = rawToken;
     return res.json(body);
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao criar convite." });
+    return serverError(res, "Erro ao criar convite.", err, "[invites]");
   }
 });
 
@@ -205,7 +206,7 @@ router.get("/preview", async (req, res) => {
 
     return res.json({ emailMasked: maskEmail(row.email) });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao validar convite." });
+    return serverError(res, "Erro ao validar convite.", err, "[invites]");
   }
 });
 
@@ -269,7 +270,7 @@ router.post("/accept", requireAuth, async (req, res) => {
 
     return res.json({ ok: true });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao aceitar convite." });
+    return serverError(res, "Erro ao aceitar convite.", err, "[invites]");
   }
 });
 
@@ -321,7 +322,7 @@ router.post("/welcome", requireAuth, async (req, res) => {
 
     return res.json({ ok: true, sent: sentOk });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao enviar boas-vindas." });
+    return serverError(res, "Erro ao enviar boas-vindas.", err, "[invites]");
   }
 });
 

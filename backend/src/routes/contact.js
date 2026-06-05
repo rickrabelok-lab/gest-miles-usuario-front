@@ -3,6 +3,7 @@ import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
 import { sendEmail, mailerConfigured } from "../lib/mailer.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -110,7 +111,7 @@ router.post("/", requireAuth, async (req, res) => {
       .single();
 
     if (insErr) {
-      return res.status(500).json({ error: insErr.message || "Erro ao registrar mensagem." });
+      return serverError(res, "Erro ao registrar mensagem.", insErr, "[contact]");
     }
 
     // E-mail best-effort: nunca derruba o sucesso (a linha já foi salva).
@@ -134,7 +135,7 @@ router.post("/", requireAuth, async (req, res) => {
 
     return res.json({ ok: true, id: inserted.id });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao enviar mensagem." });
+    return serverError(res, "Erro ao enviar mensagem.", err, "[contact]");
   }
 });
 

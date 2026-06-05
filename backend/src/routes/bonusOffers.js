@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { supabase } from "../lib/supabase.js";
 import { mapBonusOfferRow } from "../lib/bonusOffersMap.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -14,12 +15,12 @@ router.get("/", async (_req, res) => {
     }
     const { data, error } = await query.order("program", { ascending: true });
     if (error) {
-      return res.status(500).json({ error: error.message || "Erro ao listar ofertas" });
+      return serverError(res, "Erro ao listar ofertas", error, "[bonus-offers]");
     }
     const offers = (data ?? []).map(mapBonusOfferRow).filter(Boolean);
     return res.json(offers);
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao listar ofertas" });
+    return serverError(res, "Erro ao listar ofertas", err, "[bonus-offers]");
   }
 });
 

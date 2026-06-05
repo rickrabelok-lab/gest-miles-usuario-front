@@ -2,6 +2,7 @@ import { Router } from "express";
 import { buildSelfPerfilPayload } from "../lib/perfisPayload.js";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get("/me", requireAuth, async (req, res) => {
     }
     return res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao obter perfil" });
+    return serverError(res, "Erro ao obter perfil", err, "[perfis]");
   }
 });
 
@@ -47,7 +48,7 @@ router.get("/role", requireAuth, async (req, res) => {
     }
     return res.json({ role: data?.role ?? "user" });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao obter role" });
+    return serverError(res, "Erro ao obter role", err, "[perfis]");
   }
 });
 
@@ -67,7 +68,7 @@ router.get("/:usuarioId", requireAuth, async (req, res) => {
     }
     return res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao obter perfil" });
+    return serverError(res, "Erro ao obter perfil", err, "[perfis]");
   }
 });
 
@@ -92,7 +93,7 @@ router.put("/", requireAuth, async (req, res) => {
     if (err.status) {
       return res.status(err.status).json({ error: err.message, code: err.code, details: err.details });
     }
-    return res.status(500).json({ error: err.message || "Erro ao salvar perfil" });
+    return serverError(res, "Erro ao salvar perfil", err, "[perfis]");
   }
 });
 

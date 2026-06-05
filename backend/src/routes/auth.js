@@ -4,6 +4,7 @@ import { supabase, createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
 import { sendEmail, mailerConfigured } from "../lib/mailer.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -73,7 +74,7 @@ router.post("/signup", async (req, res) => {
       session: data.session,
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao cadastrar" });
+    return serverError(res, "Erro ao cadastrar", err, "[auth]");
   }
 });
 
@@ -93,7 +94,7 @@ router.post("/login", async (req, res) => {
       session: data.session,
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao fazer login" });
+    return serverError(res, "Erro ao fazer login", err, "[auth]");
   }
 });
 
@@ -113,7 +114,7 @@ router.post("/magic-link", async (req, res) => {
     }
     return res.json({ ok: true, message: "Link enviado por email" });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao enviar link" });
+    return serverError(res, "Erro ao enviar link", err, "[auth]");
   }
 });
 
@@ -127,7 +128,7 @@ router.get("/session", requireAuth, async (req, res) => {
     }
     return res.json({ session, user: session?.user ?? null });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao obter sessão" });
+    return serverError(res, "Erro ao obter sessão", err, "[auth]");
   }
 });
 
@@ -141,7 +142,7 @@ router.get("/user", requireAuth, async (req, res) => {
     }
     return res.json({ user });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao obter usuário" });
+    return serverError(res, "Erro ao obter usuário", err, "[auth]");
   }
 });
 
@@ -346,7 +347,7 @@ router.post("/complete-password-reset", async (req, res) => {
 
     return res.json({ ok: true, message: "Senha alterada com sucesso." });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao redefinir senha." });
+    return serverError(res, "Erro ao redefinir senha.", err, "[auth]");
   }
 });
 
