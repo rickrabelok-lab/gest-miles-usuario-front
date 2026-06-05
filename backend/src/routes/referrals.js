@@ -2,6 +2,7 @@ import { Router } from "express";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sendEmail, mailerConfigured } from "../lib/mailer.js";
 
 const router = Router();
 
@@ -114,26 +115,19 @@ router.post("/invite", requireAuth, async (req, res) => {
 
     // E-mail best-effort: nunca derruba o sucesso (a linha já foi salva).
     try {
-      const brevoKey = process.env.BREVO_API_KEY;
-      const sender = process.env.BREVO_SENDER_EMAIL;
       const appUrl = (process.env.PUBLIC_APP_URL || "http://localhost:3080").replace(/\/$/, "");
-      if (brevoKey && sender) {
+      if (mailerConfigured()) {
         const link = `${appUrl}/auth/sign-up?ref=${encodeURIComponent(codigo)}`;
         const html = buildConviteEmailHtml({ nome, link });
-        const r = await fetch("https://api.brevo.com/v3/smtp/email", {
-          method: "POST",
-          headers: { accept: "application/json", "content-type": "application/json", "api-key": brevoKey },
-          body: JSON.stringify({
-            sender: { name: process.env.BREVO_SENDER_NAME || "Gest Miles", email: sender },
-            to: [{ email }],
-            ...(remetenteEmail ? { replyTo: { email: remetenteEmail, name: nome || undefined } } : {}),
-            subject: `${nome || "Um amigo"} te convidou para a Gest Miles`,
-            htmlContent: html,
-          }),
+        const mail = await sendEmail({
+          to: email,
+          subject: `${nome || "Um amigo"} te convidou para a Gest Miles`,
+          html,
+          ...(remetenteEmail ? { replyTo: remetenteEmail } : {}),
         });
-        if (!r.ok) console.warn("[referrals] Brevo falhou:", await r.text());
+        if (!mail.ok) console.warn("[referrals] e-mail falhou:", mail.reason);
       } else {
-        console.warn("[referrals] Brevo não configurado; convite registrado sem e-mail.");
+        console.warn("[referrals] e-mail não configurado; convite registrado sem envio.");
       }
     } catch (mailErr) {
       console.warn("[referrals] erro ao enviar e-mail:", mailErr?.message ?? mailErr);

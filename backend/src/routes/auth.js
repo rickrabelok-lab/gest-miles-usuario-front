@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { supabase, createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sendEmail, mailerConfigured } from "../lib/mailer.js";
 
 const router = Router();
 
@@ -137,10 +138,9 @@ router.post("/request-password-reset", async (req, res) => {
       return res.status(400).json({ error: "E-mail inválido." });
     }
 
-    const resendKey = process.env.RESEND_API_KEY;
     const appUrl = (process.env.PUBLIC_APP_URL || "http://localhost:3080").replace(/\/$/, "");
-    if (!resendKey) {
-      return res.status(503).json({ error: "Resend não configurado no backend." });
+    if (!mailerConfigured()) {
+      return res.status(503).json({ error: "Serviço de e-mail não configurado no backend." });
     }
 
     const sbAdmin = assertSupabaseService();
@@ -189,17 +189,12 @@ ${saudacao}
 </td></tr>
 </table></td></tr></table></body></html>`;
 
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: "Gest Miles <nao-responda@mail.gestmiles.com.br>",
-        to: [em],
-        subject: "Recuperação de senha — Gest Miles",
-        html: html,
-      }),
+    const mail = await sendEmail({
+      to: em,
+      subject: "Recuperação de senha — Gest Miles",
+      html,
     });
-    if (!r.ok) throw new Error(await r.text());
+    if (!mail.ok) throw new Error(mail.reason || "Falha ao enviar e-mail.");
 
     return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
   } catch (err) {
@@ -217,10 +212,9 @@ router.post("/request-password-reset-manager", async (req, res) => {
       return res.status(400).json({ error: "E-mail inválido." });
     }
 
-    const resendKey = process.env.RESEND_API_KEY;
     const managerUrl = (process.env.PUBLIC_MANAGER_URL || "http://localhost:3002").replace(/\/$/, "");
-    if (!resendKey) {
-      return res.status(503).json({ error: "Resend não configurado no backend." });
+    if (!mailerConfigured()) {
+      return res.status(503).json({ error: "Serviço de e-mail não configurado no backend." });
     }
 
     const sbAdmin = assertSupabaseService();
@@ -281,17 +275,12 @@ ${saudacao}
 </td></tr>
 </table></td></tr></table></body></html>`;
 
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: "Gest Miles <nao-responda@mail.gestmiles.com.br>",
-        to: [em],
-        subject: "Recuperação de acesso — Painel de Gestão Gest Miles",
-        html: html,
-      }),
+    const mail = await sendEmail({
+      to: em,
+      subject: "Recuperação de acesso — Painel de Gestão Gest Miles",
+      html,
     });
-    if (!r.ok) throw new Error(await r.text());
+    if (!mail.ok) throw new Error(mail.reason || "Falha ao enviar e-mail.");
 
     return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
   } catch (err) {

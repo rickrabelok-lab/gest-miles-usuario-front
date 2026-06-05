@@ -2,6 +2,7 @@ import { Router } from "express";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sendEmail, mailerConfigured } from "../lib/mailer.js";
 
 const router = Router();
 
@@ -114,25 +115,18 @@ router.post("/", requireAuth, async (req, res) => {
 
     // E-mail best-effort: nunca derruba o sucesso (a linha já foi salva).
     try {
-      const brevoKey = process.env.BREVO_API_KEY;
-      const sender = process.env.BREVO_SENDER_EMAIL;
       const inbox = process.env.CONTACT_INBOX_EMAIL || "gestmilesapp@gmail.com";
-      if (brevoKey && sender) {
+      if (mailerConfigured()) {
         const html = buildContatoEmailHtml({ nome, email: emailContato, assunto, mensagem, when: new Date() });
-        const r = await fetch("https://api.brevo.com/v3/smtp/email", {
-          method: "POST",
-          headers: { accept: "application/json", "content-type": "application/json", "api-key": brevoKey },
-          body: JSON.stringify({
-            sender: { name: process.env.BREVO_SENDER_NAME || "Gest Miles", email: sender },
-            to: [{ email: inbox }],
-            ...(emailContato ? { replyTo: { email: emailContato, name: nome || undefined } } : {}),
-            subject: `Novo contato (Fale Conosco) — ${assunto}`,
-            htmlContent: html,
-          }),
+        const mail = await sendEmail({
+          to: inbox,
+          subject: `Novo contato (Fale Conosco) — ${assunto}`,
+          html,
+          ...(emailContato ? { replyTo: emailContato } : {}),
         });
-        if (!r.ok) console.warn("[contact] Brevo falhou:", await r.text());
+        if (!mail.ok) console.warn("[contact] e-mail falhou:", mail.reason);
       } else {
-        console.warn("[contact] Brevo não configurado; mensagem registrada sem e-mail.");
+        console.warn("[contact] e-mail não configurado; mensagem registrada sem envio.");
       }
     } catch (mailErr) {
       console.warn("[contact] erro ao enviar e-mail:", mailErr?.message ?? mailErr);
