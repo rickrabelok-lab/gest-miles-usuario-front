@@ -5,6 +5,8 @@ import { AuthFlowShell } from "@/components/auth/AuthFlowShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TERMS_URL, PRIVACY_URL } from "@/lib/legalUrls";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { PENDING_REFERRAL_CODE_KEY } from "@/lib/authFlowStorage";
@@ -30,6 +32,7 @@ const SignUp = () => {
   const [pending, setPending] = useState(false);
   const [pendingAction, setPendingAction] = useState<"signup" | "google" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [accepted, setAccepted] = useState(false);
 
   const isValidEmail = useMemo(
     () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()),
@@ -37,7 +40,11 @@ const SignUp = () => {
   );
 
   const canSubmit =
-    isValidEmail && password.length >= 6 && password === confirmPassword && confirmPassword.length > 0;
+    isValidEmail &&
+    password.length >= 6 &&
+    password === confirmPassword &&
+    confirmPassword.length > 0 &&
+    accepted;
 
   const formatAuthError = (error: unknown): string => {
     const msg = error instanceof Error ? error.message : String(error ?? "");
@@ -67,6 +74,7 @@ const SignUp = () => {
   }
 
   const handleGoogle = async () => {
+    if (!accepted) return;
     setPending(true);
     setPendingAction("google");
     setMessage(null);
@@ -165,6 +173,38 @@ const SignUp = () => {
       {password.length > 0 && password.length < 6 && (
         <p className="text-center text-xs text-red-600">A senha precisa de pelo menos 6 caracteres.</p>
       )}
+      <div className="flex items-start gap-2.5">
+        <Checkbox
+          id="signup-terms"
+          checked={accepted}
+          onCheckedChange={(v) => setAccepted(v === true)}
+          className="mt-0.5"
+        />
+        <Label
+          htmlFor="signup-terms"
+          className="text-xs font-normal leading-relaxed text-nubank-text-secondary"
+        >
+          Li e aceito os{" "}
+          <a
+            href={TERMS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-nubank-primary underline-offset-4 hover:underline"
+          >
+            Termos de Uso
+          </a>{" "}
+          e a{" "}
+          <a
+            href={PRIVACY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-nubank-primary underline-offset-4 hover:underline"
+          >
+            Política de Privacidade
+          </a>
+          .
+        </Label>
+      </div>
       <Button
         type="button"
         className="h-12 w-full rounded-[16px] text-base font-semibold text-primary-foreground shadow-[0_2px_8px_-2px_rgba(138,5,190,0.25)] transition-all duration-300 ease-out gradient-primary hover:opacity-95 hover:shadow-[0_4px_16px_-2px_rgba(138,5,190,0.3)] active:scale-[0.98] disabled:opacity-50"
@@ -178,7 +218,7 @@ const SignUp = () => {
           type="button"
           variant="outline"
           className="h-11 w-full rounded-[16px] border-nubank-border bg-white text-[15px] font-semibold text-nubank-text shadow-sm transition-colors hover:bg-nubank-bg"
-          disabled={pending && pendingAction !== "google"}
+          disabled={!accepted || (pending && pendingAction !== "google")}
           onClick={() => void handleGoogle()}
         >
           {pendingAction === "google" ? "Abrindo…" : "Continuar com Google"}
