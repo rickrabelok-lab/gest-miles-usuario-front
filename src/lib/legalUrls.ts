@@ -1,8 +1,7 @@
-// URLs das páginas legais. Env-driven (override por VITE_LEGAL_*); default no site público.
-// Owner confirmou base https://gestmiles.com.br com paths /termos /privacidade /cookies (2026-06-05).
-const BASE =
-  (import.meta.env.VITE_LEGAL_BASE_URL as string | undefined)?.replace(/\/$/, "") ||
-  "https://gestmiles.com.br";
+// URLs das páginas legais. Default: rotas próprias do app (`/termos` etc., servidas em
+// app.gestmiles.com.br — subdomínio de gestmiles.com.br). Override por VITE_LEGAL_* caso
+// um dia passem a ser servidas pelo site apex (gestmiles.com.br) ou outro domínio.
+const BASE = (import.meta.env.VITE_LEGAL_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 
 export const TERMS_URL =
   (import.meta.env.VITE_LEGAL_TERMS_URL as string | undefined) || `${BASE}/termos`;
