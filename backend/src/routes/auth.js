@@ -40,6 +40,23 @@ async function getPrimeiroNomeCliente(sbAdmin, userId) {
   return null;
 }
 
+// Rate-limit dos pedidos de reset por conta (anti email-bomb). Conta os tokens já
+// criados pro mesmo user na janela; read-only, sem schema novo. Fail-open em erro
+// de DB (controle não-crítico; disponibilidade > rigidez).
+const RESET_WINDOW_MIN = 15;
+const RESET_MAX_PER_WINDOW = 3;
+
+async function resetThrottled(sbAdmin, uid) {
+  const sinceIso = new Date(Date.now() - RESET_WINDOW_MIN * 60 * 1000).toISOString();
+  const { count, error } = await sbAdmin
+    .from("password_reset_tokens")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", uid)
+    .gte("created_at", sinceIso);
+  if (error) return false;
+  return (count ?? 0) >= RESET_MAX_PER_WINDOW;
+}
+
 /** POST /api/auth/signup - Cadastro com email/senha */
 router.post("/signup", async (req, res) => {
   try {
@@ -150,6 +167,10 @@ router.post("/request-password-reset", async (req, res) => {
       return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
     }
 
+    if (await resetThrottled(sbAdmin, uid)) {
+      return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
+    }
+
     const rawToken = crypto.randomBytes(32).toString("hex");
     const tokenHash = sha256Hex(rawToken);
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
@@ -198,7 +219,8 @@ ${saudacao}
 
     return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao enviar reset." });
+    console.error("[auth] request-password-reset falhou:", err?.message ?? err);
+    return res.status(500).json({ error: "Não foi possível enviar o e-mail de redefinição agora." });
   }
 });
 
@@ -221,6 +243,10 @@ router.post("/request-password-reset-manager", async (req, res) => {
     const { data: uid, error: uidErr } = await sbAdmin.rpc("get_user_id_by_email_for_service", { p_email: em });
     if (uidErr) throw uidErr;
     if (!uid) {
+      return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
+    }
+
+    if (await resetThrottled(sbAdmin, uid)) {
       return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
     }
 
@@ -284,7 +310,8 @@ ${saudacao}
 
     return res.json({ ok: true, message: "Se o email for cadastrado na Gest Miles, enviaremos instruções." });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao enviar reset." });
+    console.error("[auth] request-password-reset-manager falhou:", err?.message ?? err);
+    return res.status(500).json({ error: "Não foi possível enviar o e-mail de redefinição agora." });
   }
 });
 
