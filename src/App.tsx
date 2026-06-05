@@ -11,6 +11,7 @@ import HomeGate from "@/components/HomeGate";
 import RequireClienteApp from "@/components/RequireClienteApp";
 import MissingSupabaseConfig from "@/components/MissingSupabaseConfig";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import CookieNotice from "@/components/CookieNotice";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LoyaltyProgramDetails = lazy(() => import("./pages/LoyaltyProgramDetails"));
@@ -99,6 +100,7 @@ const App = () => {
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <CookieNotice />
       <AuthProvider>
         <AppBootReadySignal />
         <SearchFlightsProvider>
