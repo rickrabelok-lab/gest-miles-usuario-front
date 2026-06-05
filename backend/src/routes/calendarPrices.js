@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { supabase } from "../lib/supabase.js";
 import { generateEstimatedMonthPrices } from "../lib/calendarEstimate.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.get("/", async (req, res) => {
       .maybeSingle();
 
     if (error) {
-      return res.status(500).json({ error: error.message || "Erro ao obter preços" });
+      return serverError(res, "Erro ao obter preços", error, "[calendar-prices]");
     }
 
     const raw = data?.prices;
@@ -55,7 +56,7 @@ router.get("/", async (req, res) => {
     });
     return res.json(estimated);
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao obter preços" });
+    return serverError(res, "Erro ao obter preços", err, "[calendar-prices]");
   }
 });
 

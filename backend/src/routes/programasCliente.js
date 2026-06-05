@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get("/", requireAuth, async (req, res) => {
     const rows = (data ?? []).filter((row) => row.cliente_id === clientId);
     return res.json(rows);
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao listar programas" });
+    return serverError(res, "Erro ao listar programas", err, "[programas-cliente]");
   }
 });
 
@@ -51,7 +52,7 @@ router.post("/", requireAuth, async (req, res) => {
     }
     return res.json({ ok: true });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Erro ao salvar programa" });
+    return serverError(res, "Erro ao salvar programa", err, "[programas-cliente]");
   }
 });
 
