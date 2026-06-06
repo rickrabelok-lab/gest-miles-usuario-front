@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Padronizado em npm (package-lock.json) — não versionar lockfiles de outros gerenciadores.
+# Múltiplos lockfiles confundem o instalador da Vercel (footgun que já quebrou o deploy do manager).
+bun.lock
+bun.lockb
+pnpm-lock.yaml
+
 # TypeScript incremental build cache (regenerado por `tsc -b`)
 *.tsbuildinfo
 
