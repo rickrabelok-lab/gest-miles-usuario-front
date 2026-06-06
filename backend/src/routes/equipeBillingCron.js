@@ -2,9 +2,17 @@ import { getStripe } from "../lib/stripeClient.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { resolvePeriodStart } from "../lib/billingHelpers.js";
 
-/** Protegido por header `x-cron-secret` == process.env.CRON_SECRET. */
+/**
+ * Reconcile diário do billing B2B. Autenticação:
+ * - Vercel Cron envia `Authorization: Bearer <CRON_SECRET>` (quando CRON_SECRET está no env).
+ * - Fallback `x-cron-secret: <CRON_SECRET>` para disparo manual (curl/scheduler externo).
+ */
 export async function reconcileEquipeBilling(req, res) {
-  if (!process.env.CRON_SECRET || req.headers["x-cron-secret"] !== process.env.CRON_SECRET) {
+  const secret = process.env.CRON_SECRET;
+  const authHeader = req.headers["authorization"] || "";
+  const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const provided = bearer ?? req.headers["x-cron-secret"];
+  if (!secret || provided !== secret) {
     return res.status(401).json({ error: "não autorizado" });
   }
   const sb = assertSupabaseService();
