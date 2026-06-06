@@ -1,15 +1,29 @@
 import { getStripe } from "../lib/stripeClient.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 
+/** Período do fim do ciclo: novo layout (item-level) ou legado (top-level). */
+export function resolvePeriodEnd(sub) {
+  const itemEnd = sub?.items?.data?.[0]?.current_period_end;
+  const raw = itemEnd ?? sub?.current_period_end ?? null;
+  return raw ? new Date(raw * 1000).toISOString() : null;
+}
+
+/** Id da subscription a partir de uma invoice: novo layout (parent) ou legado. */
+export function resolveSubscriptionIdFromInvoice(invoice) {
+  return (
+    invoice?.parent?.subscription_details?.subscription ??
+    invoice?.subscription ??
+    null
+  );
+}
+
 async function syncPerfilFromSubscription(subscription) {
   const sb = assertSupabaseService();
   const sub = subscription;
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
   const usuarioId = sub.metadata?.usuario_id;
   const status = sub.status;
-  const periodEnd = sub.current_period_end
-    ? new Date(sub.current_period_end * 1000).toISOString()
-    : null;
+  const periodEnd = resolvePeriodEnd(sub);
 
   const priceId = sub.items?.data?.[0]?.price?.id;
   let planSlug = sub.metadata?.plan_slug ?? null;
@@ -129,7 +143,7 @@ export async function handleStripeWebhook(req, res) {
       }
       case "invoice.payment_succeeded": {
         const invoice = event.data.object;
-        const subscriptionId = invoice.subscription;
+        const subscriptionId = resolveSubscriptionIdFromInvoice(invoice);
         if (subscriptionId) {
           const stripe = getStripe();
           const sub = await stripe.subscriptions.retrieve(subscriptionId);
