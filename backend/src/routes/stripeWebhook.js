@@ -1,21 +1,6 @@
 import { getStripe } from "../lib/stripeClient.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
-
-/** Período do fim do ciclo: novo layout (item-level) ou legado (top-level). */
-export function resolvePeriodEnd(sub) {
-  const itemEnd = sub?.items?.data?.[0]?.current_period_end;
-  const raw = itemEnd ?? sub?.current_period_end ?? null;
-  return raw ? new Date(raw * 1000).toISOString() : null;
-}
-
-/** Id da subscription a partir de uma invoice: novo layout (parent) ou legado. */
-export function resolveSubscriptionIdFromInvoice(invoice) {
-  return (
-    invoice?.parent?.subscription_details?.subscription ??
-    invoice?.subscription ??
-    null
-  );
-}
+import { resolvePeriodEnd, resolveSubscriptionIdFromInvoice } from "../lib/billingHelpers.js";
 
 async function syncPerfilFromSubscription(subscription) {
   const sb = assertSupabaseService();

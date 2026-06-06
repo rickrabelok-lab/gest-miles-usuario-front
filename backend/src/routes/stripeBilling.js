@@ -4,27 +4,7 @@ import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
-
-/**
- * Monta os args do Stripe Price tiered/graduated por cliente.
- * tiers: [{ upTo: number|null, amountCents: number }] (último upTo=null => "inf").
- */
-export function buildPerClientTieredPriceArgs(productId, tiers, currency = "brl") {
-  if (!Array.isArray(tiers) || tiers.length === 0) {
-    throw new Error("tiers vazio.");
-  }
-  return {
-    product: productId,
-    currency,
-    recurring: { interval: "month" },
-    billing_scheme: "tiered",
-    tiers_mode: "graduated",
-    tiers: tiers.map((t) => ({
-      up_to: t.upTo == null ? "inf" : t.upTo,
-      unit_amount: t.amountCents,
-    })),
-  };
-}
+import { buildPerClientTieredPriceArgs } from "../lib/billingHelpers.js";
 
 const router = Router();
 
