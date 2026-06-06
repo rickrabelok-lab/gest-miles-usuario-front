@@ -2,8 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   resolvePeriodEnd,
+  resolvePeriodStart,
   resolveSubscriptionIdFromInvoice,
   buildPerClientTieredPriceArgs,
+  isB2BSubscription,
 } from "./billingHelpers.js";
 
 test("resolvePeriodEnd: layout novo (item-level)", () => {
@@ -49,4 +51,22 @@ test("buildPerClientTieredPriceArgs: graduated com up_to e inf no último", () =
 
 test("buildPerClientTieredPriceArgs: rejeita tiers vazio", () => {
   assert.throws(() => buildPerClientTieredPriceArgs("prod_1", []));
+});
+
+test("resolvePeriodStart: item-level e legado", () => {
+  assert.equal(
+    resolvePeriodStart({ items: { data: [{ current_period_start: 1751000000 }] } }),
+    new Date(1751000000 * 1000).toISOString(),
+  );
+  assert.equal(
+    resolvePeriodStart({ current_period_start: 1751000000, items: { data: [{}] } }),
+    new Date(1751000000 * 1000).toISOString(),
+  );
+  assert.equal(resolvePeriodStart({ items: { data: [] } }), null);
+});
+
+test("isB2BSubscription: true quando metadata.equipe_id presente", () => {
+  assert.equal(isB2BSubscription({ metadata: { equipe_id: "e1" } }), true);
+  assert.equal(isB2BSubscription({ metadata: {} }), false);
+  assert.equal(isB2BSubscription(null), false);
 });

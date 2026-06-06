@@ -16,6 +16,18 @@ export function resolveSubscriptionIdFromInvoice(invoice) {
   );
 }
 
+/** Início do ciclo: novo layout (item-level) ou legado (top-level). ISO string ou null. */
+export function resolvePeriodStart(sub) {
+  const itemStart = sub?.items?.data?.[0]?.current_period_start;
+  const raw = itemStart ?? sub?.current_period_start ?? null;
+  return raw ? new Date(raw * 1000).toISOString() : null;
+}
+
+/** Retorna true se a subscription é B2B (tem metadata.equipe_id). */
+export function isB2BSubscription(sub) {
+  return !!sub?.metadata?.equipe_id;
+}
+
 /**
  * Monta os args do Stripe Price tiered/graduated por cliente.
  * tiers: [{ upTo: number|null, amountCents: number }] (último upTo=null => "inf").
