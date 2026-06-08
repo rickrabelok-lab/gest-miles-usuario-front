@@ -70,17 +70,39 @@ router.post("/agency/provision", requireAuth, async (req, res) => {
     const nome = String(req.body?.nomeAgencia || "").trim();
     if (!nome) return res.status(400).json({ error: "nomeAgencia é obrigatório." });
 
+    // Garante que o perfil do usuário existe ANTES de promover. O signup do funil B2B
+    // pode não ter criado o perfil (ele nasce no /me do app cliente). ensure_self_cliente_profile
+    // é idempotente e roda como o usuário (auth.uid()); cria o perfil (role 'cliente') se faltar.
+    const emailLocal = String(user.email || "").split("@")[0];
+    const slugBase =
+      emailLocal.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `agencia-${user.id.slice(0, 8)}`;
+    const sbUser = createSupabaseWithAuth(req.accessToken);
+    const { error: ensureErr } = await sbUser.rpc("ensure_self_cliente_profile", {
+      p_slug: slugBase,
+      p_nome_completo: perfil?.nome_completo || nome || user.email || "Agência",
+    });
+    if (ensureErr) return res.status(400).json({ error: ensureErr.message });
+
     const sb = assertSupabaseService();
     const { data: equipe, error: eErr } = await sb
       .from("equipes").insert({ nome }).select("id, nome").single();
     if (eErr) return res.status(400).json({ error: eErr.message });
 
-    const { error: pErr } = await sb
+    const { data: promoted, error: pErr } = await sb
       .from("perfis")
       .update({ role: "admin_equipe", equipe_id: equipe.id })
       .eq("usuario_id", user.id)
-      .is("equipe_id", null); // guarda anti-corrida
-    if (pErr) return res.status(400).json({ error: pErr.message });
+      .is("equipe_id", null) // guarda anti-corrida
+      .select("usuario_id")
+      .maybeSingle();
+    if (pErr || !promoted) {
+      await sb.from("equipes").delete().eq("id", equipe.id); // evita equipe órfã
+      return res.status(pErr ? 400 : 409).json({
+        error: pErr?.message || "Não foi possível promover o perfil (já pertence a uma equipe?).",
+        code: pErr ? undefined : "promote_failed",
+      });
+    }
 
     return res.status(201).json({ equipe });
   } catch (e) {
