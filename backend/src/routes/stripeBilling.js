@@ -4,6 +4,7 @@ import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
+import { buildPerClientTieredPriceArgs } from "../lib/billingHelpers.js";
 
 const router = Router();
 
@@ -493,6 +494,54 @@ router.post("/billing-portal", requireAuth, async (req, res) => {
     return res.json({ url: session.url });
   } catch (e) {
     return res.status(500).json({ error: e.message || "Erro ao abrir portal." });
+  }
+});
+
+/**
+ * Cria plano B2B: produto + preço base (flat) + preço por-cliente (tiered/graduated).
+ * body: { slug, name, description?, baseAmountCents, perClientTiers:[{upTo,amountCents}],
+ *         currency?, limits?, sortOrder? }
+ */
+router.post("/admin/b2b-plans", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const {
+      slug, name, description = "",
+      baseAmountCents, perClientTiers,
+      currency = "brl", limits = {}, sortOrder = 0,
+    } = req.body || {};
+    if (!slug || !name || typeof baseAmountCents !== "number" || !Array.isArray(perClientTiers)) {
+      return res.status(400).json({
+        error: "slug, name, baseAmountCents (centavos) e perClientTiers (array) são obrigatórios.",
+      });
+    }
+
+    const stripe = getStripe();
+    const product = await stripe.products.create({ name, description: description || undefined, metadata: { slug, kind: "b2b" } });
+
+    const basePrice = await stripe.prices.create({
+      product: product.id, unit_amount: baseAmountCents, currency,
+      recurring: { interval: "month" }, metadata: { slug, item: "base" },
+    });
+    const perClientPrice = await stripe.prices.create(
+      buildPerClientTieredPriceArgs(product.id, perClientTiers, currency),
+    );
+
+    const sb = assertSupabaseService();
+    const { data: inserted, error: insErr } = await sb
+      .from("subscription_plans")
+      .insert({
+        slug, name, description,
+        stripe_product_id: product.id,
+        stripe_base_price_id: basePrice.id,
+        stripe_per_client_price_id: perClientPrice.id,
+        active: true, sort_order: sortOrder, limits,
+      })
+      .select()
+      .single();
+    if (insErr) return res.status(400).json({ error: insErr.message });
+    return res.json({ plan: inserted });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || "Erro ao criar plano B2B." });
   }
 });
 
