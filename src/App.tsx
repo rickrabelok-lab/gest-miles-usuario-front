@@ -9,6 +9,7 @@ import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
 import RequireAuth from "@/components/RequireAuth";
 import HomeGate from "@/components/HomeGate";
 import RequireClienteApp from "@/components/RequireClienteApp";
+import RequirePaid from "@/components/RequirePaid";
 import MissingSupabaseConfig from "@/components/MissingSupabaseConfig";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import CookieNotice from "@/components/CookieNotice";
@@ -167,7 +168,7 @@ const App = () => {
                   path="/price-calendar"
                   element={
                     <ClienteOnly>
-                      <PriceCalendarScreen />
+                      <RequirePaid><PriceCalendarScreen /></RequirePaid>
                     </ClienteOnly>
                   }
                 />
@@ -175,7 +176,7 @@ const App = () => {
                   path="/bonus-offers"
                   element={
                     <ClienteOnly>
-                      <BonusOffersScreen />
+                      <RequirePaid><BonusOffersScreen /></RequirePaid>
                     </ClienteOnly>
                   }
                 />
@@ -223,7 +224,7 @@ const App = () => {
                   path="/simular-compra-milhas"
                   element={
                     <ClienteOnly>
-                      <SimularCompraMilhasPage />
+                      <RequirePaid><SimularCompraMilhasPage /></RequirePaid>
                     </ClienteOnly>
                   }
                 />
@@ -231,7 +232,7 @@ const App = () => {
                   path="/radar-oportunidades"
                   element={
                     <ClienteOnly>
-                      <RadarOportunidadesPage />
+                      <RequirePaid><RadarOportunidadesPage /></RequirePaid>
                     </ClienteOnly>
                   }
                 />

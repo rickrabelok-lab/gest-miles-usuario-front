@@ -25,6 +25,8 @@ type AuthContextValue = {
   equipeId: string | null;
   /** null enquanto carrega ou sem perfil; true/false conforme coluna plano_ativo do perfil. */
   planoAtivo: boolean | null;
+  /** null enquanto carrega ou sem perfil; string conforme coluna subscription_status do perfil. */
+  subscriptionStatus: string | null;
   roleLoading: boolean;
   roleError: string | null;
   signInWithPassword: (email: string, password: string) => Promise<boolean>;
@@ -78,6 +80,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [role, setRole] = useState<AppRole | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
   const [planoAtivo, setPlanoAtivo] = useState<boolean | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
   const [roleError, setRoleError] = useState<string | null>(null);
   const lastFetchedUserIdRef = useRef<string | null>(null);
@@ -87,6 +90,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       setRole(null);
       setEquipeId(null);
       setPlanoAtivo(null);
+      setSubscriptionStatus(null);
       setRoleError(null);
       setRoleLoading(false);
       lastFetchedUserIdRef.current = null;
@@ -98,13 +102,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
     setRoleError(null);
     lastFetchedUserIdRef.current = userId;
-    let data: { role?: string; equipe_id?: string | null; plano_ativo?: boolean | null } | null = null;
+    let data: { role?: string; equipe_id?: string | null; plano_ativo?: boolean | null; subscription_status?: string | null } | null = null;
 
     try {
       const full = await queryWithTimeout((signal) =>
         supabase
           .from("perfis")
-          .select("role, equipe_id, plano_ativo")
+          .select("role, equipe_id, plano_ativo, subscription_status")
           .eq("usuario_id", userId)
           .abortSignal(signal)
           .maybeSingle(),
@@ -115,6 +119,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           setRole(null);
           setEquipeId(null);
           setPlanoAtivo(null);
+          setSubscriptionStatus(null);
           setRoleError(ROLE_LOAD_ERROR_MESSAGE);
           return;
         }
@@ -131,6 +136,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           setRole(null);
           setEquipeId(null);
           setPlanoAtivo(null);
+          setSubscriptionStatus(null);
           setRoleError(ROLE_LOAD_ERROR_MESSAGE);
           return;
         }
@@ -142,6 +148,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       setRole(null);
       setEquipeId(null);
       setPlanoAtivo(null);
+      setSubscriptionStatus(null);
       setRoleError(ROLE_LOAD_ERROR_MESSAGE);
       return;
     } finally {
@@ -151,6 +158,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     setRole(mapPerfilRoleForOperationalUi(data?.role));
     setEquipeId((data?.equipe_id as string | null | undefined) ?? null);
     setPlanoAtivo((data?.plano_ativo as boolean | null | undefined) ?? null);
+    setSubscriptionStatus((data?.subscription_status as string | null | undefined) ?? null);
     setRoleError(null);
   }, []);
 
@@ -267,6 +275,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       role,
       equipeId,
       planoAtivo,
+      subscriptionStatus,
       roleLoading,
       roleError,
       signInWithPassword,
@@ -283,6 +292,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       role,
       equipeId,
       planoAtivo,
+      subscriptionStatus,
       roleLoading,
       roleError,
       signInWithPassword,

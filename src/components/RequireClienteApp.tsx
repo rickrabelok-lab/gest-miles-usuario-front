@@ -2,8 +2,6 @@ import { useEffect } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { isClienteAppRole, staffAppEntryUrl } from "@/lib/staffAppUrls";
-import { B2C_PLAN_GATE_ENABLED } from "@/config/features";
-import PlanoInativoScreen from "@/components/PlanoInativoScreen";
 
 type Props = {
   children: JSX.Element;
@@ -14,7 +12,7 @@ type Props = {
  * Equipe interna é enviada para Manager ou Admin.
  */
 const RequireClienteApp = ({ children }: Props) => {
-  const { role, roleLoading, roleError, refreshRole, planoAtivo } = useAuth();
+  const { role, roleLoading, roleError, refreshRole } = useAuth();
 
   useEffect(() => {
     if (roleLoading || !role) return;
@@ -73,11 +71,6 @@ const RequireClienteApp = ({ children }: Props) => {
         <p className="max-w-md">Use o painel da equipe no endereço indicado pela sua organização.</p>
       </div>
     );
-  }
-
-  // Gate de billing B2B (flag-gated; só bloqueia clientes do app com plano inativo).
-  if (B2C_PLAN_GATE_ENABLED && isClienteAppRole(role) && planoAtivo === false) {
-    return <PlanoInativoScreen />;
   }
 
   return children;
