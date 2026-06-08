@@ -232,7 +232,7 @@ router.post("/clients/:clienteId/activate", requireAuth, async (req, res) => {
       await stripe.subscriptionItems.create({ subscription: subscription.id, price: plan.stripe_per_client_price_id, quantity, proration_behavior: prorationBehavior });
     }
 
-    await sb.from("perfis").update({ plano_ativo: true, plano_ativado_em: new Date().toISOString() }).eq("usuario_id", clienteId);
+    await sb.from("perfis").update({ plano_ativo: true, plano_ativado_em: new Date().toISOString(), cliente_status: "ativo" }).eq("usuario_id", clienteId);
     if (!alreadyInCycle) {
       await sb.from("equipe_ciclo_faturavel").insert({ equipe_id: perfil.equipe_id, period_start: periodStart, cliente_id: clienteId });
     }
@@ -252,7 +252,7 @@ router.post("/clients/:clienteId/deactivate", requireAuth, async (req, res) => {
     const { data: cliente } = await sb.from("perfis").select("usuario_id, equipe_id").eq("usuario_id", clienteId).maybeSingle();
     if (!cliente || cliente.equipe_id !== perfil.equipe_id) return res.status(404).json({ error: "Cliente não encontrado na sua equipe." });
     // plano_ativo=false revoga acesso B2C já; a quantidade no Stripe NÃO muda agora (política "ativo no ciclo = cobra o ciclo").
-    await sb.from("perfis").update({ plano_ativo: false, plano_desativado_em: new Date().toISOString() }).eq("usuario_id", clienteId);
+    await sb.from("perfis").update({ plano_ativo: false, plano_desativado_em: new Date().toISOString(), cliente_status: "inativo" }).eq("usuario_id", clienteId);
     return res.json({ ok: true, plano_ativo: false });
   } catch (e) {
     return res.status(500).json({ error: e.message || "Erro ao desativar cliente." });
