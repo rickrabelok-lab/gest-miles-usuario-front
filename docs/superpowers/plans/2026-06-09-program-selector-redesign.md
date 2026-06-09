@@ -1,3 +1,239 @@
+# Redesenho do Seletor de Programas — Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Trocar o seletor de programas (iniciais coloridas, lista única, tema dark) por um bottom-sheet claro com logos reais (CDN + fallback de badge), agrupado por categoria com chips de filtro; e remover o programa "Avios (IAG)" do catálogo.
+
+**Architecture:** A categoria de cada programa vive num mapa único `PROGRAM_CATEGORY` (por `programId`) em `programSelectionUtils.ts` — sem mudar o tipo `ProgramOption`. O sheet une programas ativos + disponíveis numa lista, filtra por chip+busca e agrupa via `groupByCategory`. As URLs de logo são resolvidas em `Index.tsx` (branding/localStorage → CDN Clearbit por domínio) e passadas via a prop `logoImages` já existente; o sheet renderiza `<img onError>` com fallback pra badge (cor+monograma), então nunca quebra.
+
+**Tech Stack:** React 18 + TS frouxo + Tailwind (tokens `nubank-*`, `font-display`, roxo `#8A05BE`) + lucide-react + Vitest + Testing Library/jsdom.
+
+**Spec:** `docs/superpowers/specs/2026-06-09-program-selector-redesign-design.md`
+
+**Verificação por task:** `npx tsc -b` limpo + `npm test` passando. Build final no fim.
+
+---
+
+### Task 1: Modelo de categoria + agrupamento (utils, TDD)
+
+**Files:**
+- Modify: `src/components/programSelectionUtils.ts`
+- Test: `src/components/__tests__/ProgramSelectionSheet.test.tsx`
+
+- [ ] **Step 1: Escrever os testes falhando**
+
+Adicionar ao fim de `src/components/__tests__/ProgramSelectionSheet.test.tsx` (manter os testes atuais de `filterPrograms`/`highlightSegments` no topo; adicionar o import):
+
+```tsx
+import {
+  categoryOf,
+  groupByCategory,
+  CATEGORY_META,
+} from "../programSelectionUtils";
+
+describe("categoryOf", () => {
+  it("mapeia companhias aéreas", () => {
+    expect(categoryOf("latam-pass")).toBe("aereas");
+    expect(categoryOf("tap")).toBe("aereas");
+    expect(categoryOf("american-airlines")).toBe("aereas");
+  });
+
+  it("mapeia pontos, bancos, hotéis e outros", () => {
+    expect(categoryOf("livelo")).toBe("pontos");
+    expect(categoryOf("itau")).toBe("bancos");
+    expect(categoryOf("all-accor")).toBe("hoteis");
+    expect(categoryOf("coopera")).toBe("outros");
+  });
+
+  it("usa 'outros' para programId desconhecido", () => {
+    expect(categoryOf("programa-fantasma")).toBe("outros");
+  });
+});
+
+describe("groupByCategory", () => {
+  const rows = [
+    { programId: "itau", name: "Itaú" },
+    { programId: "latam-pass", name: "LATAM Pass" },
+    { programId: "livelo", name: "Livelo" },
+    { programId: "all-accor", name: "ALL Accor" },
+  ];
+
+  it("agrupa na ordem fixa e ignora seções vazias", () => {
+    const sections = groupByCategory(rows);
+    expect(sections.map((s) => s.id)).toEqual([
+      "aereas",
+      "pontos",
+      "bancos",
+      "hoteis",
+    ]);
+  });
+
+  it("coloca cada item na seção certa", () => {
+    const sections = groupByCategory(rows);
+    const aereas = sections.find((s) => s.id === "aereas");
+    expect(aereas?.items.map((i) => i.programId)).toEqual(["latam-pass"]);
+  });
+
+  it("CATEGORY_META cobre as 5 categorias na ordem", () => {
+    expect(CATEGORY_META.map((m) => m.id)).toEqual([
+      "aereas",
+      "pontos",
+      "bancos",
+      "hoteis",
+      "outros",
+    ]);
+  });
+});
+```
+
+- [ ] **Step 2: Rodar e ver falhar**
+
+Run: `npm test -- ProgramSelectionSheet`
+Expected: FAIL — `categoryOf`/`groupByCategory`/`CATEGORY_META` não exportados.
+
+- [ ] **Step 3: Implementar no utils**
+
+Adicionar ao fim de `src/components/programSelectionUtils.ts` (manter o que já existe):
+
+```ts
+export type ProgramCategory = "aereas" | "pontos" | "bancos" | "hoteis" | "outros";
+
+/** Categoria por programId. Fonte única da verdade (chips + seções). */
+export const PROGRAM_CATEGORY: Record<string, ProgramCategory> = {
+  "latam-pass": "aereas",
+  smiles: "aereas",
+  "tudo-azul": "aereas",
+  iberia: "aereas",
+  "copa-airlines": "aereas",
+  finnair: "aereas",
+  "qatar-airways": "aereas",
+  "british-airways": "aereas",
+  tap: "aereas",
+  "american-airlines": "aereas",
+  livelo: "pontos",
+  esfera: "pontos",
+  itau: "bancos",
+  "inter-loop": "bancos",
+  amex: "bancos",
+  "atomos-c6": "bancos",
+  "uau-caixa": "bancos",
+  "brb-dux": "bancos",
+  "all-accor": "hoteis",
+  coopera: "outros",
+  kmv: "outros",
+};
+
+export function categoryOf(programId: string): ProgramCategory {
+  return PROGRAM_CATEGORY[programId] ?? "outros";
+}
+
+/** Metadados de cada categoria. A ORDEM aqui define a ordem das seções e dos chips. */
+export const CATEGORY_META: Array<{
+  id: ProgramCategory;
+  label: string;
+  shortLabel: string;
+  emoji: string;
+}> = [
+  { id: "aereas", label: "Companhias aéreas", shortLabel: "Aéreas", emoji: "✈️" },
+  { id: "pontos", label: "Pontos & coalizão", shortLabel: "Pontos", emoji: "⭐" },
+  { id: "bancos", label: "Bancos & cartões", shortLabel: "Bancos", emoji: "🏦" },
+  { id: "hoteis", label: "Hotéis", shortLabel: "Hotéis", emoji: "🏨" },
+  { id: "outros", label: "Outros", shortLabel: "Outros", emoji: "•" },
+];
+
+export type ProgramSection<T> = {
+  id: ProgramCategory;
+  label: string;
+  emoji: string;
+  items: T[];
+};
+
+/** Agrupa por categoria na ordem de CATEGORY_META; omite seções vazias. */
+export function groupByCategory<T extends { programId: string }>(
+  list: T[],
+): ProgramSection<T>[] {
+  return CATEGORY_META.map((meta) => ({
+    id: meta.id,
+    label: meta.label,
+    emoji: meta.emoji,
+    items: list.filter((item) => categoryOf(item.programId) === meta.id),
+  })).filter((section) => section.items.length > 0);
+}
+```
+
+- [ ] **Step 4: Rodar e ver passar**
+
+Run: `npm test -- ProgramSelectionSheet`
+Expected: PASS (todos, incluindo os antigos de filter/highlight).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/components/programSelectionUtils.ts src/components/__tests__/ProgramSelectionSheet.test.tsx
+git commit -m "feat(usuario): categorias de programa + groupByCategory no seletor"
+```
+
+---
+
+### Task 2: Reescrita do ProgramSelectionSheet (tema claro + chips + seções + logo com fallback)
+
+**Files:**
+- Modify (rewrite): `src/components/ProgramSelectionSheet.tsx`
+- Test: `src/components/__tests__/ProgramSelectionSheet.test.tsx`
+
+- [ ] **Step 1: Escrever o teste do ProgramLogo (falhando)**
+
+Adicionar ao fim de `src/components/__tests__/ProgramSelectionSheet.test.tsx`:
+
+```tsx
+import { render, screen, fireEvent } from "@testing-library/react";
+import { ProgramLogo } from "../ProgramSelectionSheet";
+
+describe("ProgramLogo", () => {
+  it("renderiza <img> quando há URL", () => {
+    render(
+      <ProgramLogo
+        logoImageUrl="https://logo.clearbit.com/latam.com"
+        logo="LP"
+        logoColor="#1a3a6b"
+        name="LATAM Pass"
+      />,
+    );
+    const img = screen.getByAltText("LATAM Pass") as HTMLImageElement;
+    expect(img.src).toContain("latam.com");
+    expect(screen.queryByText("LP")).toBeNull();
+  });
+
+  it("cai no badge (monograma) quando a imagem falha", () => {
+    render(
+      <ProgramLogo
+        logoImageUrl="https://logo.clearbit.com/inexistente.zzz"
+        logo="QA"
+        logoColor="#5a1f3d"
+        name="Qatar Airways"
+      />,
+    );
+    fireEvent.error(screen.getByAltText("Qatar Airways"));
+    expect(screen.getByText("QA")).toBeTruthy();
+  });
+
+  it("mostra o badge quando não há URL", () => {
+    render(<ProgramLogo logo="CP" logoColor="#2d6a4f" name="Coopera" />);
+    expect(screen.getByText("CP")).toBeTruthy();
+  });
+});
+```
+
+- [ ] **Step 2: Rodar e ver falhar**
+
+Run: `npm test -- ProgramSelectionSheet`
+Expected: FAIL — `ProgramLogo` não exportado de `ProgramSelectionSheet`.
+
+- [ ] **Step 3: Reescrever `src/components/ProgramSelectionSheet.tsx`**
+
+Substituir o arquivo INTEIRO por:
+
+```tsx
 // src/components/ProgramSelectionSheet.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Plus, Search, X } from "lucide-react";
@@ -427,3 +663,177 @@ function ProgramRow({
     </button>
   );
 }
+```
+
+- [ ] **Step 4: Rodar e ver passar**
+
+Run: `npm test -- ProgramSelectionSheet`
+Expected: PASS (utils + ProgramLogo).
+
+- [ ] **Step 5: Type-check**
+
+Run: `npx tsc -b`
+Expected: sem erros.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/components/ProgramSelectionSheet.tsx src/components/__tests__/ProgramSelectionSheet.test.tsx
+git commit -m "feat(usuario): seletor de programas tema claro com chips, seções e logo+fallback"
+```
+
+---
+
+### Task 3: Fiação no Index — logos via CDN + remover Avios do catálogo
+
+**Files:**
+- Modify: `src/pages/Index.tsx`
+
+- [ ] **Step 1: Remover Avios do `PROGRAM_META_MAP`**
+
+Em `src/pages/Index.tsx`, apagar a linha (≈240):
+
+```ts
+  avios: { name: "Avios (IAG)", logo: "Av", logoColor: "#0f2f6d" },
+```
+
+- [ ] **Step 2: Remover Avios do `AVAILABLE_PROGRAM_OPTIONS`**
+
+Apagar o bloco (≈521–526):
+
+```ts
+  {
+    programId: "avios",
+    name: "Avios (IAG)",
+    logo: "Av",
+    logoColor: "#0f2f6d",
+  },
+```
+
+> NÃO mexer no import `programAviosLogo`, em `ACTION_PLAN_PROGRAM_LABELS` (`["avios","Avios"]`) nem em `ACTION_PLAN_PROGRAM_ICON_BY_KEY.avios` — esse "avios" é do plano de ação (`useGestor`), feature separada.
+
+- [ ] **Step 3: Adicionar mapa de domínios + resolver de logo CDN**
+
+Logo APÓS o fechamento de `AVAILABLE_PROGRAM_OPTIONS` (`];`, ≈581), inserir:
+
+```ts
+/** Domínio da marca por programa, para resolver a logo via CDN (Clearbit). */
+const PROGRAM_LOGO_DOMAIN: Record<string, string> = {
+  "latam-pass": "latam.com",
+  smiles: "smiles.com.br",
+  "tudo-azul": "voeazul.com.br",
+  iberia: "iberia.com",
+  "copa-airlines": "copaair.com",
+  finnair: "finnair.com",
+  "qatar-airways": "qatarairways.com",
+  "british-airways": "britishairways.com",
+  tap: "flytap.com",
+  "american-airlines": "aa.com",
+  livelo: "livelo.com.br",
+  esfera: "esfera.com.vc",
+  itau: "itau.com.br",
+  "inter-loop": "bancointer.com.br",
+  amex: "americanexpress.com",
+  "atomos-c6": "c6bank.com.br",
+  "uau-caixa": "caixa.gov.br",
+  "brb-dux": "brb.com.br",
+  "all-accor": "all.accor.com",
+};
+
+const cdnLogoForProgram = (programId: string): string | undefined => {
+  const domain = PROGRAM_LOGO_DOMAIN[programId];
+  return domain ? `https://logo.clearbit.com/${domain}` : undefined;
+};
+```
+
+- [ ] **Step 4: Mesclar CDN no `programLogoImagesForSheet`**
+
+Substituir o `useMemo` de `programLogoImagesForSheet` (≈741–747) por:
+
+```ts
+  const programLogoImagesForSheet = useMemo(() => {
+    const out: Record<string, string> = { ...brandingConfig.data.programCardLogos };
+    for (const [k, v] of Object.entries(optionLogoImages)) {
+      if (typeof v === "string" && v.trim()) out[k] = v.trim();
+    }
+    // Fallback de logo via CDN só onde não há logo custom (branding/localStorage).
+    for (const option of AVAILABLE_PROGRAM_OPTIONS) {
+      if (!out[option.programId]) {
+        const cdn = cdnLogoForProgram(option.programId);
+        if (cdn) out[option.programId] = cdn;
+      }
+    }
+    return out;
+  }, [brandingConfig.data.programCardLogos, optionLogoImages]);
+```
+
+- [ ] **Step 5: Type-check + testes**
+
+Run: `npx tsc -b`
+Expected: sem erros.
+Run: `npm test`
+Expected: PASS.
+
+- [ ] **Step 6: Verificar que Avios sumiu do catálogo (manual)**
+
+Run: `git grep -n "Avios (IAG)" -- src`
+Expected: nenhum resultado (só o plano de ação usa `"avios"`/`"Avios"`, sem o sufixo "(IAG)").
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/pages/Index.tsx
+git commit -m "feat(usuario): logos de programa via CDN no seletor e remove Avios (IAG) do catálogo"
+```
+
+---
+
+### Task 4: Verificação final + limpeza
+
+**Files:**
+- Delete: `program-selector-mockup.html` (artefato descartável de validação)
+
+- [ ] **Step 1: Suite completa**
+
+Run: `npx tsc -b && npm test && npm run build`
+Expected: `tsc` limpo, testes PASS, build OK.
+
+- [ ] **Step 2: Smoke visual manual**
+
+Run: `npm run dev` → abrir o app → aba "Saldo" → botão "Novo".
+Conferir: bottom-sheet claro abre; chips filtram (Todos/Aéreas/Pontos/Bancos/Hotéis/Outros); seções com header sticky; logos reais carregam (LATAM, Smiles, Itaú, Amex, Accor, British, Qatar…) e os sem domínio (Coopera, KMV) mostram badge; badge aparece também quando o CDN não resolve; busca + ✓/+ funcionam; Avios não aparece na lista.
+
+- [ ] **Step 3: Remover o mockup**
+
+```bash
+git rm --cached program-selector-mockup.html 2>$null; Remove-Item program-selector-mockup.html -ErrorAction SilentlyContinue
+```
+
+(O arquivo nunca foi commitado; basta apagar do disco.)
+
+- [ ] **Step 4: Commit final (se houver algo a commitar)**
+
+```bash
+git add -A
+git commit -m "chore(usuario): remove mockup de validação do seletor de programas"
+```
+
+---
+
+## Self-Review
+
+**Spec coverage:**
+- Tema claro → Task 2 (paleta branca + `#8A05BE`). ✅
+- Logos CDN + fallback badge → Task 2 (`ProgramLogo`) + Task 3 (`cdnLogoForProgram`, merge). ✅
+- Categorias 4+Outros → Task 1 (`PROGRAM_CATEGORY`, `CATEGORY_META`, `groupByCategory`). ✅
+- Chips + seções sticky → Task 2. ✅
+- Busca cruza com chip → Task 2 (`sections` useMemo). ✅
+- Seleção add/remove via `onToggle` → Task 2 (`ProgramRow`). ✅
+- Remover Avios (IAG) só do catálogo → Task 3 (steps 1–2 + step 6 verifica). ✅
+- Manter Avios-moeda/plano-de-ação → Task 3 nota explícita. ✅
+- Testes → Task 1 + Task 2. ✅
+- Verificação `tsc`/`test`/`build` → Task 4. ✅
+
+**Placeholder scan:** nenhum TBD/TODO; todo step de código tem o código completo.
+
+**Type consistency:** `ProgramCategory`, `PROGRAM_CATEGORY`, `categoryOf`, `CATEGORY_META` (com `id/label/shortLabel/emoji`), `groupByCategory`, `ProgramSection`, `SheetRow`, `ChipId`, `ProgramLogo` — nomes idênticos entre Task 1/2/3. `onToggle` recebe `ProgramOption` (4 campos), sem `category` (categoria vem do lookup), batendo com o caller em `Index.tsx`. `programLogoImagesForSheet` mantém a mesma assinatura/deps.
