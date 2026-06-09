@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import {
   CATEGORY_META,
   categoryOf,
@@ -6,6 +7,7 @@ import {
   groupByCategory,
   highlightSegments,
 } from "../programSelectionUtils";
+import { ProgramLogo } from "../ProgramSelectionSheet";
 
 const OPTIONS = [
   { programId: "latam-pass", name: "Latam Pass", logo: "LP", logoColor: "#1a3a6b" },
@@ -105,5 +107,39 @@ describe("groupByCategory", () => {
       "hoteis",
       "outros",
     ]);
+  });
+});
+
+describe("ProgramLogo", () => {
+  it("renderiza <img> quando há URL", () => {
+    render(
+      <ProgramLogo
+        logoImageUrl="https://logo.clearbit.com/latam.com"
+        logo="LP"
+        logoColor="#1a3a6b"
+        name="LATAM Pass"
+      />,
+    );
+    const img = screen.getByAltText("LATAM Pass") as HTMLImageElement;
+    expect(img.src).toContain("latam.com");
+    expect(screen.queryByText("LP")).toBeNull();
+  });
+
+  it("cai no badge (monograma) quando a imagem falha", () => {
+    render(
+      <ProgramLogo
+        logoImageUrl="https://logo.clearbit.com/inexistente.zzz"
+        logo="QA"
+        logoColor="#5a1f3d"
+        name="Qatar Airways"
+      />,
+    );
+    fireEvent.error(screen.getByAltText("Qatar Airways"));
+    expect(screen.getByText("QA")).toBeTruthy();
+  });
+
+  it("mostra o badge quando não há URL", () => {
+    render(<ProgramLogo logo="CP" logoColor="#2d6a4f" name="Coopera" />);
+    expect(screen.getByText("CP")).toBeTruthy();
   });
 });
