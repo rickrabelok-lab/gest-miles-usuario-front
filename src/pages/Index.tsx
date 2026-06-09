@@ -237,7 +237,6 @@ const PROGRAM_META_MAP: Record<string, Omit<ProgramMeta, "slug">> = {
   "british-airways": { name: "British Airways", logo: "BA", logoColor: "#0f2f6d" },
   coopera: { name: "Coopera", logo: "CP", logoColor: "#2d6a4f" },
   tap: { name: "TAP Miles&Go", logo: "TP", logoColor: "#66aa00" },
-  avios: { name: "Avios (IAG)", logo: "Av", logoColor: "#0f2f6d" },
   "all-accor": { name: "ALL Accor", logo: "AL", logoColor: "#c2a055" },
   "american-airlines": { name: "AAdvantage (AA)", logo: "AA", logoColor: "#0066B2" },
   "uau-caixa": { name: "Uau Caixa", logo: "UC", logoColor: "#005CA9" },
@@ -519,12 +518,6 @@ const AVAILABLE_PROGRAM_OPTIONS: Array<{
     logoColor: "#66aa00",
   },
   {
-    programId: "avios",
-    name: "Avios (IAG)",
-    logo: "Av",
-    logoColor: "#0f2f6d",
-  },
-  {
     programId: "all-accor",
     name: "ALL Accor",
     logo: "AL",
@@ -579,6 +572,34 @@ const AVAILABLE_PROGRAM_OPTIONS: Array<{
     logoColor: "#006FCF",
   },
 ];
+
+/** Domínio da marca por programa, para resolver a logo via CDN (Clearbit). */
+const PROGRAM_LOGO_DOMAIN: Record<string, string> = {
+  "latam-pass": "latam.com",
+  smiles: "smiles.com.br",
+  "tudo-azul": "voeazul.com.br",
+  iberia: "iberia.com",
+  "copa-airlines": "copaair.com",
+  finnair: "finnair.com",
+  "qatar-airways": "qatarairways.com",
+  "british-airways": "britishairways.com",
+  tap: "flytap.com",
+  "american-airlines": "aa.com",
+  livelo: "livelo.com.br",
+  esfera: "esfera.com.vc",
+  itau: "itau.com.br",
+  "inter-loop": "bancointer.com.br",
+  amex: "americanexpress.com",
+  "atomos-c6": "c6bank.com.br",
+  "uau-caixa": "caixa.gov.br",
+  "brb-dux": "brb.com.br",
+  "all-accor": "all.accor.com",
+};
+
+const cdnLogoForProgram = (programId: string): string | undefined => {
+  const domain = PROGRAM_LOGO_DOMAIN[programId];
+  return domain ? `https://logo.clearbit.com/${domain}` : undefined;
+};
 
 const basePrograms: ProgramCardData[] = AVAILABLE_PROGRAM_OPTIONS.filter((option) =>
   ["latam-pass", "livelo", "esfera", "smiles", "iberia", "tudo-azul"].includes(
@@ -742,6 +763,13 @@ const Index = () => {
     const out: Record<string, string> = { ...brandingConfig.data.programCardLogos };
     for (const [k, v] of Object.entries(optionLogoImages)) {
       if (typeof v === "string" && v.trim()) out[k] = v.trim();
+    }
+    // Fallback de logo via CDN só onde não há logo custom (branding/localStorage).
+    for (const option of AVAILABLE_PROGRAM_OPTIONS) {
+      if (!out[option.programId]) {
+        const cdn = cdnLogoForProgram(option.programId);
+        if (cdn) out[option.programId] = cdn;
+      }
     }
     return out;
   }, [brandingConfig.data.programCardLogos, optionLogoImages]);
