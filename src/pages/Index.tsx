@@ -506,6 +506,12 @@ const AVAILABLE_PROGRAM_OPTIONS: Array<{
     logoColor: "#0f2f6d",
   },
   {
+    programId: "copa-airlines",
+    name: "Copa Airlines",
+    logo: "CM",
+    logoColor: "#00458c",
+  },
+  {
     programId: "coopera",
     name: "Coopera",
     logo: "CP",
