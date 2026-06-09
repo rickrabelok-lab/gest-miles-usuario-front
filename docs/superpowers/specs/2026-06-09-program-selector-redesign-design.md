@@ -23,7 +23,7 @@ Mockup aprovado: `program-selector-mockup.html` (raiz, arquivo descartável de v
 | Tema | Decisão |
 |------|---------|
 | Tema visual | **Claro**, alinhado ao app (branco `#FFFFFF`/`#F7F7F8`, acento roxo `#8A05BE`, borda `#ECECEC`). Mantém o gesto de bottom-sheet (grab pill, slide-up, overlay, botão "Confirmar seleção" fixo). |
-| Logos | **CDN por domínio** com fallback robusto. Ordem de resolução por programa: (1) asset local se existir → (2) `logo.clearbit.com/{domínio}` → (3) **badge de marca** (cor oficial + monograma) via `<img onError>`. Nunca fica quebrado. |
+| Logos | **CDN por domínio** com fallback robusto. Ordem por programa: (1) logo custom de branding/localStorage se houver → (2) `logo.clearbit.com/{domínio}` → (3) **badge de marca** (cor oficial + monograma) via `<img onError>`. Nunca fica quebrado. Sem caminho de asset local no sheet (os PNGs de cia aérea têm fundo escuro e exigiriam o processamento de canvas do `AirlineLogo`; o Clearbit resolve latam/azul/gol/tap/american bem). |
 | Categorias | **4 grupos + "Outros"**. |
 | Navegação | Fileira de **chips** (`Todos · Aéreas · Pontos · Bancos · Hotéis · Outros`) que filtra + **seções com header sticky**. Busca por texto continua e cruza com o chip ativo. |
 | Seleção | Mantém o padrão atual **adicionar/remover** (`onToggle`): ativo = ✓ (preenchido), inativo = + (contorno roxo). Sem trocar a lógica do `Index.tsx`. |
@@ -43,8 +43,6 @@ O `logo.clearbit.com` é dependência externa e a requisição vaza pro Clearbit
 ## Mapa de domínios para logo (CDN)
 
 `latam-pass→latam.com` · `smiles→smiles.com.br` · `tudo-azul→voeazul.com.br` · `iberia→iberia.com` · `copa-airlines→copaair.com` · `finnair→finnair.com` · `qatar-airways→qatarairways.com` · `british-airways→britishairways.com` · `tap→flytap.com` · `american-airlines→aa.com` · `livelo→livelo.com.br` · `esfera→esfera.com.vc` · `itau→itau.com.br` · `inter-loop→bancointer.com.br` · `amex→americanexpress.com` · `atomos-c6→c6bank.com.br` · `uau-caixa→caixa.gov.br` · `brb-dux→brb.com.br` · `all-accor→all.accor.com` · `coopera→(sem domínio → badge)` · `kmv→(sem domínio → badge)`
-
-Assets locais já existentes preferidos sobre o CDN: `tudo-azul`, `smiles` (gol), `latam-pass`, `tap`, `american-airlines` (via `AirlineLogo`/assets em `src/assets`).
 
 ## Componentes e arquivos
 
@@ -67,25 +65,28 @@ Assets locais já existentes preferidos sobre o CDN: `tudo-azul`, `smiles` (gol)
 ### `src/pages/Index.tsx`
 - Adicionar `category` e `domain` a cada item de `AVAILABLE_PROGRAM_OPTIONS` e `PROGRAM_META_MAP` (ou um mapa lateral `PROGRAM_CATEGORY`/`PROGRAM_LOGO_DOMAIN` para não inchar as duas estruturas).
 - Resolver a URL de logo por programa (asset local > CDN por domínio) e mesclar no `programLogoImagesForSheet` já passado em `logoImages`. Fallback de badge é responsabilidade do componente (onError).
-- **Remover o programa `avios`** de `AVAILABLE_PROGRAM_OPTIONS` (linhas ~521–526) e de `PROGRAM_META_MAP` (linha ~240). Remover o import `programAviosLogo`, a entrada `avios: programAviosLogo` e o par `["avios","Avios"]` do mapa de logos.
+- **Remover o programa `avios`** de `AVAILABLE_PROGRAM_OPTIONS` (linhas ~521–526) e de `PROGRAM_META_MAP` (linha ~240). Só essas duas entradas.
 
-### Asset
-- `src/assets/program-avios.svg` fica órfão após a remoção. Remover o arquivo (cleanup do que estamos mexendo).
+### Asset — NÃO deletar
+- `src/assets/program-avios.svg` **continua em uso** pelo plano de ação (`ACTION_PLAN_PROGRAM_ICON_BY_KEY.avios`, linha ~113), que é um "avios" diferente (chave do `useGestor`, não o programa do catálogo). Manter o arquivo, o import `programAviosLogo` e o par `["avios","Avios"]` em `ACTION_PLAN_PROGRAM_LABELS`.
 
 ### Fora de escopo (NÃO mexer)
-- Lógica de **Avios como moeda** em `LoyaltyProgramDetails.tsx` (Ibéria/British/Qatar/Finnair → `"avios"`): esses programas continuam existindo e acumulam Avios; mantém.
-- Flags de perfil em `ClientProfile.tsx` e `useGestor.ts` que citam `avios`: features separadas, não tocar.
+- **Avios como moeda** em `LoyaltyProgramDetails.tsx` (Ibéria/British/Qatar/Finnair → `"avios"`): esses programas continuam existindo e acumulam Avios; mantém.
+- **Avios do plano de ação** (`ACTION_PLAN_PROGRAM_LABELS`, `ACTION_PLAN_PROGRAM_ICON_BY_KEY`, `useGestor` plan keys): feature separada keyed pelo `useGestor`, não tocar.
+- Flags de perfil em `ClientProfile.tsx` que citam `avios`: feature separada, não tocar.
 - Fluxo de cotação, cards do `Index`, versão dark antiga.
 
 ## Testes (Vitest — rede de segurança principal)
 
-`src/components/__tests__/ProgramSelectionSheet.test.tsx` (atualizar) + util:
-- Agrupa programas nas categorias certas e na ordem fixa; seções vazias somem.
-- Chip de categoria filtra a lista; "Todos" mostra tudo.
-- Busca cruza com chip ativo; highlight preservado.
-- `onToggle` é chamado com o programa certo no +/−.
-- `ProgramLogo`: renderiza `<img>` quando há URL; cai no badge (cor+monograma) no `onError`/sem URL.
-- Avios não aparece mais nas opções (regressão).
+Foco no que é puro/testável sem brigar com o `requestAnimationFrame`/portal do sheet:
+
+`src/components/__tests__/ProgramSelectionSheet.test.tsx` (atualizar):
+- `categoryOf`: mapeia cada programId pra categoria certa; id desconhecido → `"outros"`.
+- `groupByCategory`: ordem fixa (aereas→pontos→bancos→hoteis→outros); seções vazias somem; bucketiza por programId.
+- `filterPrograms`/`highlightSegments`: manter os testes atuais passando.
+- `ProgramLogo` (exportado pra teste): renderiza `<img>` com `src` quando há URL; cai no badge (monograma + cor) no `onError` e quando não há URL.
+
+Avios removido do catálogo: verificado por `tsc -b`/`build` + checagem manual (a const `AVAILABLE_PROGRAM_OPTIONS` não é exportada; sem teste unitário dedicado).
 
 ## Verificação antes de "pronto"
 - `npx tsc -b` limpo
