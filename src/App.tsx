@@ -31,6 +31,7 @@ const PriceCalendarScreen = lazy(() => import("./pages/PriceCalendarScreen"));
 const BonusOffersScreen = lazy(() => import("./pages/BonusOffersScreen"));
 const BonusOfferDetailScreen = lazy(() => import("./pages/BonusOfferDetailScreen"));
 const VencimentosPage = lazy(() => import("./pages/VencimentosPage"));
+const MinhaEconomiaPage = lazy(() => import("./pages/MinhaEconomiaPage"));
 const RegistrarEmissaoPage = lazy(() => import("./pages/RegistrarEmissaoPage"));
 const CriarAlertaPage = lazy(() => import("./pages/CriarAlertaPage"));
 const SobreGestMilesPage = lazy(() => import("./pages/SobreGestMilesPage"));
@@ -241,6 +242,14 @@ const App = () => {
                   element={
                     <ClienteOnly>
                       <VencimentosPage />
+                    </ClienteOnly>
+                  }
+                />
+                <Route
+                  path="/minha-economia"
+                  element={
+                    <ClienteOnly>
+                      <MinhaEconomiaPage />
                     </ClienteOnly>
                   }
                 />

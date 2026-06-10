@@ -1,0 +1,33 @@
+/* PDF do Minha Economia: na impressão, só o relatório fica visível
+   (técnica de visibility — ignora header/nav/toasts do app). */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #minha-economia-print,
+  #minha-economia-print * {
+    visibility: visible;
+  }
+
+  #minha-economia-print {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .relatorio-bloco {
+    break-inside: avoid;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+}
