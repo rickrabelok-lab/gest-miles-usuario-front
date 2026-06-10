@@ -15,6 +15,7 @@ import {
   Calculator,
   Radio,
   CreditCard,
+  TrendingUp,
 } from "lucide-react";
 import GestMilesLogo from "@/components/GestMilesLogo";
 import { useMemo, useState } from "react";
@@ -272,6 +273,16 @@ const DashboardHeader = () => {
                         >
                           <Radio className="h-5 w-5 shrink-0 text-[#8A05BE]" />
                           <span>Radar de Oportunidades</span>
+                        </button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/minha-economia")}
+                        >
+                          <TrendingUp className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Minha Economia</span>
                         </button>
                       </SheetClose>
                     </div>
