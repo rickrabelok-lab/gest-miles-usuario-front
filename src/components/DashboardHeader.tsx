@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   FileText,
   Cookie,
+  Download,
 } from "lucide-react";
 import GestMilesLogo from "@/components/GestMilesLogo";
 import { useMemo, useState } from "react";
@@ -35,6 +36,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { resolveOptionalHeaderWordmarkImageUrl } from "@/lib/gestMilesBranding";
 import { useBrandingConfig } from "@/hooks/useBrandingConfig";
 import { toast } from "sonner";
+import { gatherUserData, downloadJson } from "@/services/dataExportService";
 import NotificationsDropdown from "@/components/notifications/NotificationsDropdown";
 
 const getInitials = (email: string | undefined) => {
@@ -58,6 +60,7 @@ const getDisplayName = (user: { email?: string; user_metadata?: Record<string, u
 const DashboardHeader = () => {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [idCopied, setIdCopied] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
@@ -87,6 +90,25 @@ const DashboardHeader = () => {
       navigate("/");
     } catch {
       navigate("/");
+    }
+  };
+
+  const handleExportData = async () => {
+    if (!user || isExporting) return;
+    setIsExporting(true);
+    const toastId = toast.loading("Gerando seu arquivo de dados…");
+    try {
+      const bundle = await gatherUserData(user.id, {
+        id: user.id,
+        email: user.email ?? null,
+        criadoEm: (user as { created_at?: string }).created_at ?? null,
+      });
+      downloadJson(bundle);
+      toast.success("Pronto! Seu arquivo foi baixado.", { id: toastId });
+    } catch {
+      toast.error("Não foi possível gerar seu arquivo agora. Tente novamente.", { id: toastId });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -372,6 +394,17 @@ const DashboardHeader = () => {
                         >
                           <Cookie className="h-5 w-5 shrink-0 text-[#8A05BE]" />
                           <span>Cookies</span>
+                        </button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          disabled={isExporting}
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 disabled:opacity-60 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={handleExportData}
+                        >
+                          <Download className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>{isExporting ? "Gerando…" : "Baixar meus dados"}</span>
                         </button>
                       </SheetClose>
                     </div>
