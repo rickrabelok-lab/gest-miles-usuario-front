@@ -2,7 +2,7 @@ import { Router } from "express";
 import { buildSelfPerfilPayload } from "../lib/perfisPayload.js";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
-import { serverError } from "../lib/httpError.js";
+import { serverError, publicError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -21,7 +21,7 @@ router.get("/me", requireAuth, async (req, res) => {
       .maybeSingle();
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return publicError(res, 400, "Não foi possível obter o perfil.", error, "[perfis]");
     }
     return res.json(data);
   } catch (err) {
@@ -44,7 +44,7 @@ router.get("/role", requireAuth, async (req, res) => {
       .maybeSingle();
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return publicError(res, 400, "Não foi possível obter a role.", error, "[perfis]");
     }
     return res.json({ role: data?.role ?? "user" });
   } catch (err) {
@@ -64,7 +64,7 @@ router.get("/:usuarioId", requireAuth, async (req, res) => {
       .maybeSingle();
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return publicError(res, 400, "Não foi possível obter o perfil.", error, "[perfis]");
     }
     return res.json(data);
   } catch (err) {
@@ -86,7 +86,7 @@ router.put("/", requireAuth, async (req, res) => {
       .upsert(payload, { onConflict: "usuario_id" });
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return publicError(res, 400, "Não foi possível salvar o perfil.", error, "[perfis]");
     }
     return res.json({ ok: true });
   } catch (err) {

@@ -11,6 +11,12 @@ const router = Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 
+// Rate-limit por autor (admin_equipe). Já é uma rota gated (não é relay aberto),
+// mas sem limite um admin comprometido/abusivo email-bomba endereços arbitrários.
+// Limites generosos o bastante para onboarding em lote, baixos para barrar abuso.
+const INVITE_MAX_PER_HOUR = 30;
+const INVITE_MAX_PER_DAY = 100;
+
 function isValidEmail(email) {
   const e = String(email || "").trim();
   return e.length > 0 && e.length <= 254 && EMAIL_RE.test(e);
@@ -133,6 +139,24 @@ router.post("/", requireAuth, async (req, res) => {
     if (autorErr) throw autorErr;
     if (!autor || autor.role !== "admin_equipe" || !autor.equipe_id) {
       return res.status(403).json({ error: "Apenas um administrador de equipe pode convidar." });
+    }
+
+    // Rate-limit (contagem no DB; serverless-safe — in-memory não persiste na Vercel).
+    // Fail-open: se a contagem falhar, segue o convite (não derruba o fluxo legítimo).
+    const nowMs = Date.now();
+    const umaHoraMs = nowMs - 60 * 60 * 1000;
+    const since24h = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
+    const { data: convitesRecentes } = await sbAdmin
+      .from("convites_cliente_gestao")
+      .select("created_at")
+      .eq("invited_by", user.id)
+      .gte("created_at", since24h);
+    const recentes = convitesRecentes ?? [];
+    if (recentes.filter((r) => new Date(r.created_at).getTime() >= umaHoraMs).length >= INVITE_MAX_PER_HOUR) {
+      return res.status(429).json({ error: "Muitos convites em pouco tempo. Tente novamente mais tarde." });
+    }
+    if (recentes.length >= INVITE_MAX_PER_DAY) {
+      return res.status(429).json({ error: "Limite diário de convites atingido. Tente novamente amanhã." });
     }
 
     // Em produção, sem e-mail configurado não há como entregar o convite.

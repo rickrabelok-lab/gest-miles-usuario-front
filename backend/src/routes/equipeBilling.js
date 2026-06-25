@@ -5,6 +5,7 @@ import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
 import { resolvePeriodStart } from "../lib/billingHelpers.js";
 import { buildCheckoutLineItems, decideQuantitySync } from "../lib/equipeBillingService.js";
+import { serverError, publicError } from "../lib/httpError.js";
 
 const router = Router();
 const TRIAL_DAYS = 14;
@@ -21,10 +22,10 @@ router.get("/plans", async (_req, res) => {
       .eq("active", true)
       .not("stripe_base_price_id", "is", null)
       .order("sort_order", { ascending: true });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return serverError(res, "Erro ao listar planos.", error, "[equipe-billing]");
     return res.json({ plans: data ?? [] });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao listar planos." });
+    return serverError(res, "Erro ao listar planos.", e, "[equipe-billing]");
   }
 });
 
@@ -82,12 +83,12 @@ router.post("/agency/provision", requireAuth, async (req, res) => {
       p_slug: slugBase,
       p_nome_completo: perfil?.nome_completo || nome || user.email || "Agência",
     });
-    if (ensureErr) return res.status(400).json({ error: ensureErr.message });
+    if (ensureErr) return publicError(res, 400, "Não foi possível preparar o perfil.", ensureErr, "[equipe-billing]");
 
     const sb = assertSupabaseService();
     const { data: equipe, error: eErr } = await sb
       .from("equipes").insert({ nome }).select("id, nome").single();
-    if (eErr) return res.status(400).json({ error: eErr.message });
+    if (eErr) return publicError(res, 400, "Não foi possível criar a equipe.", eErr, "[equipe-billing]");
 
     const { data: promoted, error: pErr } = await sb
       .from("perfis")
@@ -98,15 +99,18 @@ router.post("/agency/provision", requireAuth, async (req, res) => {
       .maybeSingle();
     if (pErr || !promoted) {
       await sb.from("equipes").delete().eq("id", equipe.id); // evita equipe órfã
-      return res.status(pErr ? 400 : 409).json({
-        error: pErr?.message || "Não foi possível promover o perfil (já pertence a uma equipe?).",
-        code: pErr ? undefined : "promote_failed",
+      if (pErr) {
+        return publicError(res, 400, "Não foi possível promover o perfil.", pErr, "[equipe-billing]");
+      }
+      return res.status(409).json({
+        error: "Não foi possível promover o perfil (já pertence a uma equipe?).",
+        code: "promote_failed",
       });
     }
 
     return res.status(201).json({ equipe });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao provisionar agência." });
+    return serverError(res, "Erro ao provisionar agência.", e, "[equipe-billing]");
   }
 });
 
@@ -124,7 +128,7 @@ router.get("/me", requireAuth, async (req, res) => {
     }
     return res.json({ equipe, subscription });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro." });
+    return serverError(res, "Erro ao carregar billing da equipe.", e, "[equipe-billing]");
   }
 });
 
@@ -175,7 +179,7 @@ router.post("/checkout-session", requireAuth, async (req, res) => {
     });
     return res.json({ url: session.url, sessionId: session.id });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao criar checkout." });
+    return serverError(res, "Erro ao criar checkout.", e, "[equipe-billing]");
   }
 });
 
@@ -192,7 +196,7 @@ router.post("/portal", requireAuth, async (req, res) => {
     });
     return res.json({ url: session.url });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao abrir portal." });
+    return serverError(res, "Erro ao abrir portal.", e, "[equipe-billing]");
   }
 });
 
@@ -238,7 +242,7 @@ router.post("/clients/:clienteId/activate", requireAuth, async (req, res) => {
     }
     return res.json({ ok: true, plano_ativo: true });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao ativar cliente." });
+    return serverError(res, "Erro ao ativar cliente.", e, "[equipe-billing]");
   }
 });
 
@@ -255,7 +259,7 @@ router.post("/clients/:clienteId/deactivate", requireAuth, async (req, res) => {
     await sb.from("perfis").update({ plano_ativo: false, plano_desativado_em: new Date().toISOString(), cliente_status: "inativo" }).eq("usuario_id", clienteId);
     return res.json({ ok: true, plano_ativo: false });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao desativar cliente." });
+    return serverError(res, "Erro ao desativar cliente.", e, "[equipe-billing]");
   }
 });
 
