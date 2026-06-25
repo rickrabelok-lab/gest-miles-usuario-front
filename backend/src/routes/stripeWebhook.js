@@ -190,6 +190,6 @@ export async function handleStripeWebhook(req, res) {
     return res.json({ received: true });
   } catch (e) {
     console.error("Stripe webhook handler:", e);
-    return res.status(500).json({ error: e.message || "Webhook handler error" });
+    return res.status(500).json({ error: "Webhook handler error" });
   }
 }

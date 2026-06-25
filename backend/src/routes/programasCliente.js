@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
-import { serverError } from "../lib/httpError.js";
+import { serverError, publicError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -20,7 +20,7 @@ router.get("/", requireAuth, async (req, res) => {
       .order("updated_at", { ascending: false });
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return publicError(res, 400, "Não foi possível listar os programas.", error, "[programas-cliente]");
     }
     const rows = (data ?? []).filter((row) => row.cliente_id === clientId);
     return res.json(rows);
@@ -48,7 +48,7 @@ router.post("/", requireAuth, async (req, res) => {
       );
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return publicError(res, 400, "Não foi possível salvar o programa.", error, "[programas-cliente]");
     }
     return res.json({ ok: true });
   } catch (err) {

@@ -16,6 +16,9 @@ import {
   Radio,
   CreditCard,
   TrendingUp,
+  ShieldCheck,
+  FileText,
+  Cookie,
 } from "lucide-react";
 import GestMilesLogo from "@/components/GestMilesLogo";
 import { useMemo, useState } from "react";
@@ -331,6 +334,44 @@ const DashboardHeader = () => {
                         >
                           <MessageCircle className="h-5 w-5 shrink-0 text-[#8A05BE]" />
                           <span>Fale Conosco</span>
+                        </button>
+                      </SheetClose>
+                    </div>
+                  </section>
+
+                  <section className="mb-5">
+                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A05BE]">
+                      Legal
+                    </p>
+                    <div className="space-y-0.5">
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/privacidade")}
+                        >
+                          <ShieldCheck className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Privacidade</span>
+                        </button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/termos")}
+                        >
+                          <FileText className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Termos de Uso</span>
+                        </button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
+                          onClick={() => navigate("/cookies")}
+                        >
+                          <Cookie className="h-5 w-5 shrink-0 text-[#8A05BE]" />
+                          <span>Cookies</span>
                         </button>
                       </SheetClose>
                     </div>

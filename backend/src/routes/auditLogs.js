@@ -582,7 +582,7 @@ router.get("/", requireAuth, async (req, res) => {
       const mapped = mapAuditLogsSupabaseError(e);
       if (mapped) return res.status(mapped.status).json({ error: mapped.message });
       console.error("[audit-logs] GET /", e?.stack ?? e?.message ?? e);
-      return res.status(500).json({ error: e?.message ?? String(e) });
+      return res.status(500).json({ error: "Erro ao listar audit logs." });
     }
 
     let enriched;
@@ -592,7 +592,7 @@ router.get("/", requireAuth, async (req, res) => {
       const mapped = mapAuditLogsSupabaseError(enrErr);
       if (mapped) return res.status(mapped.status).json({ error: mapped.message });
       console.error("[audit-logs] enrich", enrErr?.stack ?? enrErr?.message ?? enrErr);
-      return res.status(500).json({ error: enrErr?.message ?? String(enrErr) });
+      return res.status(500).json({ error: "Erro ao listar audit logs." });
     }
 
     const equipeIdsForNome = [];
@@ -672,7 +672,7 @@ router.get("/", requireAuth, async (req, res) => {
     return sendJsonSafe(res, payload);
   } catch (e) {
     console.error("[audit-logs] unhandled", e?.stack ?? e?.message ?? e);
-    return res.status(500).json({ error: e?.message || "Erro ao listar audit logs." });
+    return res.status(500).json({ error: "Erro ao listar audit logs." });
   }
 });
 
@@ -738,14 +738,14 @@ router.get("/tables", requireAuth, async (req, res) => {
       const mapped = mapAuditLogsSupabaseError(e);
       if (mapped) return res.status(mapped.status).json({ error: mapped.message });
       console.error("[audit-logs] GET /tables", e?.stack ?? e?.message ?? e);
-      return res.status(500).json({ error: e?.message ?? String(e) });
+      return res.status(500).json({ error: "Erro ao listar tabelas." });
     }
 
     const unique = [...new Set([...auditTables, ...logsTables])].sort((a, b) => a.localeCompare(b));
     return res.json({ tables: unique });
   } catch (e) {
     console.error("[audit-logs] tables unhandled", e?.stack ?? e?.message ?? e);
-    return res.status(500).json({ error: e?.message || "Erro ao listar tabelas." });
+    return res.status(500).json({ error: "Erro ao listar tabelas." });
   }
 });
 
@@ -866,7 +866,7 @@ router.get("/meta", requireAuth, async (req, res) => {
       const mapped = mapAuditLogsSupabaseError(e);
       if (mapped) return res.status(mapped.status).json({ error: mapped.message });
       console.error("[audit-logs] GET /meta", e?.stack ?? e?.message ?? e);
-      return res.status(500).json({ error: e?.message ?? String(e) });
+      return res.status(500).json({ error: "Erro ao carregar meta dos logs." });
     }
 
     const tables = [...new Set([...auditTables, ...logsTables])].sort((a, b) => a.localeCompare(b));
@@ -914,7 +914,7 @@ router.get("/meta", requireAuth, async (req, res) => {
     });
   } catch (e) {
     console.error("[audit-logs] meta unhandled", e?.stack ?? e?.message ?? e);
-    return res.status(500).json({ error: e?.message || "Erro ao carregar meta dos logs." });
+    return res.status(500).json({ error: "Erro ao carregar meta dos logs." });
   }
 });
 

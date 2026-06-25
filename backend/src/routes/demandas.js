@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
-import { serverError } from "../lib/httpError.js";
+import { serverError, publicError } from "../lib/httpError.js";
+import { buildDemandaInsert, buildDemandaUpdate } from "../lib/demandaPayload.js";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get("/", requireAuth, async (req, res) => {
       .limit(200);
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return publicError(res, 400, "Não foi possível listar as demandas.", error, "[demandas]");
     }
     return res.json(data ?? []);
   } catch (err) {
@@ -36,23 +37,24 @@ router.get("/", requireAuth, async (req, res) => {
 /** POST /api/demandas - Cria demanda */
 router.post("/", requireAuth, async (req, res) => {
   try {
-    const payload = req.body;
     const supabase = createSupabaseWithAuth(req.accessToken);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.id) {
       return res.status(401).json({ error: "Usuário não autenticado" });
     }
+    // Allowlist: só colunas de negócio entram (sem spread cego de req.body).
+    const insertPayload = buildDemandaInsert(req.body, user.id);
+    if (!insertPayload.tipo) {
+      return res.status(400).json({ error: "tipo é obrigatório." });
+    }
     const { data, error } = await supabase
       .from("demandas_cliente")
-      .insert({
-        ...payload,
-        cliente_id: payload.cliente_id ?? user.id,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return publicError(res, 400, "Não foi possível criar a demanda.", error, "[demandas]");
     }
     return res.json(data);
   } catch (err) {
@@ -64,17 +66,21 @@ router.post("/", requireAuth, async (req, res) => {
 router.patch("/:id", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
-    const payload = req.body;
+    // Allowlist: só campos mutáveis de negócio; nunca cliente_id/id/timestamps.
+    const updatePayload = buildDemandaUpdate(req.body);
+    if (Object.keys(updatePayload).length === 0) {
+      return res.status(400).json({ error: "Nenhum campo válido para atualizar." });
+    }
     const supabase = createSupabaseWithAuth(req.accessToken);
     const { data, error } = await supabase
       .from("demandas_cliente")
-      .update(payload)
+      .update(updatePayload)
       .eq("id", id)
       .select()
       .single();
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return publicError(res, 400, "Não foi possível atualizar a demanda.", error, "[demandas]");
     }
     return res.json(data);
   } catch (err) {

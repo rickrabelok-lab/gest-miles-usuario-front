@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { buildPerClientTieredPriceArgs } from "../lib/billingHelpers.js";
+import { serverError, publicError } from "../lib/httpError.js";
 
 const router = Router();
 
@@ -58,7 +59,7 @@ router.post("/admin/connection-test", requireAuth, requireAdmin, async (req, res
       webhookSecretConfigured,
     });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Falha ao validar conexão Stripe." });
+    return serverError(res, "Falha ao validar conexão Stripe.", e, "[stripe-billing]");
   }
 });
 
@@ -71,10 +72,10 @@ router.get("/plans", async (_req, res) => {
       .select("*")
       .eq("active", true)
       .order("sort_order", { ascending: true });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return serverError(res, "Erro ao listar planos.", error, "[stripe-billing]");
     return res.json({ plans: data ?? [] });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao listar planos." });
+    return serverError(res, "Erro ao listar planos.", e, "[stripe-billing]");
   }
 });
 
@@ -86,10 +87,10 @@ router.get("/admin/plans", requireAuth, requireAdmin, async (_req, res) => {
       .from("subscription_plans")
       .select("*")
       .order("sort_order", { ascending: true });
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return serverError(res, "Erro ao listar planos.", error, "[stripe-billing]");
     return res.json({ plans: data ?? [] });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao listar planos." });
+    return serverError(res, "Erro ao listar planos.", e, "[stripe-billing]");
   }
 });
 
@@ -160,11 +161,11 @@ router.post("/admin/plans", requireAuth, requireAdmin, async (req, res) => {
       .single();
 
     if (insErr) {
-      return res.status(400).json({ error: insErr.message });
+      return publicError(res, 400, "Não foi possível criar o plano.", insErr, "[stripe-billing]");
     }
     return res.json({ plan: inserted });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao criar plano." });
+    return serverError(res, "Erro ao criar plano.", e, "[stripe-billing]");
   }
 });
 
@@ -205,10 +206,10 @@ router.patch("/admin/plans/:slug", requireAuth, requireAdmin, async (req, res) =
       .eq("slug", slug)
       .select()
       .single();
-    if (upErr) return res.status(400).json({ error: upErr.message });
+    if (upErr) return publicError(res, 400, "Não foi possível atualizar o plano.", upErr, "[stripe-billing]");
     return res.json({ plan: updated });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao atualizar plano." });
+    return serverError(res, "Erro ao atualizar plano.", e, "[stripe-billing]");
   }
 });
 
@@ -274,10 +275,10 @@ router.post("/admin/plans/:slug/prices", requireAuth, requireAdmin, async (req, 
       .eq("slug", slug)
       .select()
       .single();
-    if (upErr) return res.status(400).json({ error: upErr.message });
+    if (upErr) return publicError(res, 400, "Não foi possível atualizar os preços.", upErr, "[stripe-billing]");
     return res.json({ plan: updated });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao atualizar preços." });
+    return serverError(res, "Erro ao atualizar preços.", e, "[stripe-billing]");
   }
 });
 
@@ -289,7 +290,7 @@ router.get("/admin/subscriptions", requireAuth, requireAdmin, async (req, res) =
     const subs = await stripe.subscriptions.list({ limit, status: "all", expand: ["data.customer"] });
     return res.json({ subscriptions: subs.data });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao listar assinaturas." });
+    return serverError(res, "Erro ao listar assinaturas.", e, "[stripe-billing]");
   }
 });
 
@@ -308,7 +309,7 @@ router.post("/admin/subscriptions/:subscriptionId/cancel", requireAuth, requireA
     const sub = await stripe.subscriptions.retrieve(subscriptionId);
     return res.json({ subscription: sub });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao cancelar." });
+    return serverError(res, "Erro ao cancelar.", e, "[stripe-billing]");
   }
 });
 
@@ -321,7 +322,7 @@ router.post("/admin/subscriptions/:subscriptionId/pause", requireAuth, requireAd
     });
     return res.json({ subscription: sub });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao pausar." });
+    return serverError(res, "Erro ao pausar.", e, "[stripe-billing]");
   }
 });
 
@@ -334,7 +335,7 @@ router.post("/admin/subscriptions/:subscriptionId/resume", requireAuth, requireA
     });
     return res.json({ subscription: sub });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao retomar." });
+    return serverError(res, "Erro ao retomar.", e, "[stripe-billing]");
   }
 });
 
@@ -357,7 +358,7 @@ router.get("/me", requireAuth, async (req, res) => {
       )
       .eq("usuario_id", user.id)
       .maybeSingle();
-    if (pErr) return res.status(500).json({ error: pErr.message });
+    if (pErr) return serverError(res, "Erro ao carregar assinatura.", pErr, "[stripe-billing]");
 
     let stripeSubscription = null;
     if (perfil?.stripe_subscription_id) {
@@ -371,7 +372,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
     return res.json({ perfil, stripeSubscription });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro." });
+    return serverError(res, "Erro ao carregar assinatura.", e, "[stripe-billing]");
   }
 });
 
@@ -458,7 +459,7 @@ router.post("/checkout-session", requireAuth, async (req, res) => {
 
     return res.json({ url: session.url, sessionId: session.id });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao criar checkout." });
+    return serverError(res, "Erro ao criar checkout.", e, "[stripe-billing]");
   }
 });
 
@@ -493,7 +494,7 @@ router.post("/billing-portal", requireAuth, async (req, res) => {
     });
     return res.json({ url: session.url });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao abrir portal." });
+    return serverError(res, "Erro ao abrir portal.", e, "[stripe-billing]");
   }
 });
 
@@ -538,10 +539,10 @@ router.post("/admin/b2b-plans", requireAuth, requireAdmin, async (req, res) => {
       })
       .select()
       .single();
-    if (insErr) return res.status(400).json({ error: insErr.message });
+    if (insErr) return publicError(res, 400, "Não foi possível criar o plano B2B.", insErr, "[stripe-billing]");
     return res.json({ plan: inserted });
   } catch (e) {
-    return res.status(500).json({ error: e.message || "Erro ao criar plano B2B." });
+    return serverError(res, "Erro ao criar plano B2B.", e, "[stripe-billing]");
   }
 });
 

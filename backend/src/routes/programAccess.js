@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { createSupabaseWithAuth } from "../lib/supabase.js";
 import { assertSupabaseService } from "../lib/supabaseService.js";
 import { requireAuth } from "../middleware/auth.js";
+import { serverError } from "../lib/httpError.js";
 
 const router = Router();
 const SECRET_ACTION = "view_secret";
@@ -156,7 +157,9 @@ router.get("/clientes/:clienteId/acessos", requireAuth, async (req, res) => {
 
     return res.json({ acessos: (data ?? []).map((row) => rowToResponse(row, reveal)) });
   } catch (e) {
-    return res.status(e.status || 500).json({ error: e.message || "Erro ao listar acessos." });
+    const status = e.status || 500;
+    if (status >= 500) return serverError(res, "Erro ao listar acessos.", e, "[program-access]");
+    return res.status(status).json({ error: e.message || "Erro ao listar acessos." });
   }
 });
 
@@ -195,7 +198,9 @@ router.post("/clientes/:clienteId/acessos", requireAuth, async (req, res) => {
 
     return res.status(201).json({ acesso: rowToResponse(data, false) });
   } catch (e) {
-    return res.status(e.status || 500).json({ error: e.message || "Erro ao criar acesso." });
+    const status = e.status || 500;
+    if (status >= 500) return serverError(res, "Erro ao criar acesso.", e, "[program-access]");
+    return res.status(status).json({ error: e.message || "Erro ao criar acesso." });
   }
 });
 
@@ -259,7 +264,9 @@ router.patch("/acessos/:acessoId", requireAuth, async (req, res) => {
 
     return res.json({ acesso: rowToResponse(data, false) });
   } catch (e) {
-    return res.status(e.status || 500).json({ error: e.message || "Erro ao atualizar acesso." });
+    const status = e.status || 500;
+    if (status >= 500) return serverError(res, "Erro ao atualizar acesso.", e, "[program-access]");
+    return res.status(status).json({ error: e.message || "Erro ao atualizar acesso." });
   }
 });
 
@@ -292,7 +299,9 @@ router.delete("/acessos/:acessoId", requireAuth, async (req, res) => {
 
     return res.json({ ok: true });
   } catch (e) {
-    return res.status(e.status || 500).json({ error: e.message || "Erro ao arquivar acesso." });
+    const status = e.status || 500;
+    if (status >= 500) return serverError(res, "Erro ao arquivar acesso.", e, "[program-access]");
+    return res.status(status).json({ error: e.message || "Erro ao arquivar acesso." });
   }
 });
 
