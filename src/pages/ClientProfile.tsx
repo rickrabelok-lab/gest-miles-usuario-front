@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import AccountDeletionSection from "@/components/perfil/AccountDeletionSection";
 
 type ClientePerfilData = {
   cpf: string;
@@ -383,6 +384,8 @@ const ClientProfile = () => {
         <Button type="button" className="w-full" onClick={handleSave} disabled={saving || !profileReady}>
           {saving ? "Salvando..." : profileLoadError ? "Carregue o perfil para salvar" : "Salvar perfil"}
         </Button>
+
+        <AccountDeletionSection />
       </div>
     </div>
   );
