@@ -134,14 +134,17 @@ export async function gatherUserData(
     observacoes: [CREDENCIAIS_NOTE],
   };
 
-  for (const source of SOURCES) {
-    try {
-      const data = await source.fetch(client, userId);
-      (bundle as Record<string, unknown>)[source.key] = data;
-    } catch {
+  const results = await Promise.allSettled(
+    SOURCES.map((s) => s.fetch(client, userId).then((data) => ({ key: s.key, data }))),
+  );
+  results.forEach((result, i) => {
+    const source = SOURCES[i];
+    if (result.status === "fulfilled") {
+      (bundle as Record<string, unknown>)[source.key] = result.value.data;
+    } else {
       bundle.observacoes.push(`${source.label}: não foi possível ler estes dados agora.`);
     }
-  }
+  });
 
   return bundle;
 }
@@ -157,5 +160,5 @@ export function downloadJson(bundle: DataExportBundle): void {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

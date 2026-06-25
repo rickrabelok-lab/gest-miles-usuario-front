@@ -119,9 +119,14 @@ describe("gatherUserData", () => {
 });
 
 describe("downloadJson", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
 
   it("nomeia o arquivo com a data do export e dispara o download", () => {
+    vi.useFakeTimers();
+
     const createSpy = vi.fn().mockReturnValue("blob:fake");
     const revokeSpy = vi.fn();
     vi.stubGlobal("URL", {
@@ -163,6 +168,12 @@ describe("downloadJson", () => {
     expect(mockAnchor.click).toHaveBeenCalled();
     expect(mockAnchor.remove).toHaveBeenCalled();
     expect(createSpy).toHaveBeenCalled();
+
+    // revoke é adiado via setTimeout — não deve ter rodado ainda
+    expect(revokeSpy).not.toHaveBeenCalled();
+
+    // dispara o timer pendente e confirma que o revoke foi chamado com a URL correta
+    vi.runAllTimers();
     expect(revokeSpy).toHaveBeenCalledWith("blob:fake");
   });
 });
