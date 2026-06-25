@@ -54,7 +54,7 @@ const PrivacidadePage = () => {
         <li><strong>Prestar o serviço</strong> (criar conta, autenticar, exibir e organizar seus programas e dados) — execução de contrato (art. 7º, V);</li>
         <li><strong>Comunicações operacionais</strong> (recuperação de senha, convites, respostas a contatos) — execução de contrato e legítimo interesse (art. 7º, V e IX);</li>
         <li><strong>Segurança, prevenção a fraudes e auditoria</strong> (inclusive o acesso a credenciais de programas) — legítimo interesse e cumprimento de obrigação legal (art. 7º, IX e II);</li>
-        <li><strong>Melhoria e diagnóstico</strong> (monitoramento de erros) — legítimo interesse (art. 7º, IX);</li>
+        <li><strong>Melhoria e diagnóstico</strong> (monitoramento de erros e métricas de audiência agregadas, sem cookies) — legítimo interesse (art. 7º, IX);</li>
         <li><strong>Cumprimento de obrigações legais e regulatórias</strong> — art. 7º, II.</li>
       </ul>
 
@@ -68,6 +68,7 @@ const PrivacidadePage = () => {
         <li><strong>Resend</strong> — envio de e-mails transacionais;</li>
         <li><strong>Google</strong> — login via OAuth (quando você o utiliza);</li>
         <li><strong>Vercel</strong> — hospedagem da aplicação;</li>
+        <li><strong>Cloudflare</strong> — rede de entrega de conteúdo (CDN) e métricas de audiência agregadas e sem cookies;</li>
         <li><strong>Sentry</strong> — monitoramento de erros;</li>
         <li><strong>Processadores de pagamento</strong> — quando houver cobrança de assinatura, limitados aos dados necessários à transação.</li>
       </ul>
