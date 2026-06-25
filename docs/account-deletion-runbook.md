@@ -26,6 +26,8 @@ compartilhada, sem staging — confira o id antes de executar.
     where usuario_id = '<usuario_id>';`
 
 ## Notas
+- Se o processo interromper após o passo 3, reexecute os passos 4–6 com o mesmo
+  `usuario_id` — são seguros para rerun (idempotentes).
 - Leftovers SET NULL (subscriptions/contratos_cliente/tarefas_cs/reunioes_onboarding/
   audit_logs) são mantidos com user nulado — aceitável (operacional/compliance).
 - `auth.admin.deleteUser` exige service role — NUNCA no browser.

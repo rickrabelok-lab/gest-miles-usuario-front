@@ -19,6 +19,7 @@ alter table public.conta_exclusao_solicitacoes enable row level security;
 
 -- Self lê a própria solicitação (banner). Admin global também. SEM policy de
 -- insert/update/delete p/ authenticated → escrita só via service role (backend).
+drop policy if exists conta_exclusao_select_self on public.conta_exclusao_solicitacoes;
 create policy conta_exclusao_select_self
   on public.conta_exclusao_solicitacoes
   for select
