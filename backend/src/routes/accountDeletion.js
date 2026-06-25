@@ -69,17 +69,20 @@ router.post("/deletion-request", requireUser, async (req, res) => {
     try {
       if (mailerConfigured()) {
         const dataFmt = new Date(saved.agendado_para).toLocaleDateString("pt-BR");
-        await sendEmail({
+        // sendEmail nunca lança (retorna { ok, reason }); logar a falha (best-effort).
+        const ownerMail = await sendEmail({
           to: PRIVACY_EMAIL,
           subject: "Solicitação de exclusão de conta (LGPD)",
           html: `<p>O usuário <strong>${escapeHtml(email || user.id)}</strong> (id ${escapeHtml(user.id)}) solicitou a exclusão da conta.</p><p>Agendada para <strong>${escapeHtml(dataFmt)}</strong>. Processar via runbook (docs/account-deletion-runbook.md).</p>`,
         });
+        if (!ownerMail.ok) console.warn("[accountDeletion] e-mail (owner) falhou:", ownerMail.reason);
         if (email) {
-          await sendEmail({
+          const userMail = await sendEmail({
             to: email,
             subject: "Recebemos sua solicitação de exclusão de conta",
             html: `<p>Recebemos seu pedido para excluir sua conta da Gest Miles.</p><p>Ela será excluída em <strong>${escapeHtml(dataFmt)}</strong>. Se mudar de ideia, entre no app e clique em "Cancelar exclusão" antes dessa data.</p>`,
           });
+          if (!userMail.ok) console.warn("[accountDeletion] e-mail (usuário) falhou:", userMail.reason);
         }
       } else {
         console.warn("[accountDeletion] e-mail não configurado; solicitação registrada sem envio.");
