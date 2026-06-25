@@ -90,6 +90,14 @@ describe("gatherUserData", () => {
     expect(calls.eq).toContainEqual(["csat_avaliacoes", "cliente_id", "u-1"]);
     expect(calls.eq).toContainEqual(["alertas_sistema", "cliente_id", "u-1"]);
     expect(calls.eq).toContainEqual(["mensagens_contato", "cliente_usuario_id", "u-1"]);
+
+    // Fronteira de segurança: `perfis` NUNCA via select("*") (vazaria stripe_*/
+    // subscription_*/admin_level) — usa a allowlist de colunas pessoais.
+    const perfilSelect = calls.select.find(([t]) => t === "perfis")?.[1] as string | undefined;
+    expect(perfilSelect).toBeDefined();
+    expect(perfilSelect).not.toBe("*");
+    expect(perfilSelect).toContain("cpf");
+    expect(perfilSelect).not.toContain("stripe");
   });
 
   it("NUNCA consulta a tabela de credenciais cifradas", async () => {
