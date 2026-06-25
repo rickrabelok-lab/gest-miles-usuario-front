@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 const mocks = vi.hoisted(() => ({
   signUpWithPassword: vi.fn(),
   signInWithGoogle: vi.fn(),
+  resendConfirmation: vi.fn(),
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -13,6 +14,7 @@ vi.mock("@/contexts/AuthContext", () => ({
     loading: false,
     signUpWithPassword: mocks.signUpWithPassword,
     signInWithGoogle: mocks.signInWithGoogle,
+    resendConfirmation: mocks.resendConfirmation,
   }),
 }));
 vi.mock("@/lib/supabase", () => ({ isSupabaseConfigured: true }));
@@ -50,5 +52,18 @@ describe("SignUp", () => {
     expect(google.disabled).toBe(true);
     fireEvent.click(screen.getByRole("checkbox"));
     expect(google.disabled).toBe(false);
+  });
+
+  it("cadastro sem sessão (Confirm email ON) mostra reenviar e reenvia a confirmação", async () => {
+    mocks.signUpWithPassword.mockResolvedValue(false); // sem sessão imediata
+    mocks.resendConfirmation.mockResolvedValue(undefined);
+    renderPage();
+    fillValid();
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /criar conta/i }));
+
+    const reenviar = await screen.findByRole("button", { name: /reenviar e-mail de confirmação/i });
+    fireEvent.click(reenviar);
+    expect(mocks.resendConfirmation).toHaveBeenCalledWith("a@b.com");
   });
 });

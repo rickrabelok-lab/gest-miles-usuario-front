@@ -6,18 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import { isEmailNotConfirmedError } from "@/lib/authErrors";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromInvite = searchParams.get("fromInvite") === "1";
-  const { user, loading, signInWithGoogle, signInWithPassword } = useAuth();
+  const { user, loading, signInWithGoogle, signInWithPassword, resendConfirmation } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [pendingAction, setPendingAction] = useState<"login" | "google" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   const isValidEmail = useMemo(
     () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
@@ -69,16 +71,36 @@ const Auth = () => {
     setPending(true);
     setPendingAction("login");
     setMessage(null);
+    setNeedsConfirmation(false);
     try {
       const ok = await signInWithPassword(email.trim(), password);
       setMessage("Login realizado com sucesso.");
       if (ok) navigate("/me");
     } catch (error) {
       console.warn("[Auth] login senha:", error);
-      setMessage(formatAuthError(error));
+      if (isEmailNotConfirmedError(error)) {
+        setNeedsConfirmation(true);
+        setMessage("Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada (e o spam).");
+      } else {
+        setMessage(formatAuthError(error));
+      }
     } finally {
       setPending(false);
       setPendingAction(null);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!isValidEmail) return;
+    setPending(true);
+    try {
+      await resendConfirmation(email.trim());
+      setMessage("Reenviamos o e-mail de confirmação. Verifique a caixa de entrada e o spam.");
+    } catch (error) {
+      console.warn("[Auth] reenvio de confirmação:", error);
+      setMessage("Não foi possível reenviar agora. Tente novamente em alguns instantes.");
+    } finally {
+      setPending(false);
     }
   };
 
@@ -158,6 +180,17 @@ const Auth = () => {
         <p className="text-center text-xs leading-relaxed text-nubank-text-secondary" role="status">
           {message}
         </p>
+      )}
+      {needsConfirmation && (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full rounded-[16px] border-nubank-border bg-white text-[15px] font-semibold text-nubank-text shadow-sm transition-colors hover:bg-nubank-bg"
+          disabled={pending || !isValidEmail}
+          onClick={() => void handleResend()}
+        >
+          Reenviar e-mail de confirmação
+        </Button>
       )}
       <p className="text-center text-sm text-nubank-text-secondary">
         Não tem uma conta?{" "}
