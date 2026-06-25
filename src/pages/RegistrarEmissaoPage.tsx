@@ -32,9 +32,11 @@ const PROGRAMAS = [
 const RegistrarEmissaoPage = () => {
   const navigate = useNavigate();
   const { user, role } = useAuth();
-  const { resumoClientes } = useGestor();
 
   const showClienteField = role === "gestor" || role === "admin" || role === "cs";
+  // Só busca a carteira do gestor quando o seletor de cliente aparece (staff).
+  // Para um cliente, `enabled=false` evita uma query cliente_gestores inútil (volta vazia).
+  const { resumoClientes } = useGestor(showClienteField);
 
   const [clienteId, setClienteId] = useState<string>("");
   const [programa, setPrograma] = useState<string>("");
