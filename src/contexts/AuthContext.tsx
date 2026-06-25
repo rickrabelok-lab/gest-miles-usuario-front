@@ -31,6 +31,8 @@ type AuthContextValue = {
   roleError: string | null;
   signInWithPassword: (email: string, password: string) => Promise<boolean>;
   signUpWithPassword: (email: string, password: string) => Promise<boolean>;
+  /** Reenvia o e-mail de confirmação de cadastro (quando o "Confirm email" do GoTrue está ligado). */
+  resendConfirmation: (email: string) => Promise<void>;
   signInWithMagicLink: (email: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -242,10 +244,22 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      // Pra onde o link de confirmação volta quando o "Confirm email" está ligado.
+      // Mesmo destino do magic link / OAuth (/me faz o bootstrap pós-auth).
+      options: { emailRedirectTo: `${window.location.origin}/me` },
     });
     if (error) throw error;
     // true when session is created immediately (email confirmation disabled).
     return Boolean(data.session);
+  }, []);
+
+  const resendConfirmation = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/me` },
+    });
+    if (error) throw error;
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
@@ -280,6 +294,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       roleError,
       signInWithPassword,
       signUpWithPassword,
+      resendConfirmation,
       signInWithMagicLink,
       signInWithGoogle,
       signOut,
@@ -297,6 +312,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       roleError,
       signInWithPassword,
       signUpWithPassword,
+      resendConfirmation,
       signInWithMagicLink,
       signInWithGoogle,
       signOut,

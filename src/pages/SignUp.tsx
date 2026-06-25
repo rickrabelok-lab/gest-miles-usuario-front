@@ -16,7 +16,7 @@ const SignUp = () => {
   const [searchParams] = useSearchParams();
   const fromInvite = searchParams.get("fromInvite") === "1";
   const refCode = searchParams.get("ref");
-  const { user, loading, signUpWithPassword, signInWithGoogle } = useAuth();
+  const { user, loading, signUpWithPassword, resendConfirmation, signInWithGoogle } = useAuth();
 
   // Captura o código de indicação (?ref=) antes do cadastro/OAuth; a atribuição
   // acontece após /me (só para conta nova). Ver Me.tsx + indicacao_registrar_self.
@@ -33,6 +33,7 @@ const SignUp = () => {
   const [pendingAction, setPendingAction] = useState<"signup" | "google" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const isValidEmail = useMemo(
     () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()),
@@ -99,7 +100,8 @@ const SignUp = () => {
         setMessage("Conta criada com sucesso. Entrando");
         navigate("/me");
       } else {
-        setMessage("Conta criada. Verifique seu e-mail de confirmação para continuar.");
+        setAwaitingConfirmation(true);
+        setMessage("Conta criada. Enviamos um e-mail de confirmação — confirme para continuar.");
       }
     } catch (error) {
       console.warn("[SignUp] cadastro senha:", error);
@@ -107,6 +109,21 @@ const SignUp = () => {
     } finally {
       setPending(false);
       setPendingAction(null);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!isValidEmail) return;
+    setPending(true);
+    setMessage(null);
+    try {
+      await resendConfirmation(email.trim());
+      setMessage("Reenviamos o e-mail de confirmação. Verifique a caixa de entrada e o spam.");
+    } catch (error) {
+      console.warn("[SignUp] reenvio de confirmação:", error);
+      setMessage("Não foi possível reenviar agora. Tente novamente em alguns instantes.");
+    } finally {
+      setPending(false);
     }
   };
 
@@ -228,6 +245,17 @@ const SignUp = () => {
         <p className="text-center text-xs leading-relaxed text-nubank-text-secondary" role="status">
           {message}
         </p>
+      )}
+      {awaitingConfirmation && (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full rounded-[16px] border-nubank-border bg-white text-[15px] font-semibold text-nubank-text shadow-sm transition-colors hover:bg-nubank-bg"
+          disabled={pending || !isValidEmail}
+          onClick={() => void handleResend()}
+        >
+          Reenviar e-mail de confirmação
+        </Button>
       )}
       <p className="text-center text-sm text-nubank-text-secondary">
         Já tem uma conta?{" "}
