@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Bell, ClipboardList, LogIn, RotateCcw, Star, TrendingUp, Zap, ThumbsUp } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ArrowDownCircle, ArrowLeftRight, ArrowUpCircle, Bell, ClipboardList, LogIn, RotateCcw, Star, TrendingUp, Zap, ThumbsUp } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -111,6 +111,12 @@ export default function ClientTimelineSection({
         return LogIn;
       case "ATUALIZACAO_CONTA":
         return TrendingUp;
+      case "MOVIMENTO_ENTRADA":
+        return ArrowDownCircle;
+      case "MOVIMENTO_SAIDA":
+        return ArrowUpCircle;
+      case "TRANSFERENCIA":
+        return ArrowLeftRight;
       default:
         return Zap;
     }
@@ -138,6 +144,9 @@ export default function ClientTimelineSection({
     TAREFA: "Tarefa",
     LOGIN: "Login",
     ATUALIZACAO_CONTA: "Atualização conta",
+    MOVIMENTO_ENTRADA: "Entrada",
+    MOVIMENTO_SAIDA: "Saída",
+    TRANSFERENCIA: "Transferência",
   };
 
   const hasAnyFilter = tipoEvento !== "all" || gestorId !== "all" || !!startDate || !!endDate;
@@ -162,6 +171,8 @@ export default function ClientTimelineSection({
                 {(
                   [
                     "EMISSAO",
+                    "MOVIMENTO_ENTRADA",
+                    "TRANSFERENCIA",
                     "NPS",
                     "CSAT",
                     "ALERTA",
@@ -262,6 +273,51 @@ export default function ClientTimelineSection({
           <ul className="space-y-2">
             {events.map((ev) => {
               const Icon = iconFor(ev.tipo_evento);
+              const meta = (ev.metadata ?? {}) as Record<string, unknown>;
+              /** Linha de detalhe do extrato (milhas ±, programa, rota) por tipo. */
+              let metaLine: ReactNode = null;
+              if (ev.tipo_evento === "MOVIMENTO_ENTRADA") {
+                const milhas = Number(meta.milhas);
+                const programa = meta.programa ? String(meta.programa) : null;
+                if (milhas > 0) {
+                  metaLine = (
+                    <p className="mt-1 text-[11px]">
+                      <span className="font-semibold text-green-600">
+                        +{milhas.toLocaleString("pt-BR")} milhas
+                      </span>
+                      {programa && <span className="text-muted-foreground"> · {programa}</span>}
+                    </p>
+                  );
+                }
+              } else if (ev.tipo_evento === "TRANSFERENCIA") {
+                const nomeOrigem = meta.nomeOrigem ? String(meta.nomeOrigem) : null;
+                const nomeDestino = meta.nomeDestino ? String(meta.nomeDestino) : null;
+                const creditado = Number(meta.creditado);
+                if (nomeOrigem && nomeDestino) {
+                  metaLine = (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {nomeOrigem} → {nomeDestino}
+                      {creditado > 0 && (
+                        <>
+                          {" · "}
+                          <span className="font-semibold text-green-600">
+                            +{creditado.toLocaleString("pt-BR")} milhas
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  );
+                }
+              } else if (ev.tipo_evento === "EMISSAO") {
+                const milhasUtilizadas = Number(meta.milhas_utilizadas);
+                if (milhasUtilizadas > 0) {
+                  metaLine = (
+                    <p className="mt-1 text-[11px] text-amber-600">
+                      -{milhasUtilizadas.toLocaleString("pt-BR")} milhas
+                    </p>
+                  );
+                }
+              }
               return (
                 <li
                   key={ev.id}
@@ -279,6 +335,7 @@ export default function ClientTimelineSection({
                       <div className="min-w-0">
                         <p className="text-[12px] font-semibold text-foreground">{ev.titulo}</p>
                         <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{ev.descricao}</p>
+                        {metaLine}
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
