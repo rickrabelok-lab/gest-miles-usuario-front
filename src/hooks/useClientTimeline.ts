@@ -10,7 +10,10 @@ export type TimelineEventoTipo =
   | "ALERTA"
   | "TAREFA"
   | "LOGIN"
-  | "ATUALIZACAO_CONTA";
+  | "ATUALIZACAO_CONTA"
+  | "MOVIMENTO_ENTRADA"
+  | "MOVIMENTO_SAIDA"
+  | "TRANSFERENCIA";
 
 export type TimelineEventRow = {
   id: string;
