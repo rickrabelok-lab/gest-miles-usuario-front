@@ -190,79 +190,71 @@ const SearchFlightsScreen = () => {
 
   return (
     <div className="min-h-screen bg-nubank-bg">
-      <header className="sticky top-0 z-40 border-b border-nubank-border bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-nubank-text-secondary hover:bg-nubank-bg"
-          >
-            <ArrowLeft size={20} strokeWidth={1.5} />
-          </button>
-          <h1 className="text-base font-semibold tracking-tight text-nubank-text">
-            Passagens
-          </h1>
-          <div className="w-9" />
-        </div>
+      <header className="mx-auto max-w-md px-5 pt-4">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-nubank-text">
+          Passagens
+        </h1>
+        <p className="mt-0.5 text-[13px] text-nubank-text-secondary">
+          Busque com pontos, dinheiro ou os dois
+        </p>
       </header>
 
-      <main className="mx-auto max-w-md px-4 pb-44 pt-5">
-        <div className="space-y-3">
+      <main className="mx-auto max-w-md px-5 pb-44 pt-4">
+        <div className="space-y-3.5">
 
           {/* Trip type */}
-          <div className="flex rounded-[14px] bg-white p-1 shadow-nubank">
+          <div className="flex rounded-[16px] bg-[#EDECEF] p-1">
             {(["roundtrip", "oneway"] as const).map((type) => (
               <button
                 key={type}
                 type="button"
                 onClick={() => { setTripType(type); if (type === "oneway") setReturnDate(null) }}
-                className={`flex-1 rounded-[10px] py-2.5 text-sm font-medium transition-all ${
+                className={`flex-1 rounded-[13px] py-2.5 text-[13.5px] transition-all ${
                   tripType === type
-                    ? "bg-nubank-primary text-white shadow-sm"
-                    : "text-nubank-text-secondary hover:text-nubank-text"
+                    ? "bg-white font-semibold text-nubank-text shadow-[0_1px_4px_rgba(24,6,38,0.08)]"
+                    : "font-medium text-nubank-text-secondary"
                 }`}
               >
-                {type === "roundtrip" ? "✈ Ida e volta" : "→ Somente ida"}
+                {type === "roundtrip" ? "Ida e volta" : "Somente ida"}
               </button>
             ))}
           </div>
 
           {/* Route */}
-          <div className="relative rounded-[18px] bg-white px-4 shadow-nubank">
+          <div className="relative rounded-[20px] bg-white shadow-nubank-card">
             <button
               type="button"
               onClick={() => setAirportPickerTarget("origin")}
-              className="flex w-full items-center gap-3 py-3.5"
+              className="flex w-full items-center gap-3 py-4 pl-4 pr-[72px]"
             >
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-purple-50 text-nubank-primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[13px] bg-nubank-tint text-nubank-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 21h20"/><path d="M3.5 13.5 2 9l2-.6 3.2 2.8 5.8-1.9L8.5 2.6l2.4-.7 6.8 6.2 3.9-1.2c1-.3 2.1.3 2.4 1.3.3 1-.3 2-1.3 2.4L4.6 15z"/>
                 </svg>
               </div>
-              <div className="flex-1 text-left">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">Origem</p>
-                <p className={`mt-0.5 text-[15px] font-semibold ${origin ? "text-nubank-text" : "text-nubank-border"}`}>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">Origem</p>
+                <p className={`mt-0.5 truncate text-[15.5px] font-semibold ${origin ? "text-nubank-text" : "text-[#A9A8AE]"}`}>
                   {origin ? formatAirportLabel(origin) : "De onde você sai?"}
                 </p>
               </div>
             </button>
 
-            <div className="h-px bg-nubank-border" />
+            <div className="ml-[68px] mr-4 h-px bg-[#F1F0F3]" />
 
             <button
               type="button"
               onClick={() => setAirportPickerTarget("destination")}
-              className="flex w-full items-center gap-3 py-3.5"
+              className="flex w-full items-center gap-3 py-4 pl-4 pr-[72px]"
             >
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-green-50 text-green-600">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[13px] bg-success-soft text-success-strong">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 21s7-5.4 7-11a7 7 0 0 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>
                 </svg>
               </div>
-              <div className="flex-1 text-left">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">Destino</p>
-                <p className={`mt-0.5 text-[15px] font-semibold ${destination ? "text-nubank-text" : "text-nubank-border"}`}>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">Destino</p>
+                <p className={`mt-0.5 truncate text-[15.5px] font-semibold ${destination ? "text-nubank-text" : "text-[#A9A8AE]"}`}>
                   {destination ? formatAirportLabel(destination) : "Para onde?"}
                 </p>
               </div>
@@ -272,90 +264,74 @@ const SearchFlightsScreen = () => {
               type="button"
               onClick={swapOriginDestination}
               aria-label="Trocar origem e destino"
-              className="absolute right-4 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-nubank-border bg-white text-nubank-primary shadow-sm hover:bg-purple-50"
+              className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-nubank-border bg-white text-nubank-primary shadow-[0_2px_8px_rgba(24,6,38,0.08)] transition-colors hover:bg-nubank-tint"
             >
-              <ArrowLeftRight size={15} strokeWidth={2} />
+              <ArrowLeftRight size={17} strokeWidth={2} />
             </button>
           </div>
 
-          {/* Dates */}
+          {/* Dates + Quem vai */}
           <div className="flex gap-2.5">
             <button
               type="button"
               onClick={() => openDatePicker("departure")}
-              className="flex-1 rounded-[14px] bg-white px-4 py-3 text-left shadow-nubank"
+              className="min-w-0 flex-1 rounded-[18px] bg-white px-3.5 py-3 text-left shadow-nubank-card"
             >
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">✈ Ida</p>
-              {departureDate ? (
-                <>
-                  <p className="mt-1 text-[14px] font-semibold text-nubank-text">{fmt(departureDate)}</p>
-                  <p className="mt-0.5 text-[11px] capitalize text-nubank-text-secondary">{fmtDay(departureDate)}</p>
-                </>
-              ) : (
-                <p className="mt-1 text-[13px] font-medium text-nubank-border">Selecionar data</p>
-              )}
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">Ida</p>
+              <p className={`mt-1 truncate text-[14px] font-semibold ${departureDate ? "text-nubank-text" : "text-[#A9A8AE]"}`}>
+                {departureDate ? fmt(departureDate) : "Data"}
+              </p>
             </button>
 
             {tripType === "roundtrip" && (
               <button
                 type="button"
                 onClick={() => openDatePicker("return")}
-                className={`flex-1 rounded-[14px] bg-white px-4 py-3 text-left shadow-nubank ${
-                  returnDate ? "border border-nubank-primary" : ""
-                }`}
+                className="min-w-0 flex-1 rounded-[18px] bg-white px-3.5 py-3 text-left shadow-nubank-card"
               >
                 <div className="flex items-center justify-between">
-                  <p className={`text-[10px] font-semibold uppercase tracking-wider ${
-                    returnDate ? "text-nubank-primary" : "text-nubank-text-secondary"
-                  }`}>↩ Volta</p>
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">Volta</p>
                   {returnDate && (
-                    <button
-                      type="button"
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Limpar data de volta"
                       onClick={(e) => { e.stopPropagation(); setReturnDate(null) }}
-                      className="text-nubank-text-secondary hover:text-nubank-text"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setReturnDate(null) }
+                      }}
+                      className="-mr-1 text-nubank-text-secondary hover:text-nubank-text"
                     >
                       <X size={13} />
-                    </button>
+                    </span>
                   )}
                 </div>
-                {returnDate ? (
-                  <>
-                    <p className="mt-1 text-[14px] font-semibold text-nubank-text">{fmt(returnDate)}</p>
-                    <p className="mt-0.5 text-[11px] capitalize text-nubank-primary">{fmtDay(returnDate)}</p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-[13px] font-medium text-nubank-border">Selecionar data</p>
-                )}
+                <p className={`mt-1 truncate text-[14px] font-semibold ${returnDate ? "text-nubank-text" : "text-[#A9A8AE]"}`}>
+                  {returnDate ? fmt(returnDate) : "Data"}
+                </p>
               </button>
             )}
-          </div>
 
-          {/* Passengers */}
-          <button
-            type="button"
-            onClick={() => setIsPassengersDrawerOpen(true)}
-            className="flex w-full items-center justify-between rounded-[14px] bg-white px-4 py-3.5 shadow-nubank hover:bg-nubank-bg"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-xl">👤</span>
-              <div className="text-left">
-                <p className="text-[14px] font-semibold text-nubank-text">{passengerSummary}</p>
-                <p className="text-[11px] capitalize text-nubank-text-secondary">
-                  {cabinClass === "executiva" ? "Executiva" : "Econômica"}
-                </p>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-nubank-border" strokeWidth={1.5} />
-          </button>
+            <button
+              type="button"
+              onClick={() => setIsPassengersDrawerOpen(true)}
+              title={passengerSummary}
+              className="min-w-0 flex-1 rounded-[18px] bg-white px-3.5 py-3 text-left shadow-nubank-card"
+            >
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">Quem vai</p>
+              <p className="mt-1 truncate text-[14px] font-semibold text-nubank-text">
+                {passengers.adult + passengers.child + passengers.baby} ·{" "}
+                {cabinClass === "executiva" ? "Exec." : "Econ."}
+              </p>
+            </button>
+          </div>
 
           {/* Payment mode */}
           <div>
-            <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">
-              Forma de pagamento
-            </p>
-            <div className="flex rounded-[14px] bg-white p-1 shadow-nubank">
+            <p className="section-label px-0.5">Pagar com</p>
+            <div className="flex gap-2">
               {([
-                { id: "both",   label: "Pts + R$" },
+                { id: "both",   label: "Pontos + R$" },
                 { id: "points", label: "Pontos"   },
                 { id: "money",  label: "Dinheiro"  },
               ] as const).map((m) => (
@@ -363,10 +339,10 @@ const SearchFlightsScreen = () => {
                   key={m.id}
                   type="button"
                   onClick={() => setPaymentMode(m.id)}
-                  className={`flex-1 rounded-[10px] py-2.5 text-[12px] font-medium transition-all ${
+                  className={`flex-1 rounded-[14px] py-3 text-[13px] font-semibold transition-all ${
                     paymentMode === m.id
-                      ? "bg-nubank-primary text-white font-semibold shadow-sm"
-                      : "text-nubank-text-secondary"
+                      ? "bg-nubank-text text-white"
+                      : "border border-nubank-border bg-white text-[#54535A] hover:bg-nubank-bg"
                   }`}
                 >
                   {m.label}
@@ -377,11 +353,9 @@ const SearchFlightsScreen = () => {
 
           {/* Airlines */}
           <div>
-            <div className="mb-1.5 flex items-center justify-between px-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">
-                Companhias Aéreas
-              </p>
-              <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-nubank-primary">
+            <div className="flex items-baseline justify-between px-0.5">
+              <p className="section-label mb-2.5">Companhias</p>
+              <span className="text-[12.5px] font-semibold text-primary">
                 {selectedAirlines.length} selecionada{selectedAirlines.length !== 1 ? "s" : ""}
               </span>
             </div>
@@ -393,14 +367,14 @@ const SearchFlightsScreen = () => {
                     key={airline.id}
                     type="button"
                     onClick={() => toggleAirline(airline.id)}
-                    className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-2 text-[12px] font-medium transition-all ${
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition-all ${
                       active
-                        ? "border-nubank-primary bg-purple-50 text-nubank-primary"
-                        : "border-nubank-border bg-white text-nubank-text-secondary"
+                        ? "border-[#E5CCF2] bg-nubank-tint text-nubank-dark"
+                        : "border-nubank-border bg-white text-[#54535A] hover:bg-nubank-bg"
                     }`}
                   >
                     <span
-                      className="inline-block h-2 w-2 rounded-full"
+                      className="inline-block h-[7px] w-[7px] rounded-full"
                       style={{ background: active ? airline.color : "#d1c4e0" }}
                     />
                     {airline.label}
@@ -522,13 +496,6 @@ const SearchFlightsScreen = () => {
 
           {/* Destinos */}
           <div className="pt-2">
-            <div className="mb-3 flex items-center">
-              <div className="h-px flex-1 bg-nubank-border" />
-              <span className="mx-3 text-[10px] font-semibold uppercase tracking-wider text-nubank-text-secondary">
-                Explorar destinos
-              </span>
-              <div className="h-px flex-1 bg-nubank-border" />
-            </div>
             <DestinationCarousel
               origins={origin ? [origin.code] : []}
               onDestinationClick={handleDestinationCardClick}
@@ -539,20 +506,26 @@ const SearchFlightsScreen = () => {
       </main>
 
       {/* Fixed CTA */}
-      <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-[100] flex flex-col border-t border-nubank-border bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto w-full max-w-md px-4 pt-3 pb-2">
+      <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-[100] flex flex-col border-t border-[#F1F0F3] bg-white/95 backdrop-blur-sm">
+        <div className="mx-auto w-full max-w-md px-5 pb-2 pt-3">
           <Button
             type="button"
             aria-disabled={!canSearch}
             onClick={handleSearch}
             className={cn(
-              "h-13 w-full rounded-[16px] text-[15px] font-semibold text-white shadow-lg",
-              !canSearch && "opacity-40",
+              "h-[54px] w-full gap-2 rounded-[18px] text-[15.5px] font-bold text-white",
+              canSearch
+                ? "shadow-[0_6px_18px_-4px_rgba(138,5,190,0.5)]"
+                : "opacity-40 shadow-none",
             )}
-            style={{ background: canSearch ? "linear-gradient(135deg,#8A05BE,#9E2FD4)" : "#d1c4e0" }}
+            style={{
+              background: canSearch
+                ? "linear-gradient(135deg,#8A05BE,#9E2FD4 50%,#B56CFF)"
+                : "#d1c4e0",
+            }}
           >
-            <Search size={17} className="mr-2" strokeWidth={2.5} />
-            Pesquisar passagens
+            <Search size={19} strokeWidth={2} />
+            Buscar voos
           </Button>
         </div>
         <BottomNav showClientSelector={isGestor} clients={[]} />
