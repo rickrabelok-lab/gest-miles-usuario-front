@@ -86,24 +86,32 @@ const ProgramCard = (props: ProgramCardProps) => {
   const useCuratedAirline = !logoImageUrl && Boolean(curatedAirline);
   const hasBrandImage = Boolean(logoImageUrl) || useCuratedAirline;
 
+  // Badge de vencimento no canto (design 2a): -30d urgente, -60d atenção, -90d informativo.
+  const expiringBadgeClass =
+    expiringTag === "-30d"
+      ? "bg-destructive-soft text-destructive-strong"
+      : expiringTag === "-60d"
+        ? "bg-warning-soft text-warning-strong"
+        : "bg-info-soft text-info-strong";
+
   return (
     <div
-      className="relative cursor-pointer rounded-xl border border-[#EBEBEB] bg-white p-3 text-nubank-text outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/20 active:scale-[0.99]"
+      className="relative cursor-pointer rounded-[18px] bg-white p-3.5 text-nubank-text shadow-nubank-card outline-none transition-all duration-300 ease-out hover:shadow-nubank-hover focus-visible:ring-2 focus-visible:ring-primary/20 active:scale-[0.99]"
       role="button"
       tabIndex={0}
       onClick={handleOpenDetails}
       onKeyDown={handleKeyDown}
     >
-      {expiring && (
-        <div className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-white shadow-sm" />
+      {expiring && !expiringTag && (
+        <div className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive ring-2 ring-white shadow-sm" />
       )}
 
-      <div className="mb-1.5 flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div
           className={
             hasBrandImage
-              ? "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5 ring-1 ring-black/[0.06]"
-              : "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[11px] font-bold ring-1 ring-black/[0.04]"
+              ? "flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-nubank-border bg-white p-0.5"
+              : "flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-xl text-[11px] font-bold ring-1 ring-black/[0.04]"
           }
           style={
             hasBrandImage
@@ -127,36 +135,33 @@ const ProgramCard = (props: ProgramCardProps) => {
           )}
         </div>
 
-        {variation === "up" && (
-          <span className="rounded bg-green-50 px-1.5 py-0.5 text-[8px] font-bold text-green-700">↑</span>
-        )}
-        {variation === "down" && (
-          <span className="rounded bg-red-50 px-1.5 py-0.5 text-[8px] font-bold text-red-600">↓</span>
-        )}
-        {variation === "none" && (
-          <span className="rounded bg-gray-50 px-1.5 py-0.5 text-[8px] font-bold text-gray-300">—</span>
-        )}
+        {expiringTag ? (
+          <span className={`rounded-full px-2 py-1 text-[10.5px] font-bold leading-none ${expiringBadgeClass}`}>
+            {expiringTag.replace("-", "")}
+          </span>
+        ) : variation === "up" ? (
+          <span className="rounded-full bg-success-soft px-2 py-1 text-[10.5px] font-bold leading-none text-success-strong">↑</span>
+        ) : variation === "down" ? (
+          <span className="rounded-full bg-destructive-soft px-2 py-1 text-[10.5px] font-bold leading-none text-destructive-strong">↓</span>
+        ) : null}
       </div>
 
-      <div className="mb-1 font-extrabold tabular-nums leading-tight tracking-tight text-gray-900" style={{ fontSize: "15px" }}>
+      <div className="mt-2.5 truncate text-[12.5px] font-semibold leading-tight text-nubank-text">
+        {name}
+      </div>
+
+      <div className="mt-0.5 font-display text-lg font-bold tabular-nums leading-tight tracking-tight text-nubank-text">
         {balance}
       </div>
 
-      <div className="leading-tight text-gray-400" style={{ fontSize: "9px" }}>
-        R$ {valueInBRL} · {lastUpdate}
+      <div className="mt-0.5 text-[11.5px] font-medium tabular-nums leading-tight text-nubank-text-secondary">
+        ≈ R$ {valueInBRL} <span className="text-[9.5px] font-normal opacity-70">· {lastUpdate}</span>
       </div>
 
       {error && (
-        <div className="mt-1 flex items-center justify-between gap-1 rounded-lg bg-black/[0.03] px-1.5 py-1 text-[10px] text-nubank-text-secondary">
-          <div className="flex items-center gap-0.5">
-            <AlertCircle size={10} />
-            <span className="truncate">{error}</span>
-          </div>
-          {expiringTag && (
-            <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[9px] font-semibold text-destructive">
-              {expiringTag}
-            </span>
-          )}
+        <div className="mt-1.5 flex items-center gap-1 rounded-lg bg-black/[0.03] px-1.5 py-1 text-[10px] text-nubank-text-secondary">
+          <AlertCircle size={10} className="shrink-0" />
+          <span className="truncate">{error}</span>
         </div>
       )}
     </div>

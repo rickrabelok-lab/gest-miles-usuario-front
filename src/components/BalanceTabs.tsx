@@ -46,7 +46,7 @@ const BalanceTabs = ({
   });
 
   return (
-    <div className="flex overflow-x-auto border-b border-gray-200 px-5 scrollbar-hide">
+    <div className="flex overflow-x-auto border-b border-[#F1F0F3] px-5 scrollbar-hide">
       {visibleTabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
@@ -55,10 +55,10 @@ const BalanceTabs = ({
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`-mb-px flex shrink-0 items-center justify-center gap-1 border-b-2 px-3 py-2.5 text-[11px] font-medium transition-colors ${
+            className={`-mb-px flex shrink-0 items-center justify-center gap-1 border-b-2 px-3 py-3 text-[12px] transition-colors ${
               isActive
                 ? "border-[#8A05BE] font-bold text-[#8A05BE]"
-                : "border-transparent text-gray-400 hover:text-gray-600"
+                : "border-transparent font-medium text-[#8E8D93] hover:text-nubank-text"
             }`}
           >
             {Icon ? (
