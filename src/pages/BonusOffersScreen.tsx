@@ -1,6 +1,7 @@
 // src/pages/BonusOffersScreen.tsx
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { BONUS_PROMOTIONS_SOURCE_NOTICE, BonusCategory } from '@/lib/bonusMockData'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
 import { TransferBonusSection } from '@/components/bonus/TransferBonusSection'
@@ -41,40 +42,40 @@ export default function BonusOffersScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f7f8]">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg">
       {/* Header */}
-      <div
-        className="px-4 py-3 flex items-center gap-3"
-        style={{ background: 'linear-gradient(135deg, #8A05BE 0%, #9E2FD4 100%)' }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          className="text-white text-xl font-light leading-none"
-        >
-          ←
-        </button>
-        <div>
-          <h1 className="text-white font-bold text-base leading-tight">Promoções Bonificadas</h1>
-          <p className="text-white/70 text-[10px]">
-            {activeCount} ativas
-            {expiringToday > 0 ? ` · ${expiringToday} encerram hoje` : ''}
-          </p>
+      <div className="flex items-center justify-between gap-3 px-5 pb-1 pt-4">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Voltar"
+            className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-nubank-border bg-white text-nubank-text transition-colors hover:bg-nubank-bg"
+          >
+            <ArrowLeft size={19} strokeWidth={2} />
+          </button>
+          <h1 className="font-display text-xl font-bold tracking-tight text-nubank-text">
+            Bônus
+          </h1>
         </div>
+        <span className="rounded-full bg-nubank-tint px-3 py-1.5 text-[11.5px] font-semibold leading-none text-nubank-dark">
+          {activeCount} ativas
+          {expiringToday > 0 ? ` · ${expiringToday} encerram hoje` : ''}
+        </span>
       </div>
 
       {/* Pills */}
       <div
-        className="sticky top-0 z-10 flex gap-2 overflow-x-auto bg-white px-4 py-2.5 shadow-sm border-b border-[#f0e8ff]"
-        style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+        className="sticky top-0 z-10 flex gap-2 overflow-x-auto bg-nubank-bg/95 px-5 py-2.5 backdrop-blur-sm scrollbar-hide"
       >
         {PILLS.map(pill => (
           <button
             key={pill.id}
             onClick={() => handlePillClick(pill.id)}
-            className={`flex-shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+            className={`flex-shrink-0 rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors ${
               activePill === pill.id
                 ? 'bg-primary text-white'
-                : 'bg-[#f0e8ff] text-primary'
+                : 'bg-[#F1F0F3] text-[#54535A] hover:bg-white'
             }`}
           >
             {pill.label}
@@ -83,9 +84,9 @@ export default function BonusOffersScreen() {
       </div>
 
       {/* Content */}
-      <div className="px-4 pt-4 pb-24">
-        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-          <p className="text-[11px] font-semibold leading-snug text-amber-800">
+      <div className="px-5 pt-2 pb-24">
+        <div className="mb-4 rounded-[16px] bg-warning-soft px-4 py-3">
+          <p className="text-[11.5px] font-medium leading-snug text-warning-strong">
             {BONUS_PROMOTIONS_SOURCE_NOTICE}
           </p>
         </div>
