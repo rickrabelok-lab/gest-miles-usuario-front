@@ -6,11 +6,11 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "gradient-primary text-primary-foreground shadow-[0_2px_8px_-2px_rgba(138,5,190,0.25)] hover:opacity-95 hover:shadow-[0_4px_16px_-2px_rgba(138,5,190,0.3)] active:scale-[0.98]",
+          "gradient-primary text-primary-foreground shadow-[0_4px_14px_-4px_rgba(138,5,190,0.45)] hover:opacity-95 hover:shadow-[0_6px_18px_-4px_rgba(138,5,190,0.5)] active:scale-[0.98]",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline: "border border-nubank-border bg-white hover:bg-nubank-bg hover:border-primary/25 active:scale-[0.98]",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        secondary: "bg-primary-soft text-primary-strong hover:bg-primary/15 active:scale-[0.98]",
+        ghost: "text-primary hover:bg-primary-soft",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

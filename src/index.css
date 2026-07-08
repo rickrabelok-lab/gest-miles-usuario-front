@@ -23,31 +23,46 @@
     --secondary-foreground: 0 0% 12%;
 
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 42%;
+    --muted-foreground: 250 3% 44%;
 
     --accent: 283 95% 38%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 55%;
+    --destructive: 4 74% 49%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 60% 42%;
+    --success: 151 67% 37%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
 
+    --info: 218 80% 46%;
+    --info-foreground: 0 0% 100%;
+
+    /* Tintas semânticas (design system v2): fundos suaves + texto forte p/ badges e ícones de extrato */
+    --success-soft: #E7F6EE;
+    --success-strong: #157F4F;
+    --warning-soft: #FDF0DC;
+    --warning-strong: #B45309;
+    --destructive-soft: #FDECEA;
+    --destructive-strong: #B42318;
+    --info-soft: #EAF1FD;
+    --info-strong: #175CD3;
+    --primary-soft: #F6EDFB;
+    --primary-strong: #6A00A3;
+
     --border: 0 0% 92%;
     --input: 0 0% 92%;
     --ring: 283 95% 38%;
 
-    --radius: 0.875rem;
+    --radius: 1rem;
 
     --header-bg: 283 95% 38%;
     --header-foreground: 0 0% 100%;
 
-    --card-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04), 0 4px 16px -4px rgba(0, 0, 0, 0.03);
-    --card-shadow-hover: 0 8px 24px -4px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(138, 5, 190, 0.05);
+    --card-shadow: 0 2px 8px -2px rgba(24, 6, 38, 0.05);
+    --card-shadow-hover: 0 8px 24px -4px rgba(24, 6, 38, 0.08), 0 4px 12px -2px rgba(138, 5, 190, 0.06);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 12%;
@@ -98,14 +113,28 @@
     --accent: 283 95% 45%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 45%;
+    --destructive: 4 65% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 55% 45%;
+    --success: 151 55% 42%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 85% 50%;
     --warning-foreground: 0 0% 100%;
+
+    --info: 218 70% 52%;
+    --info-foreground: 0 0% 100%;
+
+    --success-soft: rgba(31, 157, 97, 0.16);
+    --success-strong: #43C98A;
+    --warning-soft: rgba(246, 168, 35, 0.16);
+    --warning-strong: #F6B94F;
+    --destructive-soft: rgba(217, 45, 32, 0.16);
+    --destructive-strong: #F0715F;
+    --info-soft: rgba(23, 92, 211, 0.18);
+    --info-strong: #6EA0F0;
+    --primary-soft: rgba(138, 5, 190, 0.18);
+    --primary-strong: #C88AF5;
 
     --border: 0 0% 20%;
     --input: 0 0% 20%;
@@ -155,7 +184,7 @@
   }
   h3 {
     font-family: 'Space Grotesk', sans-serif;
-    @apply text-lg font-semibold;
+    @apply text-base font-semibold;
   }
   h4, h5, h6 {
     font-family: 'Space Grotesk', sans-serif;
@@ -168,13 +197,13 @@
     @apply px-5 py-4;
   }
   .section-label {
-    @apply mb-2 text-[11px] font-medium uppercase tracking-widest text-nubank-text-secondary;
+    @apply mb-2 text-[11px] font-semibold uppercase tracking-widest text-nubank-text-secondary;
   }
   .section-label-lg {
     @apply mb-2 text-lg font-bold tracking-tight text-nubank-text;
   }
   .card-premium {
-    @apply rounded-[18px] bg-white transition-all duration-300 ease-out;
+    @apply rounded-[20px] bg-white transition-all duration-300 ease-out;
     box-shadow: var(--card-shadow);
   }
   .card-premium:hover {
