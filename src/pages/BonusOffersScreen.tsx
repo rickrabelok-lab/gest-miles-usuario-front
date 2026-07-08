@@ -11,10 +11,10 @@ import { CardBonusSection } from '@/components/bonus/CardBonusSection'
 
 const PILLS: { id: BonusCategory | 'all'; label: string }[] = [
   { id: 'all', label: 'Tudo' },
-  { id: 'transfer', label: '🔄 Transferências' },
-  { id: 'shopping', label: '🛍 Compras' },
-  { id: 'miles', label: '✈️ Milhas' },
-  { id: 'cards', label: '💳 Cartões' },
+  { id: 'transfer', label: 'Transferências' },
+  { id: 'shopping', label: 'Compras' },
+  { id: 'miles', label: 'Milhas' },
+  { id: 'cards', label: 'Cartões' },
 ]
 
 export default function BonusOffersScreen() {
@@ -59,8 +59,10 @@ export default function BonusOffersScreen() {
           </h1>
         </div>
         <span className="rounded-full bg-nubank-tint px-3 py-1.5 text-[11.5px] font-semibold leading-none text-nubank-dark">
-          {activeCount} ativas
-          {expiringToday > 0 ? ` · ${expiringToday} encerram hoje` : ''}
+          {activeCount} {activeCount === 1 ? 'ativa' : 'ativas'}
+          {expiringToday > 0
+            ? ` · ${expiringToday} ${expiringToday === 1 ? 'encerra' : 'encerram'} hoje`
+            : ''}
         </span>
       </div>
 
