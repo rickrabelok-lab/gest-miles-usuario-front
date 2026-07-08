@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, Crown, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch, getApiUrl, hasApiUrl } from "@/services/api";
+
+/** Recursos liberados no plano pago (gates RequirePaid do app). */
+const RECURSOS_PLUS = [
+  "Calendário de preços por milheiro",
+  "Ofertas de bônus de transferência",
+  "Simulador de compra de milhas",
+  "Radar de oportunidades personalizado",
+];
 
 type PlanRow = {
   id: string;
@@ -199,26 +204,27 @@ const AssinaturaClientePage = () => {
 
   if (!hasApiUrl()) {
     return (
-      <div className="mx-auto max-w-lg p-6">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="mb-4 -ml-1 h-8 px-2 text-xs text-muted-foreground"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
-        </Button>
-        <Card>
-          <CardHeader>
-            <CardTitle>Assinatura indisponível</CardTitle>
-            <CardDescription>
-              A contratação de planos está temporariamente indisponível. Tente novamente mais tarde ou fale com o
-              suporte da GestMiles.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="mx-auto min-h-screen max-w-md bg-nubank-bg p-5">
+        <div className="flex items-center gap-2.5 pt-1">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Voltar"
+            className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-nubank-border bg-white text-nubank-text transition-colors hover:bg-nubank-bg"
+          >
+            <ArrowLeft size={19} strokeWidth={2} />
+          </button>
+          <h1 className="font-display text-xl font-bold tracking-tight text-nubank-text">
+            Assinatura
+          </h1>
+        </div>
+        <div className="mt-5 rounded-[20px] bg-white p-5 shadow-nubank-card">
+          <p className="text-[15px] font-semibold text-nubank-text">Assinatura indisponível</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-nubank-text-secondary">
+            A contratação de planos está temporariamente indisponível. Tente novamente mais tarde
+            ou fale com o suporte da GestMiles.
+          </p>
+        </div>
       </div>
     );
   }
@@ -230,109 +236,136 @@ const AssinaturaClientePage = () => {
   const subscriptionStateBlocked = !!token && !!meError;
   const checkoutBlocked = !!token && (loadingMe || !!meError || managedSubscription);
 
+  const statusBadge = loadingMe
+    ? "Carregando…"
+    : status
+      ? ({
+          active: "Ativa",
+          trialing: "Período de teste",
+          past_due: "Pagamento pendente",
+          unpaid: "Pagamento pendente",
+          paused: "Pausada",
+          canceled: "Cancelada",
+        }[String(status).toLowerCase()] ?? status)
+      : "Gratuito";
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4 pb-24 md:p-8">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="-ml-1 h-8 px-2 text-xs text-muted-foreground"
-        onClick={() => navigate(-1)}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Voltar
-      </Button>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Planos e assinatura</h1>
-        <p className="text-sm text-muted-foreground">
-          Escolha um plano para acessar as funcionalidades incluídas. O pagamento é processado de forma segura pelo
-          Stripe.
-        </p>
+    <div className="mx-auto min-h-screen max-w-md space-y-3.5 bg-nubank-bg p-5 pb-24">
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Voltar"
+          className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-nubank-border bg-white text-nubank-text transition-colors hover:bg-nubank-bg"
+        >
+          <ArrowLeft size={19} strokeWidth={2} />
+        </button>
+        <h1 className="font-display text-xl font-bold tracking-tight text-nubank-text">
+          Assinatura
+        </h1>
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="rounded-[14px] bg-destructive-soft px-4 py-3 text-[13px] font-medium text-destructive-strong">
           {error}
         </div>
       )}
 
       {token ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Sua assinatura</CardTitle>
-            <CardDescription>
-              {loadingMe
-                ? "Carregando estado..."
-                : meError
-                  ? "Não foi possível carregar o estado da assinatura agora."
-                  : status
-                  ? `Estado: ${status}${periodEnd ? ` · Próxima renovação: ${new Date(periodEnd).toLocaleString("pt-BR")}` : ""}`
-                  : "Sem assinatura ativa registrada."}
-            </CardDescription>
-          </CardHeader>
+        <div className="rounded-[20px] bg-white p-4 shadow-nubank-card">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[15px] font-semibold text-nubank-text">Seu plano hoje</span>
+            <span className="rounded-full bg-[#F1F0F3] px-3 py-1.5 text-[11.5px] font-semibold leading-none text-[#54535A]">
+              {statusBadge}
+            </span>
+          </div>
+          <p className="mt-2 text-[13px] leading-relaxed text-nubank-text-secondary">
+            {loadingMe
+              ? "Carregando estado da assinatura…"
+              : meError
+                ? "Não foi possível carregar o estado da assinatura agora."
+                : status
+                  ? periodEnd
+                    ? `Próxima renovação: ${new Date(periodEnd).toLocaleDateString("pt-BR")}.`
+                    : "Assinatura registrada."
+                  : "Saldos, extrato, alertas de vencimento e busca de passagens — sempre grátis."}
+          </p>
           {meError ? (
-            <CardContent className="space-y-3 text-sm text-destructive">
-              <p>{meError}</p>
-              <Button type="button" variant="outline" size="sm" onClick={() => void loadMe()}>
-                Tentar novamente
-              </Button>
-            </CardContent>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => void loadMe()}
+            >
+              Tentar novamente
+            </Button>
           ) : null}
           {hasCustomer ? (
-            <CardFooter>
-              <Button type="button" variant="outline" disabled={busySlug === "__portal__"} onClick={() => void openPortal()}>
-                Gerenciar cobrança e método de pagamento
-              </Button>
-            </CardFooter>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3 w-full"
+              disabled={busySlug === "__portal__"}
+              onClick={() => void openPortal()}
+            >
+              Gerenciar cobrança e método de pagamento
+            </Button>
           ) : null}
-        </Card>
+        </div>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Label className="text-sm font-medium">Faturação</Label>
-        <RadioGroup
-          className="flex gap-4"
-          value={interval}
-          onValueChange={(v) => setInterval(v as "month" | "year")}
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="month" id="int-m" />
-            <Label htmlFor="int-m" className="font-normal">
-              Mensal
-            </Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="year" id="int-y" />
-            <Label htmlFor="int-y" className="font-normal">
-              Anual
-            </Label>
-          </div>
-        </RadioGroup>
+      <div className="flex rounded-[16px] bg-[#EDECEF] p-1">
+        {(
+          [
+            { value: "month", label: "Mensal" },
+            { value: "year", label: "Anual" },
+          ] as const
+        ).map((opt) => {
+          const active = interval === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setInterval(opt.value)}
+              className={`flex-1 rounded-[13px] py-2.5 text-center text-[13.5px] transition-all ${
+                active
+                  ? "bg-white font-semibold text-nubank-text shadow-[0_1px_4px_rgba(24,6,38,0.08)]"
+                  : "font-medium text-nubank-text-secondary"
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
 
       {loadingPlans ? (
-        <p className="text-sm text-muted-foreground">Carregando planos...</p>
+        <p className="px-1 text-[13px] text-nubank-text-secondary">Carregando planos...</p>
       ) : plansError ? (
-        <div className="space-y-3 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-3 text-sm text-destructive">
+        <div className="space-y-3 rounded-[16px] bg-destructive-soft px-4 py-3.5 text-[13px] text-destructive-strong">
           <p>{plansError}</p>
           <Button type="button" variant="outline" size="sm" onClick={() => void loadPlans()}>
             Tentar novamente
           </Button>
         </div>
       ) : subscriptionStateBlocked ? (
-        <div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+        <div className="space-y-3 rounded-[16px] bg-warning-soft px-4 py-3.5 text-[13px] text-warning-strong">
           <p>
-            Não conseguimos confirmar sua assinatura atual. Recarregue antes de contratar para evitar cobrança duplicada.
+            Não conseguimos confirmar sua assinatura atual. Recarregue antes de contratar para
+            evitar cobrança duplicada.
           </p>
           <Button type="button" variant="outline" size="sm" onClick={() => void loadMe()}>
             Recarregar assinatura
           </Button>
         </div>
       ) : managedSubscription ? (
-        <div className="space-y-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-900">
+        <div className="space-y-3 rounded-[16px] bg-success-soft px-4 py-3.5 text-[13px] text-success-strong">
           <p>
-            Você já tem uma assinatura em andamento. Use o portal de cobrança para trocar plano, método de pagamento ou
-            regularizar pendências.
+            Você já tem uma assinatura em andamento. Use o portal de cobrança para trocar plano,
+            método de pagamento ou regularizar pendências.
           </p>
           {hasCustomer ? (
             <Button
@@ -347,56 +380,81 @@ const AssinaturaClientePage = () => {
           ) : null}
         </div>
       ) : plans.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Não há planos ativos. Volte mais tarde ou fale com o suporte.</p>
+        <p className="px-1 text-[13px] text-nubank-text-secondary">
+          Não há planos ativos. Volte mais tarde ou fale com o suporte.
+        </p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-3.5">
           {plans.map((plan) => {
             const canBuy =
               interval === "month"
                 ? !!plan.stripe_price_id_monthly
                 : !!plan.stripe_price_id_yearly;
             return (
-              <Card key={plan.id} className="flex flex-col">
-                <CardHeader>
-                  <CardTitle>{plan.name}</CardTitle>
-                  {plan.description ? (
-                    <CardDescription className="line-clamp-4">{plan.description}</CardDescription>
-                  ) : null}
-                </CardHeader>
-                <CardContent className="flex-1 text-sm text-muted-foreground">
-                  {canBuy ? (
-                    <p>
-                      {interval === "month" ? "Cobrança mensal" : "Cobrança anual"} - o valor exato é confirmado no
-                      checkout.
-                    </p>
-                  ) : (
-                    <p>Este plano não está disponível para cobrança {interval === "month" ? "mensal" : "anual"}.</p>
-                  )}
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    className="w-full"
-                    disabled={!token || !canBuy || checkoutBlocked || busySlug === plan.slug}
-                    onClick={() => void checkout(plan)}
-                  >
-                    {busySlug === plan.slug
-                      ? "Redirecionando..."
-                      : loadingMe
-                        ? "Confirmando assinatura..."
-                        : managedSubscription
-                          ? "Gerencie pelo portal"
-                          : "Assinar"}
-                  </Button>
-                </CardFooter>
-              </Card>
+              <div
+                key={plan.id}
+                className="rounded-3xl border-[1.5px] border-[#E5CCF2] bg-white p-5 shadow-[0_8px_24px_-8px_rgba(138,5,190,0.15)]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-10 w-10 flex-none items-center justify-center rounded-[13px] bg-nubank-tint text-nubank-primary">
+                    <Crown size={19} strokeWidth={1.9} aria-hidden />
+                  </span>
+                  <span className="font-display text-[19px] font-bold tracking-tight text-nubank-text">
+                    {plan.name}
+                  </span>
+                </div>
+                <p className="mt-3 text-[13px] leading-relaxed text-nubank-text-secondary">
+                  {plan.description?.trim()
+                    ? plan.description
+                    : canBuy
+                      ? `Cobrança ${interval === "month" ? "mensal" : "anual"} — o valor exato é confirmado no checkout.`
+                      : `Este plano não está disponível para cobrança ${interval === "month" ? "mensal" : "anual"}.`}
+                </p>
+                <div className="mt-4 flex flex-col gap-2.5">
+                  {RECURSOS_PLUS.map((recurso) => (
+                    <span key={recurso} className="flex items-center gap-2.5">
+                      <span className="flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full bg-nubank-tint text-nubank-primary">
+                        <Check size={12} strokeWidth={3} aria-hidden />
+                      </span>
+                      <span className="text-[13.5px] font-medium text-nubank-text">{recurso}</span>
+                    </span>
+                  ))}
+                </div>
+                <Button
+                  className="mt-5 h-[52px] w-full rounded-[18px] text-[15px] font-bold"
+                  disabled={!token || !canBuy || checkoutBlocked || busySlug === plan.slug}
+                  onClick={() => void checkout(plan)}
+                >
+                  {busySlug === plan.slug
+                    ? "Redirecionando..."
+                    : loadingMe
+                      ? "Confirmando assinatura..."
+                      : managedSubscription
+                        ? "Gerencie pelo portal"
+                        : `Assinar ${plan.name}`}
+                </Button>
+                <p className="mt-2.5 text-center text-[11.5px] text-nubank-text-secondary/70">
+                  Pagamento via Stripe · cancele quando quiser
+                </p>
+              </div>
             );
           })}
         </div>
       )}
 
+      <div className="flex items-center gap-3 rounded-[20px] bg-white px-4 py-3.5 shadow-nubank-card">
+        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-[13px] bg-success-soft text-success-strong">
+          <ShieldCheck size={18} strokeWidth={1.75} aria-hidden />
+        </span>
+        <p className="text-[12.5px] leading-relaxed text-nubank-text-secondary">
+          Cliente assessorado por agência? Seu plano é ativado pela sua equipe — sem custo extra
+          aqui.
+        </p>
+      </div>
+
       {!token ? (
-        <p className="text-center text-sm text-muted-foreground">
-          <a href="/auth" className="text-primary underline">
+        <p className="text-center text-[13px] text-nubank-text-secondary">
+          <a href="/auth" className="font-semibold text-primary hover:underline">
             Faça login
           </a>{" "}
           para assinar.
