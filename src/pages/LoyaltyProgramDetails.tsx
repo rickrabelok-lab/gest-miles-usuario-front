@@ -892,7 +892,7 @@ const LoyaltyProgramDetails = () => {
   }, [custoRealEmissaoMilhasETaxas, emitTarifaPagante]);
 
   const corClassificacao =
-    classificacaoEmissao === "vantajosa" ? "text-emerald-400" : "text-red-400";
+    classificacaoEmissao === "vantajosa" ? "text-success" : "text-destructive";
 
   const handleSalvarSaida = () => {
     if (emitMilhas <= 0) {
@@ -999,48 +999,57 @@ const LoyaltyProgramDetails = () => {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-100 text-slate-900">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-nubank-bg text-nubank-text">
       {/* Header */}
-      <header className="bg-header text-header-foreground">
-        <div className="flex items-center justify-between px-4 pb-3 pt-4">
+      <header className="px-5 pb-3 pt-4">
+        <div className="flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-header-foreground/15 text-header-foreground ring-1 ring-header-foreground/25"
+            aria-label="Voltar"
+            className="flex h-11 w-11 flex-none items-center justify-center rounded-[16px] border border-nubank-border bg-white text-nubank-text transition-colors hover:bg-nubank-bg"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={19} strokeWidth={2} />
           </button>
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="text-[10px] uppercase tracking-[0.18em] text-header-foreground/70">
-              Programa
-            </span>
-            <span className="max-w-[170px] truncate text-sm font-semibold tracking-tight">
-              {programName}
-            </span>
+          <span className="min-w-0 truncate px-1 text-center font-display text-base font-semibold tracking-tight text-nubank-text">
+            {programName}
+          </span>
+          <div className="flex flex-none items-center gap-2">
+            <button
+              type="button"
+              onClick={handleAtualizarTela}
+              className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-nubank-border bg-white text-[#54535A] transition-colors hover:bg-nubank-bg"
+              aria-label="Recarregar página"
+              title="Recarregar"
+            >
+              <RefreshCw size={17} strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              onClick={handleResetarTodosSaldos}
+              className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-destructive-soft text-destructive-strong transition-colors hover:bg-destructive/15"
+              aria-label="Resetar todos os saldos"
+              title="Resetar saldos"
+            >
+              <Trash2 size={17} strokeWidth={1.75} />
+            </button>
+          </div>
+        </div>
+        {(managerClientId || saveSyncState !== "synced") && (
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
             {managerClientId && (
-              <>
-                <span className="rounded-full bg-header-foreground/15 px-2 py-0.5 text-[10px] text-header-foreground">
-                  {`Visualizando como ${roleViewLabel}`}
-                </span>
-                {managerClientName && (
-                  <span className="max-w-[200px] truncate text-[10px] text-header-foreground/85">
-                    {managerClientName}
-                  </span>
-                )}
-              </>
-            )}
-            {programId && (
-              <span className="text-[10px] text-header-foreground/70">
-                #{programId}
+              <span className="rounded-full bg-nubank-tint px-2.5 py-1 text-[10.5px] font-semibold leading-none text-nubank-dark">
+                {`Visualizando como ${roleViewLabel}`}
+                {managerClientName ? ` · ${managerClientName}` : ""}
               </span>
             )}
             {saveSyncState !== "synced" && (
               <span
                 className={cn(
-                  "rounded-full px-2 py-0.5 text-[10px] ring-1",
+                  "rounded-full px-2.5 py-1 text-[10.5px] font-semibold leading-none",
                   saveSyncState === "saving"
-                    ? "bg-header-foreground/15 text-header-foreground ring-header-foreground/25"
-                    : "bg-amber-100 text-amber-800 ring-amber-200",
+                    ? "bg-[#F1F0F3] text-[#54535A]"
+                    : "bg-warning-soft text-warning-strong",
                 )}
               >
                 {saveSyncState === "saving"
@@ -1049,56 +1058,36 @@ const LoyaltyProgramDetails = () => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleAtualizarTela}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-header-foreground/15 text-header-foreground ring-1 ring-header-foreground/25"
-              aria-label="Recarregar página"
-              title="Recarregar"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleResetarTodosSaldos}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-header-foreground/15 text-header-foreground ring-1 ring-header-foreground/25"
-              aria-label="Resetar todos os saldos"
-              title="Resetar saldos"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        )}
       </header>
 
       <Tabs defaultValue="resumo" className="flex flex-1 flex-col">
-        <TabsList className="mx-4 mb-3 grid grid-cols-3 rounded-full border border-slate-300 bg-slate-100 p-1 text-xs">
-          <TabsTrigger value="resumo" className="rounded-full text-slate-700 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
-            Resumo
-          </TabsTrigger>
-          <TabsTrigger value="extrato" className="rounded-full text-slate-700 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
-            Extrato
-          </TabsTrigger>
-          <TabsTrigger value="analise" className="rounded-full text-slate-700 data-[state=active]:bg-slate-900 data-[state=active]:text-white">
-            Análise
-          </TabsTrigger>
+        <TabsList className="mx-5 mb-3 grid h-auto grid-cols-3 rounded-[16px] bg-[#EDECEF] p-1 text-xs">
+          {(["resumo", "extrato", "analise"] as const).map((tab) => (
+            <TabsTrigger
+              key={tab}
+              value={tab}
+              className="rounded-[13px] py-2 text-[13px] font-medium text-nubank-text-secondary data-[state=active]:bg-white data-[state=active]:font-semibold data-[state=active]:text-nubank-text data-[state=active]:shadow-[0_1px_4px_rgba(24,6,38,0.08)]"
+            >
+              {tab === "resumo" ? "Resumo" : tab === "extrato" ? "Extrato" : "Análise"}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {/* Resumo */}
         <TabsContent value="resumo" className="flex-1">
           <ScrollArea className="h-[calc(100vh-150px)] px-4 pb-6">
             {/* Card principal */}
-            <Card className="mb-3 rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-sm">
-              <CardContent className="p-4">
-                <div className="mb-3 flex items-start justify-between">
+            <Card className="mb-3 rounded-3xl border-0 bg-white shadow-nubank-card">
+              <CardContent className="p-5">
+                <div className="mb-4 flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700 ring-1 ring-cyan-200">
-                      <Plane className="h-5 w-5" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-nubank-tint text-nubank-primary">
+                      <Plane className="h-5 w-5" strokeWidth={1.75} />
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-600">
-                        Categoria
+                    <div className="space-y-0.5">
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                        Clube
                       </p>
                       <Workspaces
                         workspaces={programWorkspaces}
@@ -1108,9 +1097,9 @@ const LoyaltyProgramDetails = () => {
                         }
                       >
                         <WorkspaceTrigger
-                          className="text-xs font-semibold text-cyan-700"
+                          className="text-xs font-semibold text-nubank-dark"
                           renderTrigger={(workspace) => (
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-nubank-tint px-2.5 py-1 text-xs font-semibold leading-none text-nubank-dark">
                               {(workspace as ProgramWorkspace).name}
                             </span>
                           )}
@@ -1119,247 +1108,209 @@ const LoyaltyProgramDetails = () => {
                       </Workspaces>
                     </div>
                   </div>
-                  <div className="text-right text-[10px] text-slate-600">
+                  <div className="text-right text-[10px] text-muted-foreground">
                     <p>Atualização</p>
-                    <p className="font-medium text-slate-700">
-                      {updatedAtDisplay}
-                    </p>
+                    <p className="font-medium">{updatedAtDisplay}</p>
                   </div>
                 </div>
 
-                <div className="mb-4">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-600">
+                <div className="text-center">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                     Saldo de milhas
                   </p>
-                  <p className="mt-1 text-3xl font-semibold tracking-tight">
-                    {saldo.toLocaleString("pt-BR")}{" "}
-                    <span className="text-xs font-normal text-slate-600">
-                      milhas
-                    </span>
+                  <p className="mt-1 font-display text-[38px] font-bold tabular-nums leading-tight tracking-tight text-nubank-text">
+                    {saldo.toLocaleString("pt-BR")}
                   </p>
-                </div>
-
-                <div className="flex items-start justify-between rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                  <div>
-                    <p className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-600">
-                      Custo do saldo
-                      <Info className="h-3 w-3 text-slate-500" />
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-emerald-600">
+                  <div className="mt-3 flex flex-wrap justify-center gap-2">
+                    <span className="rounded-full border border-nubank-border bg-white px-3 py-1.5 text-[12.5px] font-semibold tabular-nums leading-none text-nubank-text">
+                      Custo{" "}
                       {custoTotal.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-slate-600">
-                      Custo real pago pelas milhas do saldo
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 text-right">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-200">
-                      <TrendingUp className="h-3 w-3" />
-                      Economia 12m{" "}
-                      {economiaRealUltimos12Meses.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                         maximumFractionDigits: 0,
                       })}
                     </span>
-                    <span className="text-[10px] text-slate-600">
-                      Custo médio:{" "}
+                    <span className="rounded-full border border-nubank-border bg-white px-3 py-1.5 text-[12.5px] font-semibold tabular-nums leading-none text-nubank-text">
+                      CPM{" "}
                       {custoMedioMilheiro.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
-                      })}{" "}
-                      / milheiro
+                      })}
                     </span>
+                    {economiaRealUltimos12Meses > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-3 py-1.5 text-[12.5px] font-semibold tabular-nums leading-none text-success-strong">
+                        <TrendingUp className="h-3 w-3" strokeWidth={2.4} />
+                        {economiaRealUltimos12Meses.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                          maximumFractionDigits: 0,
+                        })}{" "}
+                        · 12m
+                      </span>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Ações imediatamente abaixo do card estratégico */}
-            <div className="mb-4 grid grid-cols-2 gap-3">
+            <div className="mb-4 grid grid-cols-2 gap-2.5">
               <Button
                 type="button"
-                className="h-11 rounded-full bg-emerald-500 text-xs font-medium text-emerald-950 hover:bg-emerald-400"
+                className="h-[50px] rounded-[16px] text-sm font-semibold"
                 onClick={() => setEntradaOpen(true)}
               >
-                <Plus className="mr-1.5 h-4 w-4" />
-                Entrada de milhas
+                <Plus className="mr-1.5 h-4 w-4" strokeWidth={2.2} />
+                Entrada
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-full border-red-200 bg-red-50 text-xs font-medium text-red-700 hover:bg-red-100"
+                className="h-[50px] rounded-[16px] border-0 bg-destructive-soft text-sm font-semibold text-destructive-strong hover:bg-destructive/15"
                 onClick={() => setSaidaOpen(true)}
               >
-                <Minus className="mr-1.5 h-4 w-4" />
-                Saída de milhas
+                <Minus className="mr-1.5 h-4 w-4" strokeWidth={2.2} />
+                Saída
               </Button>
             </div>
 
             {/* Bloco financeiro */}
-            <Card className="mb-4 rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-sm">
-              <CardContent className="space-y-3 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-800">
-                    Inteligência de custo
-                  </span>
+            <div className="mb-4">
+              <p className="section-label px-0.5">Inteligência de custo</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-[18px] bg-white p-3.5 shadow-nubank-card">
+                  <p className="text-xs text-nubank-text-secondary">Custo do saldo</p>
+                  <p className="mt-1 font-display text-[19px] font-bold tabular-nums text-nubank-text">
+                    {custoTotal.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                      maximumFractionDigits: 0,
+                    })}
+                  </p>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="space-y-1 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                    <p className="text-[11px] text-slate-600">
-                      Custo médio por milheiro
-                    </p>
-                    <p className="text-base font-semibold text-amber-600">
-                      {custoMedioMilheiro.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      <span className="text-[10px] font-normal text-slate-600">
-                        / 1.000 milhas
-                      </span>
-                    </p>
-                  </div>
-                  <div className="space-y-1 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                    <p className="text-[11px] text-slate-600">
-                      Custo do saldo
-                    </p>
-                    <p className="text-base font-semibold text-slate-900">
-                      {custoTotal.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
-                  </div>
-                  <div className="space-y-1 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                    <p className="text-[11px] text-slate-600">
-                      Milhas vencendo nos próximos 30 dias
-                    </p>
-                    <p className="text-base font-semibold text-amber-600">
-                      {milhasVencendoUltimos30Dias.toLocaleString("pt-BR")}{" "}
-                      <span className="text-[10px] font-normal text-slate-600">
-                        milhas
-                      </span>
-                    </p>
-                  </div>
+                <div className="rounded-[18px] bg-white p-3.5 shadow-nubank-card">
+                  <p className="text-xs text-nubank-text-secondary">CPM médio pago</p>
+                  <p className="mt-1 font-display text-[19px] font-bold tabular-nums text-nubank-text">
+                    {custoMedioMilheiro.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </p>
                 </div>
-
-              </CardContent>
-            </Card>
-
-            {/* Pontos a vencer */}
-            <Card className="mb-4 rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <CardContent className="space-y-3 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-700">
-                    Pontos a vencer
-                  </span>
-                  <Calendar className="h-4 w-4 text-slate-500" />
+                <div className="rounded-[18px] bg-white p-3.5 shadow-nubank-card">
+                  <p className="text-xs text-nubank-text-secondary">Economia 12m</p>
+                  <p className="mt-1 font-display text-[19px] font-bold tabular-nums text-success-strong">
+                    {economiaRealUltimos12Meses.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                      maximumFractionDigits: 0,
+                    })}
+                  </p>
                 </div>
+                <div className="rounded-[18px] bg-white p-3.5 shadow-nubank-card">
+                  <p className="text-xs text-nubank-text-secondary">Vencendo em 30d</p>
+                  <p
+                    className={cn(
+                      "mt-1 font-display text-[19px] font-bold tabular-nums",
+                      milhasVencendoUltimos30Dias > 0
+                        ? "text-destructive-strong"
+                        : "text-nubank-text",
+                    )}
+                  >
+                    {milhasVencendoUltimos30Dias.toLocaleString("pt-BR")}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-                <div className="space-y-3">
-                  {pontosAVencer.length === 0 ? (
-                    <div className="rounded-2xl bg-slate-50 p-3 text-[11px] text-slate-500 ring-1 ring-slate-200">
-                      Nenhum lote com validade informado ainda.
-                    </div>
-                  ) : (
-                    pontosAVencer.map((ponto) => {
-                      const percentual = Math.min(
-                        100,
-                        Math.max(0, (1 - ponto.diasRestantes / 365) * 100),
-                      );
-                      const critico =
-                        ponto.diasRestantes >= 0 && ponto.diasRestantes < 90;
-                      const vencido = ponto.diasRestantes < 0;
-
-                      return (
-                        <div
-                          key={`${ponto.data}-${ponto.quantidade}`}
-                          className="space-y-1 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
-                        >
-                          <div className="flex items-center justify-between text-xs">
-                            <div>
-                              <p className="text-slate-700">{ponto.data}</p>
-                              <p className="text-[11px] text-slate-500">
-                                {vencido
-                                  ? `Venceu há ${Math.abs(ponto.diasRestantes)} dias`
-                                  : `Expira em ${ponto.diasRestantes} dias`}
-                              </p>
-                            </div>
-                            <p
-                              className={cn(
-                                "text-sm font-semibold",
-                                critico
-                                  ? "text-amber-700"
-                                  : vencido
-                                    ? "text-red-700"
-                                    : "text-slate-900",
-                              )}
-                            >
-                              {ponto.quantidade.toLocaleString("pt-BR")} pts
-                            </p>
-                          </div>
-                          <Progress
-                            value={percentual}
+            {/* Lotes a vencer */}
+            <div className="mb-4">
+              <p className="section-label px-0.5">Lotes a vencer</p>
+              <div className="rounded-[20px] bg-white py-1 shadow-nubank-card">
+                {pontosAVencer.length === 0 ? (
+                  <p className="px-4 py-4 text-[12.5px] text-nubank-text-secondary">
+                    Nenhum lote com validade informado ainda.
+                  </p>
+                ) : (
+                  pontosAVencer.map((ponto, idx) => {
+                    const vencido = ponto.diasRestantes < 0;
+                    const critico = ponto.diasRestantes >= 0 && ponto.diasRestantes <= 30;
+                    const atencao = ponto.diasRestantes > 30 && ponto.diasRestantes <= 90;
+                    const tintClass = vencido || critico
+                      ? "bg-destructive-soft text-destructive-strong"
+                      : atencao
+                        ? "bg-warning-soft text-warning-strong"
+                        : "bg-info-soft text-info-strong";
+                    return (
+                      <div key={`${ponto.data}-${ponto.quantidade}`}>
+                        {idx > 0 && <div className="mx-3.5 h-px bg-[#F1F0F3]" />}
+                        <div className="flex items-center gap-3 px-3.5 py-3">
+                          <span
                             className={cn(
-                              "h-1.5 bg-slate-200",
-                              (critico || vencido) && "bg-red-950 [&>*]:bg-red-500",
+                              "flex h-10 w-10 flex-none items-center justify-center rounded-[13px]",
+                              tintClass,
                             )}
-                          />
-                          {critico && (
-                            <p className="text-[10px] font-medium text-amber-700">
-                              Alerta: menos de 90 dias para expirar.
-                            </p>
-                          )}
+                          >
+                            <Calendar size={18} strokeWidth={1.75} aria-hidden />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-display text-sm font-semibold tabular-nums text-nubank-text">
+                              {ponto.quantidade.toLocaleString("pt-BR")} milhas
+                            </span>
+                            <span className="block text-xs text-nubank-text-secondary">
+                              {vencido ? "venceu em" : "vencem em"} {ponto.data}
+                            </span>
+                          </span>
+                          <span
+                            className={cn(
+                              "flex-none rounded-full px-2.5 py-1 text-[11px] font-bold leading-none",
+                              tintClass,
+                            )}
+                          >
+                            {vencido
+                              ? `há ${Math.abs(ponto.diasRestantes)}d`
+                              : `${ponto.diasRestantes} dias`}
+                          </span>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </ScrollArea>
         </TabsContent>
 
         {/* Extrato */}
         <TabsContent value="extrato" className="flex-1">
-          <div className="flex items-center justify-between px-4 pb-2 pt-1 text-xs text-slate-400">
+          <div className="flex items-center justify-between px-4 pb-2 pt-1 text-xs text-muted-foreground">
             <div className="flex gap-2">
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] text-slate-600"
+                className="inline-flex items-center gap-1 rounded-full border border-nubank-border bg-white px-3 py-1 text-[11px] text-nubank-text-secondary"
               >
                 <Filter className="h-3 w-3" />
                 Período
               </button>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] text-slate-600"
+                className="inline-flex items-center gap-1 rounded-full border border-nubank-border bg-white px-3 py-1 text-[11px] text-nubank-text-secondary"
               >
                 Tipo
               </button>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] text-slate-600"
+                className="inline-flex items-center gap-1 rounded-full border border-nubank-border bg-white px-3 py-1 text-[11px] text-nubank-text-secondary"
               >
                 Emissões lucrativas
               </button>
             </div>
           </div>
           <ScrollArea className="h-[calc(100vh-150px)] px-4 pb-6">
-            <Card className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <CardContent className="divide-y divide-slate-200 p-0">
+            <Card className="rounded-[20px] border-0 bg-white shadow-nubank-card">
+              <CardContent className="divide-y divide-[#F1F0F3] p-0">
                 {movimentos.length === 0 && (
-                  <div className="px-4 py-6 text-center text-xs text-slate-400">
+                  <div className="px-4 py-6 text-center text-xs text-muted-foreground">
                     Nenhuma movimentação registrada ainda.
                   </div>
                 )}
@@ -1374,24 +1325,24 @@ const LoyaltyProgramDetails = () => {
                     className="flex w-full items-center gap-3 px-4 py-3 text-left text-xs"
                   >
                     <div className="w-16">
-                      <p className="text-[11px] text-slate-400">{mov.data}</p>
+                      <p className="text-[11px] text-muted-foreground">{mov.data}</p>
                       <p
                         className={cn(
                           "mt-0.5 text-xs font-semibold",
                           mov.tipo === "entrada"
-                            ? "text-emerald-700"
-                            : "text-red-700",
+                            ? "text-success-strong"
+                            : "text-destructive-strong",
                         )}
                       >
                         {mov.tipo === "entrada" ? "Entrada" : "Saída"}
                       </p>
                     </div>
                     <div className="flex-1">
-                      <p className="text-[12px] text-slate-900">
+                      <p className="text-[12px] text-nubank-text">
                         {mov.descricao}
                       </p>
                       {mov.tipo === "saida" && mov.codigoReserva && (
-                        <p className="mt-0.5 text-[10px] text-slate-500">
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">
                           Reserva: {mov.codigoReserva}
                         </p>
                       )}
@@ -1400,8 +1351,8 @@ const LoyaltyProgramDetails = () => {
                           className={cn(
                             "mt-0.5 text-[10px]",
                             mov.lucrativa
-                              ? "text-emerald-700"
-                              : "text-red-700",
+                              ? "text-success-strong"
+                              : "text-destructive-strong",
                           )}
                         >
                           {mov.lucrativa
@@ -1415,15 +1366,15 @@ const LoyaltyProgramDetails = () => {
                         className={cn(
                           "text-xs font-semibold",
                           mov.milhas >= 0
-                            ? "text-emerald-700"
-                            : "text-red-700",
+                            ? "text-success-strong"
+                            : "text-destructive-strong",
                         )}
                       >
                         {mov.milhas >= 0 ? "+" : "-"}{" "}
                         {Math.abs(mov.milhas).toLocaleString("pt-BR")}
                       </p>
                     </div>
-                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
                   </button>
                 ))}
               </CardContent>
@@ -1434,15 +1385,15 @@ const LoyaltyProgramDetails = () => {
         {/* Análise */}
         <TabsContent value="analise" className="flex-1">
           <ScrollArea className="h-[calc(100vh-150px)] px-4 pb-6">
-            <Card className="mb-4 rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <Card className="mb-4 rounded-[20px] border-0 bg-white shadow-nubank-card">
               <CardContent className="space-y-3 p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-700">
+                  <span className="text-xs font-medium text-nubank-text">
                     Evolução do saldo
                   </span>
-                  <BarChart3 className="h-4 w-4 text-slate-500" />
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <div className="h-24 rounded-2xl bg-slate-50 text-[11px] text-slate-500 ring-1 ring-slate-200">
+                <div className="h-24 rounded-2xl bg-nubank-bg text-[11px] text-muted-foreground">
                   <p className="p-3 text-sm text-muted-foreground">
                     Gráfico saldo vs. tempo — em breve (dados agregados do programa).
                   </p>
@@ -1450,15 +1401,15 @@ const LoyaltyProgramDetails = () => {
               </CardContent>
             </Card>
 
-            <Card className="mb-4 rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <Card className="mb-4 rounded-[20px] border-0 bg-white shadow-nubank-card">
               <CardContent className="space-y-3 p-4">
-                <span className="text-xs font-medium text-slate-700">
+                <span className="text-xs font-medium text-nubank-text">
                   Custo médio vs. valor obtido
                 </span>
-                <div className="space-y-2 text-[11px] text-slate-600">
+                <div className="space-y-2 text-[11px] text-nubank-text-secondary">
                   <p>
                     Custo médio atual:{" "}
-                    <span className="font-semibold text-slate-900">
+                    <span className="font-semibold text-nubank-text">
                       {custoMedioMilheiro.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
@@ -1468,7 +1419,7 @@ const LoyaltyProgramDetails = () => {
                   </p>
                   <p>
                     Melhor emissão recente (exemplo):{" "}
-                    <span className="font-semibold text-emerald-700">
+                    <span className="font-semibold text-success-strong">
                       R$ 34,00 / milheiro
                     </span>{" "}
                     {(((34 - custoMedioMilheiro) / custoMedioMilheiro) * 100).toFixed(
@@ -1480,27 +1431,27 @@ const LoyaltyProgramDetails = () => {
               </CardContent>
             </Card>
 
-            <Card className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <Card className="rounded-[20px] border-0 bg-white shadow-nubank-card">
               <CardContent className="space-y-3 p-4">
-                <span className="text-xs font-medium text-slate-700">
+                <span className="text-xs font-medium text-nubank-text">
                   Ranking das melhores emissões
                 </span>
                 <div className="space-y-2 text-[11px]">
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
+                  <div className="flex items-center justify-between rounded-2xl bg-nubank-bg px-3 py-2">
                     <div>
-                      <p className="text-slate-900">GRU – MCO Executiva</p>
-                      <p className="text-[10px] text-slate-500">
+                      <p className="text-nubank-text">GRU – MCO Executiva</p>
+                      <p className="text-[10px] text-muted-foreground">
                         {">"} R$ 34/milheiro • ROI +61%
                       </p>
                     </div>
-                    <Badge className="rounded-full bg-emerald-100 text-[10px] text-emerald-700 ring-1 ring-emerald-200">
+                    <Badge className="rounded-full bg-emerald-100 text-[10px] text-success-strong ring-1 ring-emerald-200">
                       Excelente uso
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
+                  <div className="flex items-center justify-between rounded-2xl bg-nubank-bg px-3 py-2">
                     <div>
-                      <p className="text-slate-900">GRU – SSA Econômica</p>
-                      <p className="text-[10px] text-slate-500">
+                      <p className="text-nubank-text">GRU – SSA Econômica</p>
+                      <p className="text-[10px] text-muted-foreground">
                         R$ 22/milheiro • ROI +15%
                       </p>
                     </div>
@@ -1508,14 +1459,14 @@ const LoyaltyProgramDetails = () => {
                       Uso moderado
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
+                  <div className="flex items-center justify-between rounded-2xl bg-nubank-bg px-3 py-2">
                     <div>
-                      <p className="text-slate-900">CGH – SDU Ponte aérea</p>
-                      <p className="text-[10px] text-slate-500">
+                      <p className="text-nubank-text">CGH – SDU Ponte aérea</p>
+                      <p className="text-[10px] text-muted-foreground">
                         R$ 15/milheiro • ROI -10%
                       </p>
                     </div>
-                    <Badge className="rounded-full bg-red-100 text-[10px] text-red-700 ring-1 ring-red-200">
+                    <Badge className="rounded-full bg-red-100 text-[10px] text-destructive-strong ring-1 ring-red-200">
                       Abaixo do custo
                     </Badge>
                   </div>
@@ -1528,30 +1479,30 @@ const LoyaltyProgramDetails = () => {
 
       {/* Modal entrada */}
       <Dialog open={movimentoDetalheOpen} onOpenChange={setMovimentoDetalheOpen}>
-        <DialogContent className="max-w-md border-slate-800 bg-slate-950 text-slate-100">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Detalhes da movimentação</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
+            <DialogDescription className="text-xs text-muted-foreground">
               Informações completas da movimentação selecionada.
             </DialogDescription>
           </DialogHeader>
           {movimentoSelecionado && (
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-slate-900 p-3">
-                  <p className="text-slate-400">Data</p>
-                  <p className="font-semibold text-slate-100">
+                <div className="rounded-xl bg-nubank-bg p-3">
+                  <p className="text-muted-foreground">Data</p>
+                  <p className="font-semibold text-nubank-text">
                     {movimentoSelecionado.data}
                   </p>
                 </div>
-                <div className="rounded-xl bg-slate-900 p-3">
-                  <p className="text-slate-400">Tipo</p>
+                <div className="rounded-xl bg-nubank-bg p-3">
+                  <p className="text-muted-foreground">Tipo</p>
                   <p
                     className={cn(
                       "font-semibold",
                       movimentoSelecionado.tipo === "entrada"
-                        ? "text-emerald-300"
-                        : "text-red-300",
+                        ? "text-success-strong"
+                        : "text-destructive-strong",
                     )}
                   >
                     {movimentoSelecionado.tipo === "entrada"
@@ -1561,21 +1512,21 @@ const LoyaltyProgramDetails = () => {
                 </div>
               </div>
 
-              <div className="rounded-xl bg-slate-900 p-3">
-                <p className="text-slate-400">Descrição</p>
-                <p className="font-semibold text-slate-100">
+              <div className="rounded-xl bg-nubank-bg p-3">
+                <p className="text-muted-foreground">Descrição</p>
+                <p className="font-semibold text-nubank-text">
                   {movimentoSelecionado.descricao}
                 </p>
               </div>
 
-              <div className="rounded-xl bg-slate-900 p-3">
-                <p className="text-slate-400">Milhas</p>
+              <div className="rounded-xl bg-nubank-bg p-3">
+                <p className="text-muted-foreground">Milhas</p>
                 <p
                   className={cn(
                     "font-semibold",
                     movimentoSelecionado.milhas >= 0
-                      ? "text-emerald-300"
-                      : "text-red-300",
+                      ? "text-success-strong"
+                      : "text-destructive-strong",
                   )}
                 >
                   {movimentoSelecionado.milhas >= 0 ? "+" : "-"}{" "}
@@ -1585,15 +1536,15 @@ const LoyaltyProgramDetails = () => {
 
               {movimentoSelecionado.tipo === "entrada" && (
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl bg-slate-900 p-3">
-                    <p className="text-slate-400">Tipo de entrada</p>
-                    <p className="font-semibold text-slate-100">
+                  <div className="rounded-xl bg-nubank-bg p-3">
+                    <p className="text-muted-foreground">Tipo de entrada</p>
+                    <p className="font-semibold text-nubank-text">
                       {movimentoSelecionado.entradaTipo ?? "-"}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-900 p-3">
-                    <p className="text-slate-400">Valor pago</p>
-                    <p className="font-semibold text-slate-100">
+                  <div className="rounded-xl bg-nubank-bg p-3">
+                    <p className="text-muted-foreground">Valor pago</p>
+                    <p className="font-semibold text-nubank-text">
                       {(movimentoSelecionado.valorPago ?? 0).toLocaleString(
                         "pt-BR",
                         {
@@ -1603,9 +1554,9 @@ const LoyaltyProgramDetails = () => {
                       )}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-900 p-3 col-span-2">
-                    <p className="text-slate-400">Validade do lote</p>
-                    <p className="font-semibold text-slate-100">
+                  <div className="rounded-xl bg-nubank-bg p-3 col-span-2">
+                    <p className="text-muted-foreground">Validade do lote</p>
+                    <p className="font-semibold text-nubank-text">
                       {movimentoSelecionado.validadeLote ?? "-"}
                     </p>
                   </div>
@@ -1614,39 +1565,39 @@ const LoyaltyProgramDetails = () => {
 
               {movimentoSelecionado.tipo === "saida" && (
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl bg-slate-900 p-3 col-span-2">
-                    <p className="text-slate-400">Código da reserva</p>
-                    <p className="font-semibold text-slate-100">
+                  <div className="rounded-xl bg-nubank-bg p-3 col-span-2">
+                    <p className="text-muted-foreground">Código da reserva</p>
+                    <p className="font-semibold text-nubank-text">
                       {movimentoSelecionado.codigoReserva ?? "-"}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-900 p-3">
-                    <p className="text-slate-400">Rota</p>
-                    <p className="font-semibold text-slate-100">
+                  <div className="rounded-xl bg-nubank-bg p-3">
+                    <p className="text-muted-foreground">Rota</p>
+                    <p className="font-semibold text-nubank-text">
                       {movimentoSelecionado.origem && movimentoSelecionado.destino
                         ? `${movimentoSelecionado.origem.toUpperCase()} - ${movimentoSelecionado.destino.toUpperCase()}`
                         : "-"}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-900 p-3">
-                    <p className="text-slate-400">Classe / Pax</p>
-                    <p className="font-semibold text-slate-100">
+                  <div className="rounded-xl bg-nubank-bg p-3">
+                    <p className="text-muted-foreground">Classe / Pax</p>
+                    <p className="font-semibold text-nubank-text">
                       {(movimentoSelecionado.classe ?? "-").toUpperCase()} /{" "}
                       {movimentoSelecionado.passageiros ?? "-"}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-900 p-3">
-                    <p className="text-slate-400">Taxas</p>
-                    <p className="font-semibold text-slate-100">
+                  <div className="rounded-xl bg-nubank-bg p-3">
+                    <p className="text-muted-foreground">Taxas</p>
+                    <p className="font-semibold text-nubank-text">
                       {(movimentoSelecionado.taxas ?? 0).toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                       })}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-900 p-3">
-                    <p className="text-slate-400">Tarifa pagante</p>
-                    <p className="font-semibold text-slate-100">
+                  <div className="rounded-xl bg-nubank-bg p-3">
+                    <p className="text-muted-foreground">Tarifa pagante</p>
+                    <p className="font-semibold text-nubank-text">
                       {(movimentoSelecionado.tarifaPagante ?? 0).toLocaleString(
                         "pt-BR",
                         {
@@ -1665,10 +1616,10 @@ const LoyaltyProgramDetails = () => {
 
       {/* Modal entrada */}
       <Dialog open={entradaOpen} onOpenChange={setEntradaOpen}>
-        <DialogContent className="max-w-md border-slate-800 bg-slate-950 text-slate-100">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Entrada de milhas</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
+            <DialogDescription className="text-xs text-muted-foreground">
               Registre compras, transferências, bônus ou ajustes. O custo médio
               será recalculado automaticamente.
             </DialogDescription>
@@ -1676,7 +1627,7 @@ const LoyaltyProgramDetails = () => {
 
           <div className="space-y-3 text-xs">
             <div>
-              <p className="mb-1 text-[11px] text-slate-300">Tipo</p>
+              <p className="mb-1 text-[11px] text-muted-foreground">Tipo</p>
               <div className="grid grid-cols-3 gap-1.5">
                 {["compra", "transferencia", "bonus", "clube", "ajuste"].map(
                   (tipo) => (
@@ -1687,8 +1638,8 @@ const LoyaltyProgramDetails = () => {
                       className={cn(
                         "rounded-full border px-2 py-1 capitalize",
                         entradaTipo === tipo
-                          ? "border-emerald-400 bg-emerald-500/10 text-emerald-200"
-                          : "border-slate-800 bg-slate-900 text-slate-300",
+                          ? "border-success/40 bg-success-soft text-success-strong"
+                          : "border-nubank-border bg-white text-nubank-text-secondary",
                       )}
                     >
                       {tipo}
@@ -1700,7 +1651,7 @@ const LoyaltyProgramDetails = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="mb-1 text-[11px] text-slate-300">
+                <p className="mb-1 text-[11px] text-muted-foreground">
                   Quantidade de milhas
                 </p>
                 <Input
@@ -1709,12 +1660,12 @@ const LoyaltyProgramDetails = () => {
                   onChange={(event) =>
                     setEntradaQuantidade(Number(event.target.value) || 0)
                   }
-                  className="no-spinner h-9 border-slate-800 bg-slate-900 text-xs"
+                  className="no-spinner h-9 text-xs"
                   min={0}
                 />
               </div>
               <div>
-                <p className="mb-1 text-[11px] text-slate-300">
+                <p className="mb-1 text-[11px] text-muted-foreground">
                   Valor pago (R$)
                 </p>
                 <Input
@@ -1723,15 +1674,15 @@ const LoyaltyProgramDetails = () => {
                   onChange={(event) =>
                     setEntradaValorPago(Number(event.target.value) || 0)
                   }
-                  className="no-spinner h-9 border-slate-800 bg-slate-900 text-xs"
+                  className="no-spinner h-9 text-xs"
                   min={0}
                 />
               </div>
             </div>
 
-            <div className="rounded-xl bg-slate-900 p-3 text-[11px] text-slate-300">
+            <div className="rounded-xl bg-nubank-bg p-3 text-[11px] text-muted-foreground">
               Custo do milheiro nessa operação:{" "}
-              <span className="font-semibold text-emerald-300">
+              <span className="font-semibold text-success-strong">
                 {custoMilheiroOperacao.toLocaleString("pt-BR", {
                   style: "currency",
                   currency: "BRL",
@@ -1742,17 +1693,17 @@ const LoyaltyProgramDetails = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="mb-1 text-[11px] text-slate-300">Data</p>
+                <p className="mb-1 text-[11px] text-muted-foreground">Data</p>
                 <DatePickerField
                   value={entradaData}
                   onChange={setEntradaData}
                   placeholder="Escolher data"
-                  triggerClassName="h-9 border-slate-800 bg-slate-900 text-xs text-slate-100 hover:bg-slate-800 hover:text-slate-100"
-                  contentClassName="border-slate-700"
+                  triggerClassName="h-9 text-xs"
+                  contentClassName="border-nubank-border"
                 />
               </div>
               <div>
-                <p className="mb-1 text-[11px] text-slate-300">
+                <p className="mb-1 text-[11px] text-muted-foreground">
                   Validade do lote
                 </p>
                 <Select
@@ -1761,7 +1712,7 @@ const LoyaltyProgramDetails = () => {
                     setEntradaValidadeOpcao(value as EntradaValidadeOpcao)
                   }
                 >
-                  <SelectTrigger className="h-9 border-slate-800 bg-slate-900 text-xs">
+                  <SelectTrigger className="h-9 text-xs">
                     <SelectValue placeholder="Selecione a validade" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1779,15 +1730,15 @@ const LoyaltyProgramDetails = () => {
             {entradaValidadeOpcao === "manual" && (
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <p className="mb-1 text-[11px] text-slate-300">
+                  <p className="mb-1 text-[11px] text-muted-foreground">
                     Validade manual (data)
                   </p>
                   <DatePickerField
                     value={entradaValidadeLote}
                     onChange={setEntradaValidadeLote}
                     placeholder="Escolher data"
-                    triggerClassName="h-9 border-slate-800 bg-slate-900 text-xs text-slate-100 hover:bg-slate-800 hover:text-slate-100"
-                    contentClassName="border-slate-700"
+                    triggerClassName="h-9 text-xs"
+                    contentClassName="border-nubank-border"
                   />
                 </div>
               </div>
@@ -1795,23 +1746,23 @@ const LoyaltyProgramDetails = () => {
 
             <div className="grid grid-cols-1 gap-3">
               <div>
-                <p className="mb-1 text-[11px] text-slate-300">Observações</p>
+                <p className="mb-1 text-[11px] text-muted-foreground">Observações</p>
                 <Input
                   value={entradaObs}
                   onChange={(event) => setEntradaObs(event.target.value)}
-                  className="h-9 border-slate-800 bg-slate-900 text-xs"
+                  className="h-9 text-xs"
                   placeholder="Promoção, parceiro, etc."
                 />
               </div>
             </div>
 
-            <div className="mt-1 rounded-2xl bg-slate-900/80 p-3 text-[11px] text-slate-400">
-              <p className="mb-1 font-medium text-slate-200">
+            <div className="mt-1 rounded-2xl bg-nubank-bg p-3 text-[11px] text-muted-foreground">
+              <p className="mb-1 font-medium text-nubank-text">
                 Novo custo médio projetado
               </p>
               <p>
                 Atual:{" "}
-                <span className="font-semibold text-slate-100">
+                <span className="font-semibold text-nubank-text">
                   {custoMedioMilheiro.toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
@@ -1821,7 +1772,7 @@ const LoyaltyProgramDetails = () => {
               </p>
               <p>
                 Projetado:{" "}
-                <span className="font-semibold text-emerald-300">
+                <span className="font-semibold text-success-strong">
                   {novoCustoMedioPonderado.toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
@@ -1836,7 +1787,7 @@ const LoyaltyProgramDetails = () => {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-xs text-slate-300 hover:bg-slate-900"
+                className="text-xs"
                 onClick={() => setEntradaOpen(false)}
               >
                 Cancelar
@@ -1844,7 +1795,7 @@ const LoyaltyProgramDetails = () => {
               <Button
                 type="button"
                 size="sm"
-                className="bg-emerald-500 text-xs font-medium text-emerald-950 hover:bg-emerald-400"
+                className="text-xs font-semibold"
                 onClick={handleSalvarEntrada}
               >
                 Salvar entrada
@@ -1856,10 +1807,10 @@ const LoyaltyProgramDetails = () => {
 
       {/* Modal saída / emissão */}
       <Dialog open={saidaOpen} onOpenChange={setSaidaOpen}>
-        <DialogContent className="max-w-md border-slate-800 bg-slate-950 text-slate-100">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Saída de milhas (emissão)</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
+            <DialogDescription className="text-xs text-muted-foreground">
               Registre a emissão completa para medir o ROI real de cada voo.
             </DialogDescription>
           </DialogHeader>
@@ -1867,33 +1818,33 @@ const LoyaltyProgramDetails = () => {
           <ScrollArea className="max-h-[70vh] pr-2">
             <div className="space-y-4 pb-2 text-xs">
               {/* 1. Informações da emissão */}
-              <div className="space-y-2 rounded-2xl bg-slate-900/70 p-3">
-                <p className="text-[11px] font-medium text-slate-300">
+              <div className="space-y-2 rounded-2xl bg-nubank-bg p-3">
+                <p className="text-[11px] font-medium text-muted-foreground">
                   1. Informações da emissão
                 </p>
                 <Input
                   value={emitDescricao}
                   onChange={(event) => setEmitDescricao(event.target.value)}
                   placeholder="Ex: GRU – MCO Executiva férias família"
-                  className="h-8 border-slate-800 bg-slate-950 text-xs"
+                  className="h-8 text-xs"
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <Input
                     value={emitOrigem}
                     onChange={(event) => setEmitOrigem(event.target.value)}
                     placeholder="Origem (GRU)"
-                    className="h-8 border-slate-800 bg-slate-950 text-xs"
+                    className="h-8 text-xs"
                   />
                   <Input
                     value={emitDestino}
                     onChange={(event) => setEmitDestino(event.target.value)}
                     placeholder="Destino (MCO)"
-                    className="h-8 border-slate-800 bg-slate-950 text-xs"
+                    className="h-8 text-xs"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="col-span-2">
-                    <p className="mb-1 text-[11px] text-slate-300">Tipo de viagem</p>
+                    <p className="mb-1 text-[11px] text-muted-foreground">Tipo de viagem</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
                         type="button"
@@ -1901,8 +1852,8 @@ const LoyaltyProgramDetails = () => {
                         className={cn(
                           "rounded-full border px-2 py-1 text-[11px]",
                           emitTipoViagem === "somente_ida"
-                            ? "border-violet-400 bg-violet-500/10 text-violet-200"
-                            : "border-slate-800 bg-slate-900 text-slate-300",
+                            ? "border-[#E5CCF2] bg-nubank-tint text-nubank-dark"
+                            : "border-nubank-border bg-white text-nubank-text-secondary",
                         )}
                       >
                         Apenas ida
@@ -1913,8 +1864,8 @@ const LoyaltyProgramDetails = () => {
                         className={cn(
                           "rounded-full border px-2 py-1 text-[11px]",
                           emitTipoViagem === "ida_e_volta"
-                            ? "border-violet-400 bg-violet-500/10 text-violet-200"
-                            : "border-slate-800 bg-slate-900 text-slate-300",
+                            ? "border-[#E5CCF2] bg-nubank-tint text-nubank-dark"
+                            : "border-nubank-border bg-white text-nubank-text-secondary",
                         )}
                       >
                         Ida e volta
@@ -1928,8 +1879,8 @@ const LoyaltyProgramDetails = () => {
                       if (emitDataVolta && emitDataVolta < ymd) setEmitDataVolta("");
                     }}
                     placeholder="Data de ida"
-                    triggerClassName="h-8 border-slate-800 bg-slate-950 px-2.5 text-xs text-slate-100 hover:bg-slate-900 hover:text-slate-100"
-                    contentClassName="border-slate-700"
+                    triggerClassName="h-8 px-2.5 text-xs"
+                    contentClassName="border-nubank-border"
                   />
                   {emitTipoViagem === "ida_e_volta" ? (
                     <DatePickerField
@@ -1941,8 +1892,8 @@ const LoyaltyProgramDetails = () => {
                           ? { before: parseYmdToLocalDate(emitDataIda)! }
                           : undefined
                       }
-                      triggerClassName="h-8 border-slate-800 bg-slate-950 px-2.5 text-xs text-slate-100 hover:bg-slate-900 hover:text-slate-100"
-                      contentClassName="border-slate-700"
+                      triggerClassName="h-8 px-2.5 text-xs"
+                      contentClassName="border-nubank-border"
                     />
                   ) : (
                     <Input
@@ -1950,7 +1901,7 @@ const LoyaltyProgramDetails = () => {
                       min={1}
                       value={emitPax}
                       onChange={(event) => setEmitPax(Number(event.target.value) || 1)}
-                      className="h-8 border-slate-800 bg-slate-950 text-xs"
+                      className="h-8 text-xs"
                       placeholder="Qtd. passageiros"
                     />
                   )}
@@ -1961,13 +1912,13 @@ const LoyaltyProgramDetails = () => {
                     min={1}
                     value={emitPax}
                     onChange={(event) => setEmitPax(Number(event.target.value) || 1)}
-                    className="h-8 border-slate-800 bg-slate-950 text-xs"
+                    className="h-8 text-xs"
                     placeholder="Qtd. passageiros"
                   />
                 )}
                 <div className="grid grid-cols-2 gap-2">
                   <Select value={emitClasse} onValueChange={setEmitClasse}>
-                    <SelectTrigger className="h-8 border-slate-800 bg-slate-950 text-xs">
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Classe" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1978,63 +1929,63 @@ const LoyaltyProgramDetails = () => {
                     </SelectContent>
                   </Select>
                   <div className="flex flex-wrap gap-2">
-                    <label className="inline-flex items-center gap-1 text-[11px] text-slate-300">
+                    <label className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                       <input
                         type="checkbox"
                         checked={emitBagagem}
                         onChange={(event) => setEmitBagagem(event.target.checked)}
-                        className="h-3 w-3 rounded border-slate-700 bg-slate-900 text-violet-500"
+                        className="h-3 w-3 rounded border-nubank-border bg-white text-primary"
                       />
                       Bagagem
                     </label>
-                    <label className="inline-flex items-center gap-1 text-[11px] text-slate-300">
+                    <label className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                       <input
                         type="checkbox"
                         checked={emitAssento}
                         onChange={(event) => setEmitAssento(event.target.checked)}
-                        className="h-3 w-3 rounded border-slate-700 bg-slate-900 text-violet-500"
+                        className="h-3 w-3 rounded border-nubank-border bg-white text-primary"
                       />
                       Assento
                     </label>
-                    <label className="inline-flex items-center gap-1 text-[11px] text-slate-300">
+                    <label className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                       <input
                         type="checkbox"
                         checked={emitSeguro}
                         onChange={(event) => setEmitSeguro(event.target.checked)}
-                        className="h-3 w-3 rounded border-slate-700 bg-slate-900 text-violet-500"
+                        className="h-3 w-3 rounded border-nubank-border bg-white text-primary"
                       />
                       Seguro
                     </label>
                   </div>
                 </div>
                 <div>
-                  <p className="mb-1 text-[11px] text-slate-300">
+                  <p className="mb-1 text-[11px] text-muted-foreground">
                     Sobrenome na emissão — obrigatório{" "}
-                    <span className="text-red-400">*</span>
+                    <span className="text-destructive">*</span>
                   </p>
                   <Input
                     value={emitSobrenomeEmissao}
                     onChange={(event) => setEmitSobrenomeEmissao(event.target.value)}
                     placeholder="Sobrenome na emissão"
-                    className="h-8 border-slate-800 bg-slate-950 text-xs"
+                    className="h-8 text-xs"
                     required
                     aria-required
                     autoComplete="family-name"
                   />
-                  <p className="mt-1 text-[10px] text-slate-500">
+                  <p className="mt-1 text-[10px] text-muted-foreground">
                     Como consta na bilheteira, para localizar a reserva junto ao PNR.
                   </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-[11px] text-slate-300">
+                  <p className="mb-1 text-[11px] text-muted-foreground">
                     Código da reserva (PNR / localizador) — obrigatório{" "}
-                    <span className="text-red-400">*</span>
+                    <span className="text-destructive">*</span>
                   </p>
                   <Input
                     value={emitCodigoReserva}
                     onChange={(event) => setEmitCodigoReserva(event.target.value)}
                     placeholder="Ex.: ABC123"
-                    className="h-8 border-slate-800 bg-slate-950 text-xs"
+                    className="h-8 text-xs"
                     required
                     aria-required
                   />
@@ -2042,13 +1993,13 @@ const LoyaltyProgramDetails = () => {
               </div>
 
               {/* 2. Dados financeiros */}
-              <div className="space-y-2 rounded-2xl bg-slate-900/70 p-3">
-                <p className="text-[11px] font-medium text-slate-300">
+              <div className="space-y-2 rounded-2xl bg-nubank-bg p-3">
+                <p className="text-[11px] font-medium text-muted-foreground">
                   2. Dados financeiros da emissão
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="mb-1 text-[11px] text-slate-300">
+                    <p className="mb-1 text-[11px] text-muted-foreground">
                       Milhas utilizadas *
                     </p>
                     <Input
@@ -2058,11 +2009,11 @@ const LoyaltyProgramDetails = () => {
                       onChange={(event) =>
                         setEmitMilhas(Number(event.target.value) || 0)
                       }
-                      className="no-spinner h-8 border-slate-800 bg-slate-950 text-xs"
+                      className="no-spinner h-8 text-xs"
                     />
                   </div>
                   <div>
-                    <p className="mb-1 text-[11px] text-slate-300">
+                    <p className="mb-1 text-[11px] text-muted-foreground">
                       Taxas pagas (R$) *
                     </p>
                     <Input
@@ -2072,12 +2023,12 @@ const LoyaltyProgramDetails = () => {
                       onChange={(event) =>
                         setEmitTaxas(Number(event.target.value) || 0)
                       }
-                      className="no-spinner h-8 border-slate-800 bg-slate-950 text-xs"
+                      className="no-spinner h-8 text-xs"
                     />
                   </div>
                 </div>
                 <div>
-                  <p className="mb-1 text-[11px] text-slate-300">
+                  <p className="mb-1 text-[11px] text-muted-foreground">
                     Tarifa pagante (R$) *
                   </p>
                   <Input
@@ -2087,20 +2038,20 @@ const LoyaltyProgramDetails = () => {
                     onChange={(event) =>
                       setEmitTarifaPagante(Number(event.target.value) || 0)
                     }
-                    className="no-spinner h-8 border-slate-800 bg-slate-950 text-xs"
+                    className="no-spinner h-8 text-xs"
                   />
                 </div>
               </div>
 
               {/* 3. Calculadora inteligente */}
-              <div className="space-y-2 rounded-2xl bg-slate-900/70 p-3">
-                <p className="text-[11px] font-medium text-slate-300">
+              <div className="space-y-2 rounded-2xl bg-nubank-bg p-3">
+                <p className="text-[11px] font-medium text-muted-foreground">
                   3. Calculadora inteligente de valor do milheiro
                 </p>
-                <div className="space-y-1 text-[11px] text-slate-400">
+                <div className="space-y-1 text-[11px] text-muted-foreground">
                   <p>
                     Base de custo médio do milheiro:{" "}
-                    <span className="font-semibold text-slate-100">
+                    <span className="font-semibold text-nubank-text">
                       {custoMedioMilheiroReferencia.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
@@ -2111,7 +2062,7 @@ const LoyaltyProgramDetails = () => {
                   </p>
                   <p>
                     Custo da emissão (milhas + taxas):{" "}
-                    <span className="font-semibold text-amber-300">
+                    <span className="font-semibold text-warning-strong">
                       {custoRealEmissaoMilhasETaxas.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
@@ -2120,11 +2071,11 @@ const LoyaltyProgramDetails = () => {
                   </p>
                   <p>
                     Desconto obtido vs tarifa pagante:{" "}
-                    <span className="font-semibold text-emerald-300">
+                    <span className="font-semibold text-success-strong">
                       {descontoReal.toFixed(1)}%
                     </span>
                     {" • "}
-                    <span className="font-semibold text-emerald-300">
+                    <span className="font-semibold text-success-strong">
                       {economiaRealEmissao.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
@@ -2135,45 +2086,45 @@ const LoyaltyProgramDetails = () => {
               </div>
 
               {/* 4. Resumo estratégico */}
-              <div className="space-y-2 rounded-2xl bg-slate-900/70 p-3">
-                <p className="text-[11px] font-medium text-slate-300">
+              <div className="space-y-2 rounded-2xl bg-nubank-bg p-3">
+                <p className="text-[11px] font-medium text-muted-foreground">
                   4. Resumo estratégico da emissão
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div className="space-y-1 rounded-2xl bg-slate-950/80 p-2">
-                    <p className="text-slate-400">Milhas usadas</p>
-                    <p className="text-sm font-semibold text-slate-100">
+                  <div className="space-y-1 rounded-2xl bg-white p-2">
+                    <p className="text-muted-foreground">Milhas usadas</p>
+                    <p className="text-sm font-semibold text-nubank-text">
                       {emitMilhas.toLocaleString("pt-BR")}
                     </p>
                   </div>
-                  <div className="space-y-1 rounded-2xl bg-slate-950/80 p-2">
-                    <p className="text-slate-400">Economia real</p>
-                    <p className="text-sm font-semibold text-emerald-300">
+                  <div className="space-y-1 rounded-2xl bg-white p-2">
+                    <p className="text-muted-foreground">Economia real</p>
+                    <p className="text-sm font-semibold text-success-strong">
                       {economiaRealEmissao.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                       })}
                     </p>
                   </div>
-                  <div className="space-y-1 rounded-2xl bg-slate-950/80 p-2">
-                    <p className="text-slate-400">Valor do milheiro</p>
-                    <p className="text-sm font-semibold text-emerald-300">
+                  <div className="space-y-1 rounded-2xl bg-white p-2">
+                    <p className="text-muted-foreground">Valor do milheiro</p>
+                    <p className="text-sm font-semibold text-success-strong">
                       {custoMedioMilheiro.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                       })}
                     </p>
                   </div>
-                  <div className="space-y-1 rounded-2xl bg-slate-950/80 p-2">
-                    <p className="text-slate-400">Desconto real</p>
-                    <p className="text-sm font-semibold text-emerald-300">
+                  <div className="space-y-1 rounded-2xl bg-white p-2">
+                    <p className="text-muted-foreground">Desconto real</p>
+                    <p className="text-sm font-semibold text-success-strong">
                       {descontoReal.toFixed(1)}%
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between rounded-2xl bg-slate-950/90 px-3 py-2">
-                  <div className="text-[11px] text-slate-400">
+                <div className="flex items-center justify-between rounded-2xl bg-white px-3 py-2">
+                  <div className="text-[11px] text-muted-foreground">
                     <p>Classificação da emissão</p>
                     <p className={cn("mt-0.5 text-sm font-semibold", corClassificacao)}>
                       {classificacaoEmissao === "vantajosa"
@@ -2185,15 +2136,15 @@ const LoyaltyProgramDetails = () => {
               </div>
 
               {/* 5. Observações */}
-              <div className="space-y-2 rounded-2xl bg-slate-900/70 p-3">
-                <p className="text-[11px] font-medium text-slate-300">
+              <div className="space-y-2 rounded-2xl bg-nubank-bg p-3">
+                <p className="text-[11px] font-medium text-muted-foreground">
                   5. Observações estratégicas
                 </p>
                 <Textarea
                   value={emitObs}
                   onChange={(event) => setEmitObs(event.target.value)}
                   rows={3}
-                  className="border-slate-800 bg-slate-950 text-xs"
+                  className="text-xs"
                   placeholder="Insights sobre a emissão, aprendizados, contexto etc."
                 />
               </div>
@@ -2203,7 +2154,7 @@ const LoyaltyProgramDetails = () => {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-xs text-slate-300 hover:bg-slate-900"
+                  className="text-xs"
                   onClick={() => setSaidaOpen(false)}
                 >
                   Cancelar
@@ -2211,7 +2162,7 @@ const LoyaltyProgramDetails = () => {
                 <Button
                   type="button"
                   size="sm"
-                  className="bg-red-500 text-xs font-medium text-slate-950 hover:bg-red-400"
+                  className="bg-destructive text-xs font-semibold text-white hover:bg-destructive/90"
                   onClick={handleSalvarSaida}
                 >
                   Salvar emissão
