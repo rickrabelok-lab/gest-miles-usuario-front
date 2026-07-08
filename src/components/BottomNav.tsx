@@ -127,13 +127,13 @@ const BottomNav: FC<BottomNavProps> = () => {
   }, [searchParams]);
 
   return (
-    <div className="pointer-events-auto fixed bottom-0 left-0 right-0 z-[100] border-t border-stone-200/80 bg-white shadow-[0_-2px_16px_rgba(0,0,0,0.06)]">
-      <div className="mx-auto flex max-w-md items-stretch justify-between gap-0 px-1.5 py-1.5 sm:px-2">
+    <div className="pointer-events-auto fixed bottom-0 left-0 right-0 z-[100] border-t border-[#F1F0F3] bg-white shadow-[0_-4px_20px_rgba(24,6,38,0.06)]">
+      <div className="mx-auto flex max-w-md items-stretch justify-between gap-0 px-2 pb-1 pt-1.5 sm:px-3">
         {NAV.map(({ id, label, Icon }) => {
           const isActive = active === id;
           const tabClass = cn(
-            "flex w-full flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 transition-colors no-underline",
-            isActive ? "text-nubank-primary" : "text-stone-500 hover:text-stone-800",
+            "flex w-full flex-col items-center justify-center gap-1 rounded-xl py-1.5 transition-colors no-underline",
+            isActive ? "text-nubank-primary" : "text-[#8E8D93] hover:text-nubank-text",
           );
 
           if (id === "passagens") {
@@ -149,15 +149,15 @@ const BottomNav: FC<BottomNavProps> = () => {
                 >
                   <span className="relative">
                     <Icon
-                      className="h-5 w-5 shrink-0"
+                      className="h-[22px] w-[22px] shrink-0"
                       strokeWidth={isActive ? 2.25 : 1.75}
                       aria-hidden
                     />
                   </span>
                   <span
                     className={cn(
-                      "max-w-full truncate px-0.5 text-center text-[9px] leading-tight",
-                      isActive ? "font-semibold" : "font-medium",
+                      "max-w-full truncate px-0.5 text-center text-[10px] leading-tight",
+                      isActive ? "font-bold" : "font-medium",
                     )}
                   >
                     {label}
@@ -190,13 +190,13 @@ const BottomNav: FC<BottomNavProps> = () => {
               >
                 <span className="relative">
                   <Icon
-                    className="h-5 w-5 shrink-0"
+                    className="h-[22px] w-[22px] shrink-0"
                     strokeWidth={isActive ? 2.25 : 1.75}
                     aria-hidden
                   />
                   {id === "alertas" && badge > 0 ? (
                     <span
-                      className="absolute -right-1.5 -top-1 min-h-[16px] min-w-[16px] rounded-full bg-rose-500 px-0.5 text-center text-[9px] font-bold leading-4 text-white"
+                      className="absolute -right-2 -top-1 min-h-[16px] min-w-[16px] rounded-full bg-nubank-notification px-1 text-center text-[9.5px] font-bold leading-4 text-white"
                       aria-label={`${badge} notificações não lidas`}
                     >
                       {badge > 9 ? "9+" : badge}
@@ -205,8 +205,8 @@ const BottomNav: FC<BottomNavProps> = () => {
                 </span>
                 <span
                   className={cn(
-                    "max-w-full truncate px-0.5 text-center text-[9px] leading-tight",
-                    isActive ? "font-semibold" : "font-medium",
+                    "max-w-full truncate px-0.5 text-center text-[10px] leading-tight",
+                    isActive ? "font-bold" : "font-medium",
                   )}
                 >
                   {label}
