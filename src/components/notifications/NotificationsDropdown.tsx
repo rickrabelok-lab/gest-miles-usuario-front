@@ -48,24 +48,26 @@ export default function NotificationsDropdown() {
         <button
           type="button"
           className={cn(
-            "relative flex h-[38px] w-[38px] items-center justify-center rounded-full",
-            "border border-primary/20 bg-primary/[0.08] text-primary",
-            "transition-all duration-200 hover:bg-primary/[0.15] hover:scale-105 active:scale-95",
+            "relative flex h-11 w-11 items-center justify-center rounded-[16px]",
+            "border border-nubank-border bg-white text-[#54535A] shadow-nubank",
+            "transition-colors hover:bg-nubank-bg active:scale-[0.98]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
           )}
           aria-label={triggerLabel}
           title={triggerLabel}
         >
           <Bell
+            strokeWidth={1.75}
             className={cn(
-              "h-[18px] w-[18px]",
+              "h-[19px] w-[19px]",
               unreadCount > 0 && "animate-[bell-ring_0.6s_ease-in-out]",
             )}
           />
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full border-2 border-background bg-primary px-0.5 text-[9px] font-bold text-white">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
+            <span
+              className="absolute right-2 top-2 h-[9px] w-[9px] rounded-full border-2 border-white bg-nubank-notification"
+              aria-hidden
+            />
           )}
         </button>
       </DropdownMenuTrigger>

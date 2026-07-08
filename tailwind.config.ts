@@ -98,6 +98,7 @@ export default {
           dark: "#6A00A3",
           light: "#B56CFF",
           tint: "#F6EDFB",
+          notification: "#FB4D6D",
         },
       },
       borderRadius: {

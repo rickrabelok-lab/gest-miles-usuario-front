@@ -113,19 +113,36 @@ const DashboardHeader = () => {
   };
 
   return (
-    <div className="border-b border-border/20 bg-transparent text-foreground">
-      <div className="flex items-center justify-between px-4 py-2.5">
+    <div className="bg-transparent text-foreground">
+      <div className="flex items-center justify-between px-5 py-3">
+        <h1 className="m-0 flex min-h-[2.25rem] items-center">
+          {optionalHeaderWordmarkImageUrl ? (
+            <img
+              src={optionalHeaderWordmarkImageUrl}
+              alt="GestMiles"
+              className="h-7 w-auto max-w-[min(150px,40vw)] object-contain object-left sm:h-8 sm:max-w-[170px]"
+              loading="eager"
+              decoding="async"
+            />
+          ) : (
+            <span className="font-display text-lg font-bold leading-none tracking-tight">
+              <span className="text-foreground">Gest</span>
+              <span className="text-[#8A05BE]">Miles</span>
+            </span>
+          )}
+        </h1>
         <div className="flex items-center gap-2">
+          <NotificationsDropdown />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border-2 border-background bg-gradient-to-br from-[#8A05BE] to-[#a855f7] text-[13px] font-extrabold text-white shadow-[0_2px_12px_rgba(138,5,190,0.40)] transition-all duration-200 hover:scale-105 hover:shadow-[0_4px_20px_rgba(138,5,190,0.55)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] border border-nubank-border bg-white text-[13px] font-extrabold text-[#8A05BE] shadow-nubank transition-colors hover:bg-nubank-bg active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 aria-label="Menu do usuário"
               >
                 {user ? getInitials(user.email) : "?"}
                 {user && (
-                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-green-500" />
+                  <span className="absolute bottom-1.5 right-1.5 h-2 w-2 rounded-full border-2 border-white bg-green-500" />
                 )}
               </button>
             </DropdownMenuTrigger>
@@ -181,35 +198,14 @@ const DashboardHeader = () => {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <NotificationsDropdown />
-        </div>
-        <div className="flex flex-1 justify-center">
-          <h1 className="m-0 flex min-h-[2rem] items-center justify-center">
-            {optionalHeaderWordmarkImageUrl ? (
-              <img
-                src={optionalHeaderWordmarkImageUrl}
-                alt="GestMiles"
-                className="h-8 w-auto max-w-[min(160px,42vw)] object-contain object-center sm:h-9 sm:max-w-[180px]"
-                loading="eager"
-                decoding="async"
-              />
-            ) : (
-              <span className="font-display text-[22px] font-bold leading-none tracking-tight sm:text-2xl">
-                <span className="text-foreground">Gest</span>
-                <span className="text-[#8A05BE]">Miles</span>
-              </span>
-            )}
-          </h1>
-        </div>
-        <Sheet>
+          <Sheet>
           <SheetTrigger asChild>
             <button
               type="button"
-              className="rounded-xl p-2 text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-nubank-border bg-white text-[#54535A] shadow-nubank transition-colors hover:bg-nubank-bg active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               aria-label="Abrir menu"
             >
-              <Menu size={22} />
+              <Menu size={20} strokeWidth={1.75} />
             </button>
           </SheetTrigger>
           <SheetContent
@@ -441,18 +437,19 @@ const DashboardHeader = () => {
               )}
             </div>
           </SheetContent>
-        </Sheet>
+          </Sheet>
+        </div>
       </div>
 
       {bannerVisible && (
-        <div className="mx-4 mb-2.5 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-          <Zap size={14} className="shrink-0 text-amber-600" aria-hidden />
-          <p className="flex-1 text-[11px] leading-snug text-amber-800">
-            Bônus de até <span className="font-bold text-amber-700">133%</span> na transferência. Confira
+        <div className="mx-5 mb-2.5 flex items-center gap-2 rounded-[14px] bg-warning-soft px-3 py-2 text-[11px] text-warning-strong">
+          <Zap size={14} className="shrink-0" aria-hidden />
+          <p className="flex-1 text-[11px] font-medium leading-snug">
+            Bônus de até <span className="font-bold">133%</span> na transferência. Confira
           </p>
           <button
             onClick={() => setBannerVisible(false)}
-            className="shrink-0 text-amber-500 opacity-60 hover:opacity-100"
+            className="shrink-0 opacity-60 hover:opacity-100"
             aria-label="Fechar"
             type="button"
           >
