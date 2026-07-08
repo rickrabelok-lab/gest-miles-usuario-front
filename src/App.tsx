@@ -23,6 +23,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AcceptInvite = lazy(() => import("./pages/AcceptInvite"));
 const Me = lazy(() => import("./pages/Me"));
 const ClientProfile = lazy(() => import("./pages/ClientProfile"));
+const PerfilPage = lazy(() => import("./pages/PerfilPage"));
 const SearchFlightsScreen = lazy(() => import("./pages/SearchFlightsScreen"));
 const FlightResultsScreen = lazy(() => import("./pages/FlightResultsScreen"));
 const EmissionDetailsScreen = lazy(() => import("./pages/EmissionDetailsScreen"));
@@ -207,6 +208,14 @@ const App = () => {
                 />
                 <Route
                   path="/perfil"
+                  element={
+                    <ClienteOnly>
+                      <PerfilPage />
+                    </ClienteOnly>
+                  }
+                />
+                <Route
+                  path="/perfil/dados"
                   element={
                     <ClienteOnly>
                       <ClientProfile />

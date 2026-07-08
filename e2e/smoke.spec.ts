@@ -44,8 +44,10 @@ test.describe("smoke do app do cliente", () => {
   test("abre tela-chave (perfil) e faz logout", async ({ page }) => {
     test.skip(!haveCreds, "Defina E2E_EMAIL e E2E_PASSWORD para rodar.");
     await login(page);
-    // Tela-chave: o formulário de perfil carrega.
+    // Tela-chave: o hub de perfil carrega e leva ao formulário de dados.
     await page.goto("/perfil");
+    await expect(page.getByRole("button", { name: "Dados pessoais e viajantes" })).toBeVisible({ timeout: 30_000 });
+    await page.goto("/perfil/dados");
     await expect(page.getByRole("heading", { name: "Perfil do cliente" })).toBeVisible({ timeout: 30_000 });
     // Logout: só existe no header (home). Dispensa as pesquisas que bloqueiam o menu.
     await page.goto("/");

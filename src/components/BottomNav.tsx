@@ -62,7 +62,7 @@ const NAV: Array<{
     label: "Perfil",
     Icon: User,
     match: ({ pathname }) =>
-      pathname === "/perfil" ||
+      pathname.startsWith("/perfil") ||
       pathname === "/preferencias-sugestoes" ||
       pathname === "/convide-amigos" ||
       pathname === "/fale-conosco" ||
