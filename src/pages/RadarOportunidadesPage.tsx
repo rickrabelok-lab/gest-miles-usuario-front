@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Crown, Radar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import DashboardHeader from "@/components/DashboardHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -162,37 +161,41 @@ const RadarOportunidadesPage = () => {
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
-      <DashboardHeader />
-
-      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 py-3">
+      <header className="flex items-center justify-between gap-3 px-5 pb-1 pt-4">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
+            aria-label="Voltar"
+            className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-nubank-border bg-white text-nubank-text transition-colors hover:bg-nubank-bg"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} />
+            <ArrowLeft size={19} strokeWidth={2} />
           </button>
-          <h1 className="text-base font-semibold tracking-tight">Radar de Oportunidades</h1>
-          <div className="w-9" />
+          <h1 className="font-display text-xl font-bold tracking-tight text-nubank-text">Radar</h1>
         </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-nubank-tint px-3 py-1.5 text-[11.5px] font-semibold leading-none text-nubank-dark">
+          <Crown size={12} strokeWidth={2} className="text-[#FFB020]" aria-hidden />
+          Gest Miles+
+        </span>
       </header>
+      <p className="px-5 pt-1 text-[13px] text-nubank-text-secondary">
+        Oportunidades de emissão detectadas pra você.
+      </p>
 
-      <main className="space-y-4 px-4 py-4">
+      <main className="space-y-4 px-5 py-4">
         {/* Future notifications – structure only */}
-        <Card className="rounded-[18px] border-border/80 border-dashed bg-muted/30 shadow-none">
-          <CardContent className="px-3.5 py-3">
-            <p className="text-xs text-muted-foreground">
-              Em breve: você poderá receber alertas quando surgirem novas oportunidades na sua
-              região ou classe preferida.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="flex items-start gap-3 rounded-[16px] bg-nubank-tint px-4 py-3">
+          <Radar size={16} strokeWidth={1.9} className="mt-0.5 flex-none text-nubank-primary" aria-hidden />
+          <p className="text-xs leading-relaxed text-[#4A3358]">
+            Em breve: você poderá receber alertas quando surgirem novas oportunidades na sua
+            região ou classe preferida.
+          </p>
+        </div>
 
         {/* Filters */}
-        <Card className="rounded-[18px] border-border/80 shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover hover:-translate-y-0.5">
-          <CardContent className="space-y-3 px-3.5 pb-3.5 pt-3">
-            <p className="text-xs font-semibold text-foreground">Filtros</p>
+        <Card className="rounded-[20px] border-0 shadow-nubank-card">
+          <CardContent className="space-y-3 px-4 pb-4 pt-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Filtros</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="space-y-1">
                 <label className="text-[11px] text-muted-foreground">Programa</label>
@@ -304,39 +307,49 @@ const RadarOportunidadesPage = () => {
             filtered.map((o) => (
               <Card
                 key={o.id}
-                className="rounded-[18px] border-border/80 shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover hover:-translate-y-0.5"
+                className="rounded-[20px] border-0 shadow-nubank-card transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-nubank-hover"
               >
-                <CardContent className="space-y-2 px-3.5 pb-3.5 pt-3">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-sm font-semibold text-foreground">
+                <CardContent className="px-4 pb-4 pt-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-display text-[15px] font-semibold tracking-tight text-nubank-text">
                       {o.origem} → {o.destino}
                     </p>
                     {o.regiao_destino && (
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                      <span className="shrink-0 rounded-full bg-[#F1F0F3] px-2.5 py-1 text-[10.5px] font-semibold leading-none text-[#54535A]">
                         {o.regiao_destino}
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    <span>{o.programa}</span>
-                    <span>{o.classe}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2">
-                    <span className="text-xs font-medium text-foreground">
-                      {formatMiles(o.milhas)}
+                  <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <span className="font-display text-[22px] font-bold tabular-nums leading-none tracking-tight text-nubank-text">
+                      {new Intl.NumberFormat("pt-BR").format(o.milhas)}
+                      <span className="text-[13px] font-semibold"> milhas</span>
                     </span>
-                    <span className="text-xs font-semibold text-[#8A05BE]">
-                      {formatCurrency(o.valor_estimado)}
+                    <span className="text-[12.5px] text-nubank-text-secondary">
+                      {o.programa} · {o.classe}
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Voo: {formatDate(o.data_voo)}
-                  </p>
+                  <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-[#F1F0F3] pt-2.5">
+                    <span className="text-[11.5px] text-nubank-text-secondary">
+                      Voo: {formatDate(o.data_voo)}
+                    </span>
+                    <span className="text-[13px] font-bold tabular-nums text-primary">
+                      ≈ {formatCurrency(o.valor_estimado)}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             ))
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={() => navigate("/preferencias-sugestoes")}
+          className="mx-auto block pt-1 text-center text-[13px] font-semibold text-primary hover:underline"
+        >
+          Ajustar preferências do radar →
+        </button>
       </main>
     </div>
   );
