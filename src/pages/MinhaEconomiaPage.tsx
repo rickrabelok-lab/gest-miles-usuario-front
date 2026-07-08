@@ -52,36 +52,44 @@ export default function MinhaEconomiaPage({ useHook = useMinhaEconomia }: MinhaE
   }, [user?.id, periodo, fetchRelatorio]);
 
   return (
-    <div className="min-h-screen bg-[#f6f3fa] pb-10">
+    <div className="min-h-screen bg-nubank-bg pb-10">
       {/* Header — some na impressão */}
-      <div className="print-hidden sticky top-0 z-40 border-b border-gray-100 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-md items-center justify-between gap-2 px-4 py-3">
+      <div className="print-hidden mx-auto max-w-md">
+        <div className="flex items-center justify-between gap-3 px-5 pb-1 pt-4">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              aria-label="Voltar"
+              className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-nubank-border bg-white text-nubank-text transition-colors hover:bg-nubank-bg"
+            >
+              <ArrowLeft size={19} strokeWidth={2} />
+            </button>
+            <h1 className="font-display text-xl font-bold tracking-tight text-nubank-text">
+              Minha economia
+            </h1>
+          </div>
           <button
             type="button"
-            className="flex items-center gap-1.5 text-sm font-medium text-gray-700"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden /> Minha Economia
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-1.5 rounded-full bg-[#8A05BE] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#7a04a8]"
             onClick={() => window.print()}
+            aria-label="Baixar relatório em PDF"
+            title="Baixar relatório em PDF"
+            className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-nubank-tint text-nubank-dark transition-colors hover:bg-primary/15"
           >
-            <FileDown className="h-3.5 w-3.5" aria-hidden /> Baixar relatório
+            <FileDown size={19} strokeWidth={1.75} aria-hidden />
           </button>
         </div>
         {/* Chips de período */}
-        <div className="mx-auto flex max-w-md gap-1.5 overflow-x-auto px-4 pb-3">
+        <div className="flex gap-2 overflow-x-auto px-5 pb-1 pt-3 scrollbar-hide">
           {PERIODOS.map((p) => (
             <button
               key={p.id}
               type="button"
               className={cn(
-                "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors",
+                "shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-semibold transition-colors",
                 periodo === p.id
-                  ? "bg-[#8A05BE] text-white"
-                  : "bg-white text-gray-600 shadow-nubank hover:bg-gray-50",
+                  ? "bg-nubank-text text-white"
+                  : "border border-nubank-border bg-white text-[#54535A] hover:bg-nubank-bg",
               )}
               onClick={() => setPeriodo(p.id)}
             >
@@ -93,12 +101,12 @@ export default function MinhaEconomiaPage({ useHook = useMinhaEconomia }: MinhaE
 
       <div className="mx-auto max-w-md px-4 pt-4">
         {loading && (
-          <p className="py-16 text-center text-sm text-gray-500" aria-live="polite">
+          <p className="py-16 text-center text-sm text-nubank-text-secondary" aria-live="polite">
             Calculando sua economia…
           </p>
         )}
         {!loading && error && (
-          <p className="py-16 text-center text-sm text-red-600" role="alert">{error}</p>
+          <p className="py-16 text-center text-sm text-destructive" role="alert">{error}</p>
         )}
         {!loading && !error && data && (
           <div id="minha-economia-print">
