@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
+import { PlaneTakeoff } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type AuthFlowShellProps = {
@@ -11,28 +11,37 @@ type AuthFlowShellProps = {
 };
 
 /**
- * Shell comum às telas de recuperação / redefinição — paleta Gest Miles (roxo #8A05BE, fundo #F7F7F8).
+ * Shell comum às telas de auth — design system v2 (claro, roxo só nos acentos):
+ * tile de avião + wordmark à esquerda, formulário direto sobre o fundo #F7F7F8.
  */
 export function AuthFlowShell({ title, description, children, className }: AuthFlowShellProps) {
   return (
     <div
       className={cn(
-        "mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center bg-nubank-bg p-5 antialiased",
+        "mx-auto flex min-h-screen w-full max-w-md flex-col justify-center bg-nubank-bg px-6 py-10 antialiased",
         className,
       )}
     >
-      <div className="mb-5 w-full max-w-md shrink-0 text-center">
-        <p className="font-display text-[1.35rem] font-bold tracking-tight text-nubank-primary">Gest Miles</p>
+      <div className="w-full shrink-0">
+        <span className="inline-flex h-14 w-14 items-center justify-center rounded-[20px] bg-nubank-tint text-nubank-primary">
+          <PlaneTakeoff size={27} strokeWidth={1.75} aria-hidden />
+        </span>
+        <p className="mt-4 font-display text-3xl font-bold leading-none tracking-tight">
+          <span className="text-nubank-text">Gest</span>
+          <span className="text-nubank-primary">Miles</span>
+        </p>
+        {title ? (
+          <h1 className="mt-4 font-display text-[22px] font-bold tracking-tight text-nubank-text">
+            {title}
+          </h1>
+        ) : null}
+        {description ? (
+          <p className="mt-1.5 max-w-[280px] text-[14.5px] leading-relaxed text-nubank-text-secondary">
+            {description}
+          </p>
+        ) : null}
       </div>
-      <Card className="w-full max-w-md rounded-[24px] border border-nubank-border/90 bg-white shadow-[0_8px_36px_-10px_rgba(138,5,190,0.18)] transition-shadow duration-300 ease-out hover:translate-y-0 hover:shadow-[0_12px_40px_-12px_rgba(138,5,190,0.22)]">
-        <CardHeader className="space-y-2 px-8 pb-2 pt-8">
-          <CardTitle className="font-display text-2xl font-bold tracking-tight text-nubank-text">{title}</CardTitle>
-          {description ? (
-            <CardDescription className="text-[15px] leading-snug text-nubank-text-secondary">{description}</CardDescription>
-          ) : null}
-        </CardHeader>
-        <CardContent className="space-y-5 px-8 pb-8 pt-2">{children}</CardContent>
-      </Card>
+      <div className="mt-7 w-full space-y-4">{children}</div>
     </div>
   );
 }

@@ -107,7 +107,10 @@ const Auth = () => {
   const signUpHref = fromInvite ? "/auth/sign-up?fromInvite=1" : "/auth/sign-up";
 
   return (
-    <AuthFlowShell title="Login" description="Entre com as suas credenciais para acessar o sistema.">
+    <AuthFlowShell
+      title=""
+      description="Suas milhas, saldos e emissões — tudo num lugar só, com a sua gestão junto."
+    >
       {!isSupabaseConfigured && (
         <p className="rounded-[14px] border border-amber-500/40 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-800/50 dark:bg-amber-950/50 dark:text-amber-100">
           Login indisponível agora. Tente novamente em alguns minutos.
@@ -118,64 +121,81 @@ const Auth = () => {
           <strong>Convite:</strong> use o <strong>mesmo e-mail</strong> do convite. O papel cliente gestão será aplicado após criar a conta.
         </p>
       )}
-      <div className="space-y-2">
-        <Label htmlFor="auth-email" className="text-[13px] font-semibold text-nubank-text">
+      <div className="rounded-[16px] border border-nubank-border bg-white px-4 py-2.5 transition-shadow focus-within:border-nubank-primary focus-within:shadow-[0_0_0_3px_rgba(138,5,190,0.1)]">
+        <Label
+          htmlFor="auth-email"
+          className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground"
+        >
           E-mail
         </Label>
         <Input
           id="auth-email"
           type="email"
-          className="h-11 rounded-[16px] border-nubank-border text-[15px]"
+          className="h-7 rounded-none border-0 bg-transparent p-0 text-[15px] shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="voce@email.com"
           autoComplete="email"
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="auth-password" className="text-[13px] font-semibold text-nubank-text">
-          Senha
-        </Label>
-        <Input
-          id="auth-password"
-          type="password"
-          className="h-11 rounded-[16px] border-nubank-border text-[15px]"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="Mínimo 6 caracteres"
-          autoComplete="current-password"
-        />
-      </div>
-      <div className="flex justify-end pt-0.5">
-        <Link
-          to="/auth/forgot-password"
-          className="text-sm font-semibold text-nubank-primary underline-offset-4 hover:underline"
-        >
-          Esqueci minha senha
-        </Link>
+      <div>
+        <div className="rounded-[16px] border border-nubank-border bg-white px-4 py-2.5 transition-shadow focus-within:border-nubank-primary focus-within:shadow-[0_0_0_3px_rgba(138,5,190,0.1)]">
+          <Label
+            htmlFor="auth-password"
+            className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground"
+          >
+            Senha
+          </Label>
+          <Input
+            id="auth-password"
+            type="password"
+            className="h-7 rounded-none border-0 bg-transparent p-0 text-[15px] shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Mínimo 6 caracteres"
+            autoComplete="current-password"
+          />
+        </div>
+        <div className="mt-2.5 flex justify-end">
+          <Link
+            to="/auth/forgot-password"
+            className="text-[13px] font-semibold text-nubank-primary underline-offset-4 hover:underline"
+          >
+            Esqueci minha senha
+          </Link>
+        </div>
       </div>
       <Button
         type="button"
-        className="h-12 w-full rounded-[16px] text-base font-semibold text-primary-foreground shadow-[0_2px_8px_-2px_rgba(138,5,190,0.25)] transition-all duration-300 ease-out gradient-primary hover:opacity-95 hover:shadow-[0_4px_16px_-2px_rgba(138,5,190,0.3)] active:scale-[0.98] disabled:opacity-50"
+        className="h-[52px] w-full rounded-[18px] text-[15.5px] font-bold text-primary-foreground shadow-[0_6px_18px_-4px_rgba(138,5,190,0.5)] transition-all duration-300 ease-out gradient-primary hover:opacity-95 active:scale-[0.98] disabled:opacity-50"
         disabled={!canSubmit || pending}
         onClick={() => void handleLogin()}
       >
         {pendingAction === "login" ? "Entrando" : "Entrar"}
       </Button>
       {password.length > 0 && password.length < 6 && (
-        <p className="text-center text-xs text-red-600">A senha precisa de pelo menos 6 caracteres.</p>
+        <p className="text-center text-xs text-destructive">A senha precisa de pelo menos 6 caracteres.</p>
       )}
-      <div className="border-t border-nubank-border pt-5">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 w-full rounded-[16px] border-nubank-border bg-white text-[15px] font-semibold text-nubank-text shadow-sm transition-colors hover:bg-nubank-bg"
-          disabled={pending && pendingAction !== "google"}
-          onClick={() => void handleGoogle()}
-        >
-          {pendingAction === "google" ? "Abrindo…" : "Entrar com Google"}
-        </Button>
+      <div className="flex items-center gap-3 text-nubank-text-secondary/70">
+        <span className="h-px flex-1 bg-[#E4E3E8]" />
+        <span className="text-xs font-medium">ou</span>
+        <span className="h-px flex-1 bg-[#E4E3E8]" />
       </div>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-[50px] w-full gap-2.5 rounded-[16px] border-nubank-border bg-white text-sm font-semibold text-nubank-text shadow-none transition-colors hover:bg-white/70"
+        disabled={pending && pendingAction !== "google"}
+        onClick={() => void handleGoogle()}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+          <path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.3H12v4.4h5.9a5 5 0 0 1-2.2 3.3v2.8h3.6c2.1-2 3.3-4.9 3.3-8.2z" />
+          <path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.3 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.6H2.1v2.9A11 11 0 0 0 12 23z" />
+          <path fill="#FBBC05" d="M5.8 14a6.6 6.6 0 0 1 0-4.2V6.9H2.1a11 11 0 0 0 0 10z" />
+          <path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 6.9L5.8 9.8c.9-2.7 3.3-4.4 6.2-4.4z" />
+        </svg>
+        {pendingAction === "google" ? "Abrindo…" : "Continuar com Google"}
+      </Button>
       {message && (
         <p className="text-center text-xs leading-relaxed text-nubank-text-secondary" role="status">
           {message}
@@ -192,13 +212,10 @@ const Auth = () => {
           Reenviar e-mail de confirmação
         </Button>
       )}
-      <p className="text-center text-sm text-nubank-text-secondary">
+      <p className="pt-1 text-center text-[13.5px] text-nubank-text-secondary">
         Não tem uma conta?{" "}
-        <Link
-          to={signUpHref}
-          className="font-semibold text-nubank-primary underline-offset-4 hover:underline"
-        >
-          Cadastre-se
+        <Link to={signUpHref} className="font-bold text-nubank-primary hover:underline">
+          Criar conta
         </Link>
       </p>
     </AuthFlowShell>
