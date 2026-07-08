@@ -144,11 +144,13 @@ const DestinationCarousel = ({
               key={`skeleton-${destination.code}`}
               className="basis-[46%] pl-2 sm:basis-[38%]"
             >
-              <div className="overflow-hidden rounded-[14px] bg-white p-2.5 shadow-nubank">
-                <Skeleton className="h-20 w-full rounded-xl" />
-                <Skeleton className="mt-2.5 h-4 w-20" />
-                <Skeleton className="mt-2 h-3.5 w-full" />
-                <Skeleton className="mt-1.5 h-3.5 w-5/6" />
+              <div className="overflow-hidden rounded-[20px] bg-white shadow-nubank">
+                <Skeleton className="h-[92px] w-full rounded-none" />
+                <div className="px-3 pb-3 pt-2.5">
+                  <Skeleton className="h-4 w-16 rounded-full" />
+                  <Skeleton className="mt-2 h-4 w-24" />
+                  <Skeleton className="mt-2 h-3.5 w-20" />
+                </div>
               </div>
             </CarouselItem>
           ))}
@@ -168,9 +170,9 @@ const DestinationCarousel = ({
                   onActivate={() =>
                     onDestinationClick?.({ code: destination.code, name: destination.name })
                   }
-                  className="w-full overflow-hidden rounded-[14px] gradient-card-subtle p-2.5 text-left shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover hover:-translate-y-0.5"
+                  className="w-full overflow-hidden rounded-[20px] bg-white text-left shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover hover:-translate-y-0.5"
                 >
-                  <div className="relative h-20 overflow-hidden rounded-xl">
+                  <div className="relative h-[92px] overflow-hidden">
                     <img
                       src={destination.image}
                       alt={destination.name}
@@ -178,25 +180,23 @@ const DestinationCarousel = ({
                       loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
-                    <span className="absolute bottom-1.5 left-2 text-sm font-semibold text-white">
+                    <span className="absolute bottom-2 left-3 font-display text-[15px] font-bold text-white">
                       {destination.name}
                     </span>
                   </div>
 
-                  <div className="mt-1.5 rounded-lg bg-nubank-bg px-2 py-1.5">
-                    <div className="mb-1 flex justify-end">
-                      <span className="rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold uppercase text-nubank-text-secondary">
-                        estimado
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-semibold text-nubank-text">
+                  <div className="px-3 pb-3 pt-2.5">
+                    <span className="inline-block rounded-full border border-[#E4E3E8] px-2 py-[3px] text-[9.5px] font-bold uppercase leading-none tracking-[0.08em] text-[#6E6D73]">
+                      Estimado
+                    </span>
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="font-display text-[15px] font-bold tabular-nums text-nubank-text">
                         {formatMiles(miles?.bestPrice ?? null)}
                       </p>
                       <AirlineLogo airline={miles?.airline} size={16} />
                     </div>
                     <div className="mt-1 flex items-center justify-between">
-                      <p className="text-[11px] text-nubank-text-secondary">
+                      <p className="text-xs font-medium tabular-nums text-nubank-text-secondary">
                         {formatMoney(money?.bestPrice ?? null)}
                       </p>
                       <AirlineLogo airline={money?.airline} size={16} />
@@ -213,21 +213,21 @@ const DestinationCarousel = ({
   return (
     <section className="px-5 py-4">
       <div className="mb-3">
-        <h2 className="text-lg font-bold tracking-tight text-nubank-text">Destinos em destaque</h2>
-      <p className="mt-0.5 text-xs text-nubank-text-secondary">
-        Referências estimadas por região com base nas origens habilitadas.
-      </p>
-    </div>
+        <h2 className="section-label mb-0">Destinos em destaque</h2>
+        <p className="mt-1 text-xs text-nubank-text-secondary">
+          Referências estimadas por região com base nas origens habilitadas.
+        </p>
+      </div>
       {!loading && error ? (
-        <div className="mb-3 rounded-[14px] border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
-          <p className="font-semibold">Preços indisponíveis agora</p>
-          <p className="mt-1 text-xs text-red-600">
+        <div className="mb-3 rounded-[16px] bg-destructive-soft px-4 py-3">
+          <p className="text-sm font-semibold text-destructive-strong">Preços indisponíveis agora</p>
+          <p className="mt-1 text-xs font-medium text-destructive-strong">
             Não foi possível atualizar os melhores preços. Os destinos continuam navegáveis, mas sem valores confiáveis.
           </p>
           <button
             type="button"
             onClick={retry}
-            className="mt-2 rounded-[10px] bg-white px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm"
+            className="mt-2 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-destructive-strong shadow-sm"
           >
             Tentar novamente
           </button>
