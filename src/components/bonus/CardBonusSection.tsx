@@ -1,8 +1,8 @@
 // src/components/bonus/CardBonusSection.tsx
-import { RefObject } from 'react'
+import { Fragment, RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
-import { BONUS_PROMOTIONS_SOURCE_NOTICE } from '@/lib/bonusMockData'
+import { BonusProgramLogo } from '@/components/bonus/BonusProgramLogo'
 
 interface Props {
   sectionRef?: RefObject<HTMLDivElement>
@@ -16,45 +16,42 @@ export function CardBonusSection({ sectionRef }: Props) {
 
   return (
     <div ref={sectionRef} className="mb-6">
-      <div className="mb-3 flex items-center gap-1.5">
-        <span className="text-base">💳</span>
-        <h3 className="text-[13px] font-bold" style={{ color: '#3498db' }}>
-          Promoções de Cartões
-        </h3>
-        <span className="text-[10px] text-nubank-text-secondary">{promotions.length} ofertas</span>
+      <div className="mb-2.5 flex items-baseline justify-between">
+        <h3 className="section-label mb-0">Cartões</h3>
+        <span className="text-[11px] font-medium text-nubank-text-secondary">
+          {promotions.length} {promotions.length === 1 ? 'oferta' : 'ofertas'}
+        </span>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {promotions.map(promo => (
-          <button
-            key={promo.id}
-            onClick={() => navigate(`/bonus-offers/${promo.id}`)}
-            className="flex w-full items-center justify-between rounded-2xl border border-[#f0e8ff] bg-white p-3.5 text-left shadow-nubank active:scale-[0.99] transition-transform"
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-bold uppercase tracking-wide text-nubank-text-secondary">
-                Oferta de cartão
-              </p>
-              <p className="mt-0.5 text-sm font-bold text-nubank-text">{promo.targetProgram}</p>
-              <p className="mt-0.5 text-[9px] text-nubank-text-secondary">{promo.bonusLabel}</p>
-              <p className="mt-1.5 text-[9px] font-semibold text-amber-700">
-                Referencia local, confira no programa
-              </p>
-            </div>
-
-            <div
-              className="ml-3 flex-shrink-0 rounded-xl p-2.5 text-center text-white"
-              style={{ background: 'linear-gradient(135deg, #2c3e50, #3498db)' }}
+      <div className="rounded-[20px] bg-white py-1 shadow-nubank">
+        {promotions.map((promo, index) => (
+          <Fragment key={promo.id}>
+            {index > 0 && <div className="mx-3.5 h-px bg-[#F1F0F3]" />}
+            <button
+              onClick={() => navigate(`/bonus-offers/${promo.id}`)}
+              className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition-transform active:scale-[0.99]"
             >
-              <p className="text-xl font-black leading-none">{promo.bonusValue}</p>
-              <p className="text-[9px] opacity-90">{promo.bonusLabel}</p>
-            </div>
-          </button>
+              <BonusProgramLogo program={promo.targetProgram} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-nubank-text">
+                  {promo.targetProgram}
+                </span>
+                <span className="block truncate text-xs text-nubank-text-secondary">
+                  Oferta de cartão
+                </span>
+              </span>
+              <span className="text-right">
+                <span className="block font-display text-xl font-bold tabular-nums text-primary">
+                  {promo.bonusValue}
+                </span>
+                <span className="block text-[10.5px] font-medium text-nubank-text-secondary">
+                  {promo.bonusLabel}
+                </span>
+              </span>
+            </button>
+          </Fragment>
         ))}
       </div>
-      <p className="mt-2 text-[10px] leading-snug text-nubank-text-secondary">
-        {BONUS_PROMOTIONS_SOURCE_NOTICE}
-      </p>
     </div>
   )
 }

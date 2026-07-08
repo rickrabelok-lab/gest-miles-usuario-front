@@ -1,15 +1,8 @@
 // src/components/bonus/ShoppingBonusSection.tsx
-import { RefObject } from 'react'
+import { Fragment, RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
-import { BONUS_PROMOTIONS_SOURCE_NOTICE } from '@/lib/bonusMockData'
-
-const PROGRAM_EMOJI: Record<string, string> = {
-  Livelo: '💗',
-  Esfera: '⭐',
-  TudoAzul: '✈️',
-  Smiles: '🌟',
-}
+import { BonusProgramLogo } from '@/components/bonus/BonusProgramLogo'
 
 interface Props {
   sectionRef?: RefObject<HTMLDivElement>
@@ -25,53 +18,44 @@ export function ShoppingBonusSection({ sectionRef }: Props) {
 
   return (
     <div ref={sectionRef} className="mb-6">
-      <div className="mb-3 flex items-center gap-1.5">
-        <span className="text-base">🛍</span>
-        <h3 className="text-[13px] font-bold" style={{ color: '#e67e22' }}>
-          Compras Bonificadas
-        </h3>
-        <span className="text-[10px] text-nubank-text-secondary">{maxStores}+ lojas</span>
+      <div className="mb-2.5 flex items-baseline justify-between">
+        <h3 className="section-label mb-0">Compras online</h3>
+        <span className="text-[11px] font-medium text-nubank-text-secondary">
+          {maxStores}+ lojas
+        </span>
       </div>
 
-      <div
-        className="flex gap-3 overflow-x-auto pb-1"
-        style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
-      >
-        {promotions.map(promo => (
-          <button
-            key={promo.id}
-            onClick={() => navigate(`/bonus-offers/${promo.id}`)}
-            className="flex-shrink-0 w-[88px] rounded-2xl border border-[#f0e8ff] bg-white p-3 text-center shadow-nubank active:scale-[0.98] transition-transform"
-          >
-            <span className="text-2xl">
-              {PROGRAM_EMOJI[promo.targetProgram] ?? '🏬'}
-            </span>
-            <p className="mt-1 text-[9px] font-bold text-nubank-text leading-tight">
-              {promo.targetProgram}
-            </p>
-            <p className="text-base font-black" style={{ color: '#e67e22' }}>
-              {promo.bonusValue}
-            </p>
-            <p className="text-[8px] text-nubank-text-secondary">{promo.bonusLabel}</p>
-            <p className="mt-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[8px] font-semibold text-amber-700">
-              Demo
-            </p>
-          </button>
+      <div className="rounded-[20px] bg-white py-1 shadow-nubank">
+        {promotions.map((promo, index) => (
+          <Fragment key={promo.id}>
+            {index > 0 && <div className="mx-3.5 h-px bg-[#F1F0F3]" />}
+            <button
+              onClick={() => navigate(`/bonus-offers/${promo.id}`)}
+              className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition-transform active:scale-[0.99]"
+            >
+              <BonusProgramLogo program={promo.targetProgram} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-nubank-text">
+                  {promo.targetProgram}
+                </span>
+                {promo.partnerStores && (
+                  <span className="block truncate text-xs text-nubank-text-secondary">
+                    {promo.partnerStores}+ lojas parceiras
+                  </span>
+                )}
+              </span>
+              <span className="text-right">
+                <span className="block font-display text-xl font-bold tabular-nums text-primary">
+                  {promo.bonusValue}
+                </span>
+                <span className="block text-[10.5px] font-medium text-nubank-text-secondary">
+                  {promo.bonusLabel}
+                </span>
+              </span>
+            </button>
+          </Fragment>
         ))}
-
-        {/* "Ver tudo" placeholder — fase 2 */}
-        <div
-          aria-disabled="true"
-          className="flex-shrink-0 w-[72px] cursor-default pointer-events-none rounded-2xl border border-dashed border-[#d8b4fe] bg-[#faf5ff] p-3 flex items-center justify-center"
-        >
-          <span className="text-[10px] font-semibold text-[#8A05BE] leading-tight text-center opacity-60">
-            Ver tudo →
-          </span>
-        </div>
       </div>
-      <p className="mt-2 text-[10px] leading-snug text-nubank-text-secondary">
-        {BONUS_PROMOTIONS_SOURCE_NOTICE}
-      </p>
     </div>
   )
 }
