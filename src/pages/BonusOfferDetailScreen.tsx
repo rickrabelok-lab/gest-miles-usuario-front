@@ -1,14 +1,44 @@
 // src/pages/BonusOfferDetailScreen.tsx
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { AlertTriangle, ArrowLeft } from 'lucide-react'
 import {
   BONUS_PROMOTIONS,
   BONUS_PROMOTIONS_SOURCE_NOTICE,
+  BonusCategory,
   BonusPromotion,
 } from '@/lib/bonusMockData'
-import { CATEGORY_CONFIG } from '@/lib/bonusUtils'
+import { isExpiringToday } from '@/lib/bonusUtils'
+import { BonusProgramLogo } from '@/components/bonus/BonusProgramLogo'
 
 type ActiveTab = 'promotion' | 'rules'
+
+const CATEGORY_SUBTITLE: Record<BonusCategory, string> = {
+  transfer: 'transferência de pontos',
+  shopping: 'compras bonificadas',
+  miles: 'compra de milhas',
+  cards: 'oferta de cartão',
+}
+
+function ExpiryPill({ promo }: { promo: BonusPromotion }) {
+  if (!promo.expiresAt) return null
+  const expiry = new Date(promo.expiresAt)
+
+  if (isExpiringToday(promo.expiresAt)) {
+    const time = expiry.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    return (
+      <span className="flex-none rounded-full bg-destructive-soft px-2.5 py-1 text-[10.5px] font-bold text-destructive-strong">
+        ATÉ {time}
+      </span>
+    )
+  }
+
+  return (
+    <span className="flex-none rounded-full bg-[#F1F0F3] px-2.5 py-1 text-[10.5px] font-bold text-[#54535A]">
+      até {expiry.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+    </span>
+  )
+}
 
 export default function BonusOfferDetailScreen() {
   const { id } = useParams<{ id: string }>()
@@ -19,11 +49,11 @@ export default function BonusOfferDetailScreen() {
 
   if (!promo) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#f7f7f8] px-6 text-center">
+      <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-3 bg-nubank-bg px-6 text-center">
         <p className="text-nubank-text-secondary">Promoção não encontrada.</p>
         <button
           onClick={() => navigate('/bonus-offers')}
-          className="rounded-xl bg-primary/10 px-4 py-2 text-sm font-semibold text-primary"
+          className="rounded-full bg-nubank-tint px-4 py-2 text-sm font-semibold text-nubank-dark"
         >
           Ver promoções
         </button>
@@ -31,148 +61,163 @@ export default function BonusOfferDetailScreen() {
     )
   }
 
-  const { color, gradient } = CATEGORY_CONFIG[promo.category]
-
-  function formatExpiry(p: BonusPromotion): string | null {
-    if (!p.expiresAt) return null
-    const expiry = new Date(p.expiresAt)
-    const date = expiry.toLocaleDateString('pt-BR')
-    const time = expiry.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-    return `⏰ Encerra em ${date} às ${time}`
-  }
-
-  const expiryLabel = formatExpiry(promo)
-
   return (
-    <div className="min-h-screen bg-[#f7f7f8]">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg">
       {/* Header */}
-      <div
-        className="flex items-center gap-3 px-4 py-3"
-        style={{ background: 'linear-gradient(135deg, #8A05BE 0%, #9E2FD4 100%)' }}
-      >
-        <button onClick={() => navigate(-1)} className="text-xl font-light leading-none text-white">
-          ←
+      <div className="flex items-center gap-2.5 px-5 pb-1 pt-4">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Voltar"
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-[16px] border border-nubank-border bg-white text-nubank-text transition-colors hover:bg-nubank-bg"
+        >
+          <ArrowLeft size={19} strokeWidth={2} />
         </button>
-        <h1 className="text-base font-bold text-white">{promo.targetProgram}</h1>
+        <BonusProgramLogo program={promo.targetProgram} size={36} />
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display text-[17px] font-bold tracking-tight text-nubank-text">
+            {promo.targetProgram}
+          </h1>
+          <p className="truncate text-xs text-nubank-text-secondary">
+            {CATEGORY_SUBTITLE[promo.category]}
+          </p>
+        </div>
+        <ExpiryPill promo={promo} />
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#f0e8ff] bg-white">
-        {(['promotion', 'rules'] as ActiveTab[]).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-3 text-[12px] font-bold transition-colors ${
-              activeTab === tab
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-nubank-text-secondary'
-            }`}
-          >
-            {tab === 'promotion' ? 'Promoção' : 'Regras'}
-          </button>
-        ))}
+      <div className="px-5 pt-3">
+        <div className="flex rounded-[16px] bg-[#EDECEF] p-1">
+          {(['promotion', 'rules'] as ActiveTab[]).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 rounded-[13px] py-2.5 text-[13.5px] transition-all ${
+                activeTab === tab
+                  ? 'bg-white font-semibold text-nubank-text shadow-[0_1px_4px_rgba(24,6,38,0.08)]'
+                  : 'font-medium text-nubank-text-secondary'
+              }`}
+            >
+              {tab === 'promotion' ? 'Promoção' : 'Regras'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="px-4 py-4 pb-24">
+      <div className="flex flex-col gap-4 px-5 pb-24 pt-4">
         {activeTab === 'promotion' ? (
           <>
-            {/* Hero badge */}
-            <div
-              className="relative mb-4 overflow-hidden rounded-2xl p-5 text-center text-white"
-              style={{ background: gradient }}
-            >
-              <div className="pointer-events-none absolute right-[-30px] top-[-30px] h-28 w-28 rounded-full bg-white/5" />
-              <p className="text-6xl font-black leading-none">{promo.bonusValue}</p>
-              <p className="mt-2 text-sm opacity-90">{promo.bonusLabel}</p>
-              <p className="mt-1 text-xs opacity-75">
+            {/* Hero */}
+            <div className="rounded-[24px] bg-white px-5 py-6 text-center shadow-nubank">
+              <div className="flex items-baseline justify-center gap-2">
+                <span className="font-display text-[56px] font-bold leading-none tracking-tight tabular-nums text-primary">
+                  {promo.bonusValue}
+                </span>
+                <span className="text-base font-medium text-nubank-text-secondary">
+                  {promo.bonusLabel}
+                </span>
+              </div>
+              <p className="mt-2 text-[13.5px] text-nubank-text-secondary">
                 {promo.category === 'transfer'
-                  ? `Transfira seus pontos para ${promo.targetProgram}`
+                  ? `Transfira seus pontos para o ${promo.targetProgram}`
                   : promo.targetProgram}
               </p>
-            </div>
-
-            {/* Tiers */}
-            {promo.tiers && promo.tiers.length > 0 && (
-              <div className="mb-4">
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-nubank-text-secondary">
-                  Bônus por perfil
-                </p>
-                <div className="flex flex-col gap-2">
-                  {promo.tiers.map((tier, i) => (
-                    <div
-                      key={i}
-                      className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${
-                        tier.isBest
-                          ? 'border border-[#8A05BE]/30 bg-[#f0e8ff]'
-                          : 'border border-[#f0e8ff] bg-white'
-                      }`}
-                    >
-                      <span className="text-[11px] text-nubank-text">{tier.label}</span>
-                      <span className="text-base font-black" style={{ color }}>
-                        {tier.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Max bonus */}
-            {promo.maxBonus && (
-              <div className="mb-4 rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-2.5 text-center">
-                <p className="text-[10px] font-semibold text-yellow-700">
-                  ⚠️ Bônus máximo da promoção: {promo.maxBonus.toLocaleString('pt-BR')} pts
-                </p>
-              </div>
-            )}
-
-            {/* Participating banks */}
-            {promo.participatingBanks && promo.participatingBanks.length > 0 && (
-              <div className="mb-4">
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-nubank-text-secondary">
-                  Bancos participantes
-                </p>
-                <div className="flex flex-wrap gap-2">
+              {promo.participatingBanks && promo.participatingBanks.length > 0 && (
+                <div className="mt-3.5 flex flex-wrap justify-center gap-1.5">
                   {promo.participatingBanks.map(bank => (
                     <span
                       key={bank}
-                      className="rounded-full bg-[#f0e8ff] px-3 py-1 text-[10px] font-semibold text-[#8A05BE]"
+                      className="rounded-full bg-[#F1F0F3] px-2.5 py-1 text-[11.5px] font-semibold text-[#54535A]"
                     >
                       {bank}
                     </span>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Bônus por perfil */}
+            {promo.tiers && promo.tiers.length > 0 && (
+              <div>
+                <p className="section-label mb-2.5">Bônus por perfil</p>
+                <div className="rounded-[20px] bg-white p-1 shadow-nubank">
+                  {promo.tiers.map((tier, index) =>
+                    tier.isBest ? (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2.5 rounded-[16px] border border-[#E5CCF2] bg-nubank-tint px-3.5 py-3"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[13.5px] font-semibold text-nubank-text">
+                            {tier.label}
+                          </span>
+                          <span className="block text-[11px] font-semibold text-nubank-dark">
+                            maior bônus
+                          </span>
+                        </span>
+                        <span className="font-display text-lg font-bold tabular-nums text-primary">
+                          {tier.value}
+                        </span>
+                      </div>
+                    ) : (
+                      <Fragment key={index}>
+                        {index > 0 && !promo.tiers[index - 1].isBest && (
+                          <div className="mx-3.5 h-px bg-[#F1F0F3]" />
+                        )}
+                        <div className="flex items-center gap-2.5 px-3.5 py-3">
+                          <span className="min-w-0 flex-1 text-[13.5px] font-medium text-nubank-text">
+                            {tier.label}
+                          </span>
+                          <span className="font-display text-base font-bold tabular-nums text-primary">
+                            {tier.value}
+                          </span>
+                        </div>
+                      </Fragment>
+                    )
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Expiry */}
-            {expiryLabel && (
-              <p className="mb-4 text-center text-[10px] font-semibold text-red-500">
-                {expiryLabel}
-              </p>
+            {/* Bônus máximo */}
+            {promo.maxBonus && (
+              <div className="flex items-center gap-2.5 rounded-[16px] bg-warning-soft px-3.5 py-3">
+                <AlertTriangle size={16} strokeWidth={1.9} className="flex-none text-warning-strong" />
+                <p className="text-[12.5px] font-medium leading-snug text-warning-strong">
+                  Bônus máximo da promoção:{' '}
+                  <strong>{promo.maxBonus.toLocaleString('pt-BR')} pts</strong>.
+                </p>
+              </div>
             )}
 
             {/* CTA */}
             {promo.ctaUrl && (
-              <div className="space-y-2">
-                <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-snug text-amber-800">
-                  {BONUS_PROMOTIONS_SOURCE_NOTICE}
-                </p>
+              <div className="flex gap-2.5">
                 <a
                   href={promo.ctaUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full rounded-2xl py-4 text-center text-[13px] font-bold text-white shadow-[0_4px_16px_rgba(138,5,190,0.3)]"
-                  style={{ background: 'linear-gradient(135deg, #8A05BE, #B56CFF)' }}
+                  className="gradient-primary flex h-[52px] flex-1 items-center justify-center rounded-[18px] text-[15px] font-bold text-white shadow-[0_6px_18px_-4px_rgba(138,5,190,0.5)]"
                 >
-                  Conferir no programa →
+                  Quero aproveitar
                 </a>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('rules')}
+                  className="flex h-[52px] items-center justify-center rounded-[18px] border border-nubank-border bg-white px-[18px] text-sm font-semibold text-nubank-text"
+                >
+                  Ver regras
+                </button>
               </div>
             )}
+
+            <p className="px-2 text-center text-[11px] leading-snug text-[#A9A8AE]">
+              {BONUS_PROMOTIONS_SOURCE_NOTICE}
+            </p>
           </>
         ) : (
-          <div className="rounded-2xl border border-[#f0e8ff] bg-white p-4">
-            <p className="text-[12px] leading-relaxed text-nubank-text">
+          <div className="rounded-[20px] bg-white p-4 shadow-nubank">
+            <p className="text-[13px] leading-relaxed text-nubank-text">
               {promo.rules ??
                 'Consulte o site do programa para mais informações sobre as regras desta promoção.'}
             </p>
