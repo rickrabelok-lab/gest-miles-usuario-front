@@ -1,6 +1,7 @@
 import { useState, useMemo, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Zap, X } from "lucide-react";
+import { ArrowLeft, BellRing, Plus, Search, Zap, X } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGestor } from "@/hooks/useGestor";
 import { useProgramasCliente } from "@/hooks/useProgramasCliente";
@@ -10,9 +11,11 @@ type FilterKey = "todos" | "critico" | "atencao" | "ok";
 
 type VencimentoMeuItem = {
   programName: string;
+  programColor?: string;
   data: string;
   diasRestantes: number;
   quantidade: number;
+  valorEstimado?: number;
 };
 
 const getUrgency = (dias: number): Exclude<FilterKey, "todos"> => {
@@ -112,9 +115,11 @@ const VencimentosPage = () => {
     const items: VencimentoMeuItem[] = [];
     (meusProgramas ?? []).forEach((row) => {
       const state = row.state as {
+        custoMedioMilheiro?: number;
         lotes?: Array<{ validadeLote?: string; quantidade?: number }>;
         movimentos?: Array<{ tipo?: string; validadeLote?: string; milhas?: number }>;
       } | null;
+      const cpm = Number(state?.custoMedioMilheiro ?? 0);
       const lotes = (state?.lotes ?? [])
         .filter((l) => !!l.validadeLote && (l.quantidade ?? 0) > 0)
         .map((l) => ({ validadeLote: l.validadeLote!, quantidade: Number(l.quantidade ?? 0) }));
@@ -128,9 +133,11 @@ const VencimentosPage = () => {
         const diasRestantes = Math.ceil((validade.getTime() - hoje.getTime()) / msDia);
         items.push({
           programName: row.program_name ?? row.program_id,
+          programColor: row.logo_color ?? undefined,
           data: validade.toLocaleDateString("pt-BR", { timeZone: "UTC" }),
           diasRestantes,
           quantidade: lote.quantidade,
+          valorEstimado: cpm > 0 ? (lote.quantidade / 1000) * cpm : undefined,
         });
       });
     });
@@ -248,91 +255,106 @@ const VencimentosPage = () => {
     );
   };
 
-  const renderMeuBandHeader = (
-    variant: "critico" | "atencao" | "ok",
-    label: string,
-    pill: string,
-  ) => {
-    const colors =
+  const renderMeuBandHeader = (variant: "critico" | "atencao" | "ok", label: string) => {
+    const dot =
       variant === "critico"
-        ? { dot: "bg-red-500", title: "text-red-700", pill: "bg-red-50 text-red-700" }
+        ? "bg-destructive"
         : variant === "atencao"
-        ? { dot: "bg-amber-500", title: "text-amber-800", pill: "bg-amber-50 text-amber-800" }
-        : { dot: "bg-green-500", title: "text-green-800", pill: "bg-green-50 text-green-800" };
+          ? "bg-warning"
+          : "bg-info";
     return (
-      <div className="flex items-center gap-2 px-0.5">
-        <div className={`h-2 w-2 flex-shrink-0 rounded-full ${colors.dot}`} />
-        <span className={`flex-1 text-[11px] font-extrabold uppercase tracking-wide ${colors.title}`}>
+      <div className="mb-2.5 flex items-center gap-2 px-0.5">
+        <div className={`h-2 w-2 flex-shrink-0 rounded-full ${dot}`} />
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
           {label}
         </span>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${colors.pill}`}>
-          {pill}
-        </span>
       </div>
     );
   };
 
-  const renderMeuCard2 = (item: VencimentoMeuItem) => {
+  const renderMeuRow = (item: VencimentoMeuItem, idx: number) => {
     const urgency = getUrgency(item.diasRestantes);
-    const dayColor =
+    const badgeClass =
       urgency === "critico"
-        ? "text-red-500"
+        ? "bg-destructive-soft text-destructive-strong"
         : urgency === "atencao"
-        ? "text-amber-500"
-        : "text-green-500";
+          ? "bg-warning-soft text-warning-strong"
+          : "bg-info-soft text-info-strong";
     return (
-      <div
-        key={`${item.programName}-${item.data}-${item.quantidade}`}
-        className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
-      >
-        <div
-          className={`flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] text-[11px] font-black text-white ${getAvatarGradient(item.programName)}`}
-        >
-          {getInitials(item.programName)}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[12px] font-bold text-gray-900">{item.programName}</div>
-          <div className="mt-0.5 text-[10px] text-gray-400">
-            {item.quantidade.toLocaleString("pt-BR")} pts · {formatDataVencimento(item.data)}
+      <Fragment key={`${item.programName}-${item.data}-${item.quantidade}`}>
+        {idx > 0 && <div className="mx-3.5 h-px bg-[#F1F0F3]" />}
+        <div className="flex items-center gap-3 px-3.5 py-3">
+          <div
+            className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[14px] font-display text-sm font-bold text-white ${
+              item.programColor ? "" : getAvatarGradient(item.programName)
+            }`}
+            style={item.programColor ? { backgroundColor: item.programColor } : undefined}
+          >
+            {getInitials(item.programName)}
           </div>
-        </div>
-        <div className="flex-shrink-0 text-right">
-          <div className={`text-[14px] font-black leading-none ${dayColor}`}>
-            {item.diasRestantes}
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-display text-[15px] font-semibold tabular-nums text-nubank-text">
+              {item.quantidade.toLocaleString("pt-BR")} milhas
+            </div>
+            <div className="mt-0.5 truncate text-[12.5px] text-nubank-text-secondary">
+              {item.programName} · vence {formatDataVencimento(item.data)}
+              {typeof item.valorEstimado === "number" && item.valorEstimado > 0
+                ? ` · ≈ ${item.valorEstimado.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}`
+                : ""}
+            </div>
           </div>
-          <div className="mt-0.5 text-[9px] font-semibold text-gray-400">dias</div>
+          <span
+            className={`flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold leading-none ${badgeClass}`}
+          >
+            {item.diasRestantes} {item.diasRestantes === 1 ? "dia" : "dias"}
+          </span>
         </div>
-      </div>
+      </Fragment>
     );
   };
+
+  const totalVencendoBreve = [...meusBands.critico, ...meusBands.atencao].reduce(
+    (acc, i) => acc + i.quantidade,
+    0,
+  );
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-[#f4f4f8] pb-24">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 py-3">
+      <header className="flex items-start justify-between gap-3 px-5 pb-1 pt-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              aria-label="Voltar"
+              className="-ml-2 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white"
+            >
+              <ArrowLeft size={20} strokeWidth={1.75} />
+            </button>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-nubank-text">
+              Alertas
+            </h1>
+          </div>
+          {!isGestor && totalVencendoBreve > 0 && (
+            <p className="mt-0.5 pl-8 text-[13px] tabular-nums text-nubank-text-secondary">
+              {totalVencendoBreve.toLocaleString("pt-BR")} milhas vencendo em breve
+            </p>
+          )}
+        </div>
+        {!isGestor && (
           <button
             type="button"
-            onClick={() => navigate(-1)}
-            className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
+            onClick={() => navigate("/alertas/novo")}
+            className="mt-1 flex h-11 flex-none items-center gap-1.5 rounded-[16px] bg-nubank-tint px-4 text-[13px] font-semibold text-nubank-dark transition-colors hover:bg-primary/15"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} />
+            <Plus size={15} strokeWidth={2.2} aria-hidden />
+            Criar alerta
           </button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[15px] font-bold tracking-tight text-gray-900">
-              Milhas Vencendo
-            </h1>
-            {!isGestor && meusVencimentos.length > 0 && (
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
-                {meusVencimentos.length} {meusVencimentos.length === 1 ? "programa" : "programas"}
-              </span>
-            )}
-          </div>
-          <div className="w-9" />
-        </div>
+        )}
       </header>
 
-      <main className="flex flex-col gap-3 p-3.5">
+      <main className="flex flex-col gap-3 px-5 py-3">
         {/* Demanda banner */}
         {showBanner && (
           <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-800">
@@ -385,47 +407,69 @@ const VencimentosPage = () => {
             </div>
           )
         ) : meusVencimentos.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-14 text-center">
-            <span className="text-5xl opacity-20">🎉</span>
-            <p className="text-[14px] font-bold text-gray-700">Tudo em dia!</p>
-            <p className="text-[12px] leading-relaxed text-gray-400">
+          <div className="flex flex-col items-center gap-2 rounded-[20px] bg-white px-6 py-12 text-center shadow-nubank-card">
+            <span className="text-5xl">🎉</span>
+            <p className="mt-2 text-[15px] font-semibold text-nubank-text">Tudo em dia!</p>
+            <p className="max-w-[250px] text-[13px] leading-relaxed text-nubank-text-secondary">
               Nenhuma milha vencendo nos próximos dias.
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-5">
             {meusBands.critico.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {renderMeuBandHeader("critico", "Crítico", "≤ 30 dias")}
-                <div className="flex flex-col gap-1.5">
-                  {meusBands.critico.map(renderMeuCard2)}
+              <div>
+                {renderMeuBandHeader("critico", "Próximos 30 dias")}
+                <div className="rounded-[20px] border-l-4 border-[#E4574A] bg-white py-1 shadow-nubank-card">
+                  {meusBands.critico.map(renderMeuRow)}
                 </div>
               </div>
-            )}
-            {meusBands.critico.length > 0 && meusBands.atencao.length > 0 && (
-              <div className="h-px bg-gray-200" />
             )}
             {meusBands.atencao.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {renderMeuBandHeader("atencao", "Atenção", "31 – 60 dias")}
-                <div className="flex flex-col gap-1.5">
-                  {meusBands.atencao.map(renderMeuCard2)}
+              <div>
+                {renderMeuBandHeader("atencao", "31 a 60 dias")}
+                <div className="rounded-[20px] bg-white py-1 shadow-nubank-card">
+                  {meusBands.atencao.map(renderMeuRow)}
                 </div>
               </div>
             )}
-            {(meusBands.critico.length > 0 || meusBands.atencao.length > 0) &&
-              meusBands.ok.length > 0 && <div className="h-px bg-gray-200" />}
             {meusBands.ok.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {renderMeuBandHeader("ok", "Tranquilo", "> 60 dias")}
-                <div className="flex flex-col gap-1.5">
-                  {meusBands.ok.map(renderMeuCard2)}
+              <div>
+                {renderMeuBandHeader("ok", "Acima de 60 dias")}
+                <div className="rounded-[20px] bg-white py-1 shadow-nubank-card">
+                  {meusBands.ok.map(renderMeuRow)}
                 </div>
               </div>
             )}
           </div>
         )}
+
+        {!isGestor && (
+          <div className="mt-2">
+            <p className="section-label px-0.5">Alertas personalizados</p>
+            <div className="flex flex-col items-center rounded-[20px] bg-white px-6 py-7 text-center shadow-nubank-card">
+              <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-primary-subtle text-nubank-primary">
+                <BellRing size={28} strokeWidth={1.6} aria-hidden />
+              </span>
+              <p className="mt-3.5 text-[15px] font-semibold text-nubank-text">
+                Crie alertas do seu jeito
+              </p>
+              <p className="mt-1 max-w-[260px] text-[13px] leading-relaxed text-nubank-text-secondary">
+                Avise-me quando um trecho baixar de preço ou um bônus de transferência valer a
+                pena.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate("/alertas/novo")}
+                className="mt-4 h-[46px] rounded-[16px] px-5 text-[13.5px] font-semibold text-white shadow-[0_4px_14px_-4px_rgba(138,5,190,0.45)] transition-all duration-300 ease-out gradient-primary hover:opacity-95 active:scale-[0.98]"
+              >
+                Criar alerta
+              </button>
+            </div>
+          </div>
+        )}
       </main>
+
+      {!isGestor && <BottomNav />}
     </div>
   );
 };
