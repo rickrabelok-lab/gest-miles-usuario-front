@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  ArrowDownLeft,
   ArrowDownRight,
   ArrowUpRight,
+  BarChart3,
   ChevronDown,
   ChevronRight,
+  Clock,
   Download,
+  Plane,
   Plus,
+  Search,
+  TrendingUp,
   X,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -297,6 +303,9 @@ function formatExtratoDate(value?: string): string {
   if (!d) return value.trim();
   return d.toLocaleDateString("pt-BR");
 }
+
+const brlInteiro = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 /** Mesmo id estável usado na lista do extrato quando `mov.id` não veio persistido. */
 function stableExtratoMovimentoId(
@@ -1099,6 +1108,19 @@ const Index = () => {
 
   const visiblePrograms = showAll ? programs : programs.slice(0, 4);
 
+  const saudacaoLabel = useMemo(() => {
+    const h = new Date().getHours();
+    return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+  }, []);
+
+  const clienteFirstName = useMemo(() => {
+    const meta = (user?.user_metadata as Record<string, unknown> | undefined)?.full_name;
+    const base =
+      typeof meta === "string" && meta.trim() ? meta.trim() : (user?.email?.split("@")[0] ?? "");
+    const first = base.split(/[\s._-]+/)[0] ?? "";
+    return first ? first.charAt(0).toUpperCase() + first.slice(1) : "";
+  }, [user]);
+
   const loadDemandGestores = useCallback(async () => {
     if (!isDemandDialogOpen || !demandTargetClientId) return;
 
@@ -1514,6 +1536,21 @@ const Index = () => {
     };
   }, [allPersistedPrograms, economiaPeriodoMeses]);
 
+  const patrimonio = useMemo(() => {
+    let milhas = 0;
+    let valor = 0;
+    allPersistedPrograms.forEach(({ state }) => {
+      const saldo = Number(state.saldo ?? 0);
+      if (saldo > 0) milhas += saldo;
+      const cpm = Number(state.custoMedioMilheiro ?? 0);
+      if (saldo > 0 && cpm > 0) valor += (saldo / 1000) * cpm;
+    });
+    return { milhas, valor };
+  }, [allPersistedPrograms]);
+
+  const vencimentoCritico = vencimentosGlobais.find((i) => i.diasRestantes <= 30) ?? null;
+  const ultimosMovimentos = extratoGlobal.slice(0, 4);
+
   const [emissoesProgramFilter, setEmissoesProgramFilter] = useState<
     "all" | "latam" | "smiles" | "tudoazul" | "livelo" | "esfera"
   >("all");
@@ -1625,19 +1662,74 @@ const Index = () => {
 
       {activeTab === "saldo" && (
         <>
-          <div className="px-5 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="flex w-full items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddProgramMenuOpen(true)}
-                  className="inline-flex h-9 items-center justify-center gap-1 rounded-[10px] border border-[#8A05BE] bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-[#8A05BE] shadow-nubank transition-colors hover:bg-purple-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                >
-                  <Plus size={12} />
-                  <span>Novo</span>
-                </button>
+          <div className="px-5 pt-3 text-sm text-nubank-text-secondary">
+            {saudacaoLabel},{" "}
+            <span className="font-bold text-nubank-text">{clienteFirstName || "viajante"}</span>
+          </div>
 
-                <ProgramSelectionSheet
+          <div className="px-5 pt-3">
+            <div className="rounded-3xl bg-white p-5 shadow-nubank-card">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+                Patrimônio em milhas
+              </p>
+              <div className="mt-2 flex flex-wrap items-baseline gap-2">
+                <span className="font-display text-4xl font-bold tabular-nums leading-none tracking-tight text-nubank-text">
+                  {patrimonio.milhas.toLocaleString("pt-BR")}
+                </span>
+                <span className="text-sm font-medium text-nubank-text-secondary">milhas</span>
+              </div>
+              {(patrimonio.valor > 0 || analiseEconomia.economiaTotal > 0) && (
+                <div className="mt-3.5 flex flex-wrap gap-2">
+                  {patrimonio.valor > 0 && (
+                    <span className="rounded-full bg-[#F1F0F3] px-3 py-1.5 text-[12.5px] font-semibold tabular-nums text-nubank-text">
+                      ≈ {brlInteiro(patrimonio.valor)}
+                    </span>
+                  )}
+                  {analiseEconomia.economiaTotal > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 text-[12.5px] font-semibold tabular-nums text-success-strong">
+                      <TrendingUp size={12} strokeWidth={2.4} aria-hidden />
+                      {brlInteiro(analiseEconomia.economiaTotal)} · {economiaPeriodoMeses}m
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-between px-5 pt-5">
+            {[
+              { label: "Cotação", Icon: Plane, onClick: () => setIsDemandDialogOpen(true), badge: 0 },
+              { label: "Buscar voos", Icon: Search, onClick: () => navigate("/search-flights"), badge: 0 },
+              {
+                label: "Vencimentos",
+                Icon: Clock,
+                onClick: () => setActiveTab("vencendo"),
+                badge: vencimentosBands.critico.length,
+              },
+              { label: "Economia", Icon: BarChart3, onClick: () => setActiveTab("economia"), badge: 0 },
+            ].map(({ label, Icon, onClick, badge }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={onClick}
+                className="flex w-[74px] flex-col items-center gap-2"
+              >
+                <span className="relative flex h-[54px] w-[54px] items-center justify-center rounded-[20px] border border-nubank-border bg-white text-primary shadow-nubank transition-colors hover:bg-nubank-bg">
+                  <Icon size={22} strokeWidth={1.75} aria-hidden />
+                  {badge > 0 && (
+                    <span className="absolute -right-1 -top-1 min-h-[18px] min-w-[18px] rounded-full bg-nubank-notification px-1 text-center text-[10.5px] font-bold leading-[18px] text-white">
+                      {badge > 9 ? "9+" : badge}
+                    </span>
+                  )}
+                </span>
+                <span className="whitespace-nowrap text-[11px] font-semibold text-[#54535A]">
+                  {label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <ProgramSelectionSheet
                   isOpen={isAddProgramMenuOpen}
                   onClose={() => setIsAddProgramMenuOpen(false)}
                   activePrograms={programDefs.map((p) => ({
@@ -1652,80 +1744,27 @@ const Index = () => {
                   logoImages={programLogoImagesForSheet}
                 />
 
-                <button
-                  type="button"
-                  onClick={() => setIsDemandDialogOpen(true)}
-                  className="inline-flex h-9 flex-1 items-center justify-center rounded-[10px] border border-transparent bg-primary px-2 text-[11px] font-semibold whitespace-nowrap text-primary-foreground shadow-nubank transition-colors hover:bg-primary/90"
-                >
-                  Solicitar Cotação
-                </button>
-                <button
-                  type="button"
-                  disabled
-                  className="inline-flex h-9 cursor-not-allowed items-center justify-center gap-1 rounded-[10px] border border-gray-200 bg-white px-3 text-[11px] font-semibold whitespace-nowrap text-nubank-text opacity-60 shadow-nubank dark:border-slate-700 dark:bg-transparent dark:text-slate-200"
-                >
-                  {actionPlanSelectedPrograms.length > 1 ? (
-                    <span className="inline-flex items-center gap-1">
-                      {actionPlanButtonIcons.map((program) =>
-                        program.iconSrc ? (
-                          <span key={`action-plan-icon-${program.key}`} className="inline-flex h-4 w-4">
-                            {ACTION_PLAN_AIRLINE_BY_KEY[program.key] ? (
-                              <AirlineLogo airline={ACTION_PLAN_AIRLINE_BY_KEY[program.key]} size={16} />
-                            ) : (
-                              <img
-                                src={program.iconSrc}
-                                alt={`Programa ${program.label}`}
-                                className="h-4 w-4 bg-transparent object-contain"
-                              />
-                            )}
-                          </span>
-                        ) : (
-                          <span
-                            key={`action-plan-icon-${program.key}`}
-                            className="inline-flex h-4 w-4 items-center justify-center text-[8px] font-bold leading-none text-current"
-                          >
-                            {program.fallbackIcon}
-                          </span>
-                        ),
-                      )}
-                      {actionPlanButtonOverflowCount > 0 && (
-                        <span className="inline-flex h-4 min-w-4 items-center justify-center text-[9px] font-semibold leading-none text-current">
-                          +{actionPlanButtonOverflowCount}
-                        </span>
-                      )}
-                    </span>
-                  ) : actionPlanSelectedPrograms[0]?.iconSrc ? (
-                    <>
-                      {ACTION_PLAN_AIRLINE_BY_KEY[actionPlanSelectedPrograms[0].key] ? (
-                        <AirlineLogo
-                          airline={ACTION_PLAN_AIRLINE_BY_KEY[actionPlanSelectedPrograms[0].key]}
-                          size={16}
-                        />
-                      ) : (
-                        <img
-                          src={actionPlanSelectedPrograms[0].iconSrc}
-                          alt={`Programa ${actionPlanSelectedPrograms[0].label}`}
-                          className="h-4 w-4 bg-transparent object-contain"
-                        />
-                      )}
-                    </>
-                  ) : null}
-                </button>
-              </div>
+          <section id="meus-programas" className="mt-6 flex items-center justify-between px-5 pb-3">
+            <span className="section-label mb-0">Meus programas</span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsAddProgramMenuOpen(true)}
+                aria-label="Adicionar programa"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-nubank-tint text-nubank-dark transition-colors hover:bg-primary/15"
+              >
+                <Plus size={15} strokeWidth={2.25} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAll(true)}
+                className="text-[13px] font-semibold text-primary"
+              >
+                Ver todos →
+              </button>
             </div>
-          </div>
-
-          <section id="meus-programas" className="flex items-center justify-between px-5 pb-1">
-            <h2 className="text-[15px] font-bold text-gray-900">Meus programas</h2>
-            <button
-              type="button"
-              onClick={() => setShowAll(true)}
-              className="text-[11px] font-semibold text-[#8A05BE]"
-            >
-              Ver todos →
-            </button>
           </section>
-          <div className="grid grid-cols-2 gap-1.5 px-5 pb-2">
+          <div className="grid grid-cols-2 gap-2.5 px-5 pb-2">
             {visiblePrograms.map((prog) => (
               <ProgramCard key={prog.programId} {...prog} />
             ))}
@@ -1741,14 +1780,105 @@ const Index = () => {
             </button>
           )}
 
-          <div className="mt-5">
+          {vencimentoCritico && (
+            <div className="mx-5 mt-5 flex items-center gap-3 rounded-[20px] border-l-4 border-[#E4574A] bg-white p-4 shadow-nubank-card">
+              <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px] bg-destructive-soft text-destructive">
+                <Clock size={20} strokeWidth={1.75} aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-nubank-text">
+                  {vencimentoCritico.quantidade.toLocaleString("pt-BR")} milhas vencem em{" "}
+                  {vencimentoCritico.diasRestantes}{" "}
+                  {vencimentoCritico.diasRestantes === 1 ? "dia" : "dias"}
+                </span>
+                <span className="block text-[12.5px] text-nubank-text-secondary">
+                  {vencimentoCritico.programName} · lote de {vencimentoCritico.data}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveTab("vencendo")}
+                className="shrink-0 text-[13px] font-semibold text-primary"
+              >
+                Ver opções
+              </button>
+            </div>
+          )}
+
+          {ultimosMovimentos.length > 0 && (
+            <div className="mt-6 px-5">
+              <div className="mb-3 flex items-baseline justify-between">
+                <span className="section-label mb-0">Últimos movimentos</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("extrato")}
+                  className="text-[13px] font-semibold text-primary"
+                >
+                  Extrato completo →
+                </button>
+              </div>
+              <div className="rounded-[20px] bg-white px-1 py-1 shadow-nubank-card">
+                {ultimosMovimentos.map((item, idx) => {
+                  const isSaida = item.tipo === "saida";
+                  const rota =
+                    item.origem?.trim() && item.destino?.trim()
+                      ? `${item.origem.toUpperCase()} → ${item.destino.toUpperCase()}`
+                      : null;
+                  const isEmissao = isSaida && !!rota;
+                  const MovIcon = isEmissao ? Plane : isSaida ? ArrowUpRight : ArrowDownLeft;
+                  const tintClass = isEmissao
+                    ? "bg-primary-soft text-primary"
+                    : isSaida
+                      ? "bg-destructive-soft text-destructive-strong"
+                      : "bg-success-soft text-success-strong";
+                  const valorClass = isEmissao
+                    ? "text-primary"
+                    : isSaida
+                      ? "text-destructive-strong"
+                      : "text-success-strong";
+                  return (
+                    <div key={`${item.programSlug}-${item.id}`}>
+                      {idx > 0 && <div className="mx-3.5 h-px bg-[#F1F0F3]" />}
+                      <button
+                        type="button"
+                        onClick={() => setResumoCliente({ kind: "extrato", item })}
+                        className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left transition-colors hover:bg-nubank-bg/60"
+                      >
+                        <span
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] ${tintClass}`}
+                        >
+                          <MovIcon size={17} strokeWidth={2} aria-hidden />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13.5px] font-semibold text-nubank-text">
+                            {isEmissao ? `Emissão · ${rota}` : item.descricao}
+                          </span>
+                          <span className="block truncate text-xs text-nubank-text-secondary">
+                            {item.programName} · {formatExtratoDate(item.data)}
+                          </span>
+                        </span>
+                        <span
+                          className={`shrink-0 font-display text-[14.5px] font-semibold tabular-nums ${valorClass}`}
+                        >
+                          {isSaida ? "−" : "+"}
+                          {Math.abs(item.milhas).toLocaleString("pt-BR")}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6">
             <DestinationCarousel
               origins={enabledOrigins}
               onDestinationClick={handleSearchEmissionFromDestinationCard}
             />
           </div>
 
-          <div className="mt-5">
+          <div className="mt-6">
             <BonusPromotionsSection />
           </div>
 
