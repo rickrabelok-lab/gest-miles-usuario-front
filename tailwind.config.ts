@@ -27,6 +27,8 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          soft: "var(--primary-soft)",
+          strong: "var(--primary-strong)",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -35,14 +37,26 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+          soft: "var(--destructive-soft)",
+          strong: "var(--destructive-strong)",
         },
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
+          soft: "var(--success-soft)",
+          strong: "var(--success-strong)",
         },
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
+          soft: "var(--warning-soft)",
+          strong: "var(--warning-strong)",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+          soft: "var(--info-soft)",
+          strong: "var(--info-strong)",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -83,6 +97,7 @@ export default {
           primary: "#8A05BE",
           dark: "#6A00A3",
           light: "#B56CFF",
+          tint: "#F6EDFB",
         },
       },
       borderRadius: {
@@ -91,13 +106,13 @@ export default {
         sm: "calc(var(--radius) - 4px)",
         "2xl": "1rem",
         "3xl": "1.125rem",
-        card: "1rem",
-        "card-lg": "1.125rem",
+        card: "1.25rem",
+        "card-lg": "1.5rem",
       },
       boxShadow: {
-        "nubank": "0 2px 8px -2px rgba(0, 0, 0, 0.04), 0 4px 16px -4px rgba(0, 0, 0, 0.03)",
-        "nubank-hover": "0 8px 24px -4px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(138, 5, 190, 0.05)",
-        "nubank-card": "0 2px 8px -2px rgba(0, 0, 0, 0.04), 0 4px 16px -4px rgba(0, 0, 0, 0.03)",
+        "nubank": "0 2px 8px -2px rgba(24, 6, 38, 0.05)",
+        "nubank-hover": "0 8px 24px -4px rgba(24, 6, 38, 0.08), 0 4px 12px -2px rgba(138, 5, 190, 0.06)",
+        "nubank-card": "0 2px 8px -2px rgba(24, 6, 38, 0.05)",
       },
       keyframes: {
         "accordion-down": {
