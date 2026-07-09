@@ -1,25 +1,21 @@
-import destBrasil from "@/assets/dest-brasil.jpg";
-import destBrasilNew from "@/assets/dest-brasil-new.png";
-import destSudeste from "@/assets/dest-sudeste.jpg";
-import destSudesteNew from "@/assets/dest-sudeste-new.png";
-import destSulNew from "@/assets/dest-sul-new.png";
-import destCentroOesteNew from "@/assets/dest-centro-oeste-new.png";
-import destNorteNew from "@/assets/dest-norte-new.png";
-import destNordesteNew from "@/assets/dest-nordeste-new.png";
-import destUSA from "@/assets/dest-usa.jpg";
-import destEuaNew from "@/assets/dest-eua-new.png";
-import destPortugal from "@/assets/dest-portugal.jpg";
-import destPortugalNew from "@/assets/dest-portugal-new.png";
-import destEspanhaNew from "@/assets/dest-espanha-new.png";
-import destReinoUnidoNew from "@/assets/dest-reino-unido-new.png";
-import destFrancaNew from "@/assets/dest-franca-new.png";
-import destAlemanhaNew from "@/assets/dest-alemanha-new.png";
-import destArgentinaNew from "@/assets/dest-argentina-new.png";
-import destItaliaNew from "@/assets/dest-italia-new.png";
-import destChileNew from "@/assets/dest-chile-new.png";
-import destPeruNew from "@/assets/dest-peru-new.png";
-import destMexicoNew from "@/assets/dest-mexico-new.png";
-import destUruguaiNew from "@/assets/dest-uruguai-new.png";
+import destBrasilNew from "@/assets/dest-brasil-new.webp";
+import destSudesteNew from "@/assets/dest-sudeste-new.webp";
+import destSulNew from "@/assets/dest-sul-new.webp";
+import destCentroOesteNew from "@/assets/dest-centro-oeste-new.webp";
+import destNorteNew from "@/assets/dest-norte-new.webp";
+import destNordesteNew from "@/assets/dest-nordeste-new.webp";
+import destEuaNew from "@/assets/dest-eua-new.webp";
+import destPortugalNew from "@/assets/dest-portugal-new.webp";
+import destEspanhaNew from "@/assets/dest-espanha-new.webp";
+import destReinoUnidoNew from "@/assets/dest-reino-unido-new.webp";
+import destFrancaNew from "@/assets/dest-franca-new.webp";
+import destAlemanhaNew from "@/assets/dest-alemanha-new.webp";
+import destArgentinaNew from "@/assets/dest-argentina-new.webp";
+import destItaliaNew from "@/assets/dest-italia-new.webp";
+import destChileNew from "@/assets/dest-chile-new.webp";
+import destPeruNew from "@/assets/dest-peru-new.webp";
+import destMexicoNew from "@/assets/dest-mexico-new.webp";
+import destUruguaiNew from "@/assets/dest-uruguai-new.webp";
 import { useRef, type ReactNode } from "react";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import AirlineLogo from "@/components/AirlineLogo";
@@ -83,8 +79,6 @@ type DestinationCarouselProps = {
   onDestinationClick?: (destination: { code: string; name: string }) => void;
 };
 
-const CARD_IMAGES = [destBrasil, destSudeste, destUSA, destPortugal];
-
 const REGION_DESTINATIONS: DestinationCard[] = [
   { code: "BRA", name: "Brasil", image: destBrasilNew },
   { code: "SAO", name: "Sudeste", image: destSudesteNew },
@@ -137,7 +131,9 @@ const DestinationCarousel = ({
       }}
       className="w-full"
     >
-      <CarouselContent className="-ml-2">
+      {/* will-change promove o strip a camada própria: o drag do Embla vira só transform
+          no compositor, sem re-rasterizar os cards (sombra+gradiente) a cada frame. */}
+      <CarouselContent className="-ml-2 will-change-transform">
         {loading &&
           destinations.map((destination) => (
             <CarouselItem
@@ -178,6 +174,7 @@ const DestinationCarousel = ({
                       alt={destination.name}
                       className="h-full w-full object-cover"
                       loading="lazy"
+                      decoding="async"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
                     <span className="absolute bottom-2 left-3 font-display text-[15px] font-bold text-white">
