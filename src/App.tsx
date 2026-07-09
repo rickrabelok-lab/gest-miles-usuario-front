@@ -2,9 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { SearchFlightsProvider } from "@/contexts/SearchFlightsContext";
 import RequireAuth from "@/components/RequireAuth";
 import HomeGate from "@/components/HomeGate";
@@ -59,20 +59,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const APP_BOOT_READY_EVENT = "gest-miles:usuario-boot-ready";
-
-function AppBootReadySignal() {
-  const { loading, roleLoading } = useAuth();
-
-  useEffect(() => {
-    if (!loading && !roleLoading) {
-      window.dispatchEvent(new Event(APP_BOOT_READY_EVENT));
-    }
-  }, [loading, roleLoading]);
-
-  return null;
-}
-
 function RouteLoading() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
@@ -108,7 +94,6 @@ const App = () => {
       <Sonner />
       <CookieNotice />
       <AuthProvider>
-        <AppBootReadySignal />
         <SearchFlightsProvider>
           <BrowserRouter>
             <Suspense fallback={<RouteLoading />}>
