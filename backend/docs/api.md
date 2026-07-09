@@ -3,6 +3,7 @@
 > Contrato completo das rotas de usuário (Bearer, front): [`../../docs/api.md`](../../docs/api.md).
 > Este arquivo documenta especificamente rotas **server-to-server**, sem sessão de usuário,
 > autenticadas por API key fixa em vez de `Authorization: Bearer`.
+> Procurando a Seção D (bônus, calendário, voos demo)? Está documentada em [`docs/api.md`](../../docs/api.md) na raiz.
 
 Base URL: `VITE_API_URL` no front / URL do deploy do backend (ex.: `http://localhost:3000`).
 
