@@ -20,6 +20,7 @@ import invitesRoutes from "./routes/invites.js";
 import equipeBillingRoutes from "./routes/equipeBilling.js";
 import { reconcileEquipeBilling } from "./routes/equipeBillingCron.js";
 import accountDeletionRoutes from "./routes/accountDeletion.js";
+import agentResumoRoutes from "./routes/agentResumo.js";
 
 initSentry();
 
@@ -94,6 +95,7 @@ routes.use("/api/invites", invitesRoutes);
 routes.use("/api/equipe-billing", equipeBillingRoutes);
 routes.get("/api/equipe-billing/cron/reconcile", reconcileEquipeBilling);
 routes.use("/api/account", accountDeletionRoutes);
+routes.use("/api/agent", agentResumoRoutes);
 
 routes.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
