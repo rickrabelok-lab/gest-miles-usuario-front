@@ -32,6 +32,10 @@ const STATIC_ALLOWED_ORIGINS = [
   "https://manager.gestmiles.com.br",
   "http://localhost:3002",
   "http://localhost:3080",
+  // WebView do app mobile (Capacitor 8): Android serve em https://localhost,
+  // iOS em capacitor://localhost — origens fixas, valem também na Vercel.
+  "https://localhost",
+  "capacitor://localhost",
 ];
 
 const allowedCorsOrigins = [
