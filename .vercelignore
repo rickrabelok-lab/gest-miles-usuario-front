@@ -1,3 +1,7 @@
 # Não listar `backend` aqui: um segundo projeto na Vercel usa Root Directory = `backend`
 # e o .vercelignore da raiz aplica-se a todo o clone — ignorar `backend` quebrava esse deploy.
 # O build do front (Vite) não inclui o Express no bundle; só sobe mais ficheiros no upload.
+
+# App nativo (Capacitor) — nenhum dos dois projetos Vercel precisa disto no upload
+android/
+capacitor.config.ts
