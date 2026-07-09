@@ -1,16 +1,24 @@
-// Agrega demandas por equipe pro resumo diário do grupo interno (workflow n8n
-// gm-resumo-demandas). Função pura: recebe linhas já enriquecidas com
-// cliente_nome/equipe_id e devolve contagens + lista curta por equipe.
+// Agrega demandas por equipe e por DUPLA (carteira vw_carteira_dupla) pro resumo
+// diário do grupo interno (workflow n8n gm-resumo-demandas). Função pura: recebe
+// linhas já enriquecidas com equipe_id/dupla_id/dupla_nome e devolve só contagens —
+// o resumo não lista demandas individuais (pedido do owner, 2026-07-09).
 
 const DIA_MS = 86_400_000;
 
-function resumoCurto(tipo, payload) {
-  const p = payload ?? {};
-  if (tipo === "emissao") {
-    const rota = [p.origem, p.destino].filter(Boolean).join(" → ");
-    return rota || "emissão";
-  }
-  return p.categoria || "outros";
+function novaContagem() {
+  return { novas_24h: 0, pendentes: 0, em_andamento: 0, paradas_3d: 0 };
+}
+
+function acumula(contagens, row, agora) {
+  const createdAt = new Date(row.created_at);
+  const updatedAt = new Date(row.updated_at ?? row.created_at);
+  const ativa = row.status === "pendente" || row.status === "em_andamento";
+  const diasParada = Math.max(0, Math.floor((agora - updatedAt) / DIA_MS));
+
+  if (agora - createdAt < DIA_MS) contagens.novas_24h += 1;
+  if (row.status === "pendente") contagens.pendentes += 1;
+  if (row.status === "em_andamento") contagens.em_andamento += 1;
+  if (ativa && diasParada >= 3) contagens.paradas_3d += 1;
 }
 
 export function buildDemandasResumo(rows, { agora = new Date() } = {}) {
@@ -18,35 +26,28 @@ export function buildDemandasResumo(rows, { agora = new Date() } = {}) {
   for (const row of rows ?? []) {
     const equipeId = row.equipe_id ?? null;
     if (!porEquipe.has(equipeId)) {
-      porEquipe.set(equipeId, {
-        equipe_id: equipeId,
-        contagens: { novas_24h: 0, pendentes: 0, em_andamento: 0, paradas_3d: 0 },
-        demandas: [],
-      });
+      porEquipe.set(equipeId, { equipe_id: equipeId, contagens: novaContagem(), duplas: new Map() });
     }
     const eq = porEquipe.get(equipeId);
-    const createdAt = new Date(row.created_at);
-    const updatedAt = new Date(row.updated_at ?? row.created_at);
-    const ativa = row.status === "pendente" || row.status === "em_andamento";
-    const diasParada = Math.max(0, Math.floor((agora - updatedAt) / DIA_MS));
+    acumula(eq.contagens, row, agora);
 
-    if (agora - createdAt < DIA_MS) eq.contagens.novas_24h += 1;
-    if (row.status === "pendente") eq.contagens.pendentes += 1;
-    if (row.status === "em_andamento") eq.contagens.em_andamento += 1;
-    if (ativa && diasParada >= 3) eq.contagens.paradas_3d += 1;
-
-    if (ativa) {
-      eq.demandas.push({
-        id: row.id,
-        cliente_nome: row.cliente_nome ?? null,
-        tipo: row.tipo,
-        status: row.status,
-        resumo_curto: resumoCurto(row.tipo, row.payload),
-        dias_parada: diasParada,
-      });
+    const duplaId = row.dupla_id ?? null;
+    if (!eq.duplas.has(duplaId)) {
+      eq.duplas.set(duplaId, { dupla_id: duplaId, dupla_nome: row.dupla_nome ?? null, contagens: novaContagem() });
     }
+    acumula(eq.duplas.get(duplaId).contagens, row, agora);
   }
-  const equipes = [...porEquipe.values()];
-  for (const eq of equipes) eq.demandas.sort((a, b) => b.dias_parada - a.dias_parada);
-  return { equipes };
+
+  return {
+    equipes: [...porEquipe.values()].map((eq) => ({
+      equipe_id: eq.equipe_id,
+      contagens: eq.contagens,
+      // "Sem dupla" (dupla_id null) sempre por último; o resto em ordem de nome.
+      duplas: [...eq.duplas.values()].sort((a, b) => {
+        if (a.dupla_id === null) return 1;
+        if (b.dupla_id === null) return -1;
+        return String(a.dupla_nome ?? "").localeCompare(String(b.dupla_nome ?? ""), "pt-BR");
+      }),
+    })),
+  };
 }

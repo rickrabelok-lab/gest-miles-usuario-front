@@ -35,6 +35,7 @@ router.get("/demandas-resumo", async (req, res) => {
 
     const clienteIds = [...new Set((demandas ?? []).map((d) => d.cliente_id))];
     let perfisById = new Map();
+    const duplaByCliente = new Map();
     if (clienteIds.length > 0) {
       const { data: perfis, error: perfisError } = await supabase
         .from("perfis")
@@ -44,12 +45,31 @@ router.get("/demandas-resumo", async (req, res) => {
         return serverError(res, "Erro ao ler perfis", perfisError, "[agent-resumo]");
       }
       perfisById = new Map((perfis ?? []).map((p) => [p.usuario_id, p]));
+
+      // Carteira: qual dupla atende cada cliente (fora da carteira => "sem dupla").
+      const { data: carteira, error: carteiraError } = await supabase
+        .from("vw_carteira_dupla")
+        .select("cliente_id, dupla_id, dupla_nome")
+        .in("cliente_id", clienteIds);
+      if (carteiraError) {
+        return serverError(res, "Erro ao ler carteira de duplas", carteiraError, "[agent-resumo]");
+      }
+      for (const c of carteira ?? []) {
+        if (!duplaByCliente.has(c.cliente_id)) duplaByCliente.set(c.cliente_id, c);
+      }
     }
 
     const rows = (demandas ?? []).map((d) => {
       const perfil = perfisById.get(d.cliente_id);
       const nome = (perfil?.nome ?? "").trim() || perfil?.nome_completo || null;
-      return { ...d, cliente_nome: nome, equipe_id: perfil?.equipe_id ?? null };
+      const dupla = duplaByCliente.get(d.cliente_id);
+      return {
+        ...d,
+        cliente_nome: nome,
+        equipe_id: perfil?.equipe_id ?? null,
+        dupla_id: dupla?.dupla_id ?? null,
+        dupla_nome: dupla?.dupla_nome ?? null,
+      };
     });
 
     return res.json({ gerado_em: new Date().toISOString(), ...buildDemandasResumo(rows) });
