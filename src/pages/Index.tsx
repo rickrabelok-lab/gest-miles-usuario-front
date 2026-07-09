@@ -1652,8 +1652,6 @@ const Index = () => {
       <BalanceTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        economyTrend={analiseEconomia.trend}
-        economyLabel="R$"
         canShowInsights={canShowInsights}
         canShowTimeline={canShowTimeline}
       />

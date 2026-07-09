@@ -1,21 +1,19 @@
-import { ArrowDownRight, ArrowUpRight, Clock, Sparkles, TrendingUp, History, Lightbulb } from "lucide-react";
+import { Sparkles, TrendingUp, History, Lightbulb } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 
 interface BalanceTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
-  economyTrend?: "up" | "down" | "none";
-  economyLabel?: string;
   canShowInsights?: boolean;
   canShowTimeline?: boolean;
 }
 
+// "Vencendo" e "R$" (economia) saíram da barra: os atalhos do dashboard
+// (Vencimentos / Economia) já abrem as mesmas seções via setActiveTab.
 const tabs = [
   { id: "saldo", label: "Inicio", icon: null },
-  { id: "vencendo", label: "Vencendo", icon: Clock },
   { id: "extrato", label: "Extrato", icon: TrendingUp },
-  { id: "economia", label: "R$", icon: null },
   { id: "sugestoes", label: "Sugestões", icon: Sparkles },
   { id: "insights", label: "Insights", icon: Lightbulb },
   { id: "timeline", label: "Timeline", icon: History },
@@ -24,8 +22,6 @@ const tabs = [
 const BalanceTabs = ({
   activeTab,
   onTabChange,
-  economyTrend = "none",
-  economyLabel = "R$",
   canShowInsights,
   canShowTimeline,
 }: BalanceTabsProps) => {
@@ -50,7 +46,6 @@ const BalanceTabs = ({
       {visibleTabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
-        const isEconomyTab = tab.id === "economia";
         return (
           <button
             key={tab.id}
@@ -66,18 +61,8 @@ const BalanceTabs = ({
                 <Icon size={14} strokeWidth={2} />
                 <span>{tab.label}</span>
               </>
-            ) : isEconomyTab ? (
-              <span className={economyLabel === "R$" ? "text-sm font-bold" : "text-xs font-semibold"}>
-                {economyLabel}
-              </span>
             ) : (
               <span>{tab.label}</span>
-            )}
-            {isEconomyTab && economyTrend === "up" && (
-              <ArrowUpRight size={14} className="shrink-0 text-emerald-600" strokeWidth={2.5} />
-            )}
-            {isEconomyTab && economyTrend === "down" && (
-              <ArrowDownRight size={14} className="shrink-0 text-red-600" strokeWidth={2.5} />
             )}
           </button>
         );
