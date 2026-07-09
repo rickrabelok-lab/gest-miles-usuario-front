@@ -22,10 +22,11 @@ Resumo diário de demandas por equipe, usado pelo workflow `gm-resumo-demandas` 
 tempo constante). Sem sessão de usuário — usa Supabase **service role** internamente.
 
 **Dados lidos:** `demandas_cliente` com status `pendente`/`em_andamento` (ativas) **ou**
-criadas nas últimas 24h, `limit 500`, mais os `perfis` (nome + `equipe_id`) dos clientes
-envolvidos.
+criadas nas últimas 24h, `limit 500`, mais os `perfis` (nome + `equipe_id`) e a carteira
+`vw_carteira_dupla` (`dupla_id`/`dupla_nome`) dos clientes envolvidos.
 
-**Resposta 200:**
+**Resposta 200** (só contagens, agregadas por equipe e por dupla — sem lista de demandas
+individuais, por decisão do owner 2026-07-09):
 
 ```json
 {
@@ -39,14 +40,16 @@ envolvidos.
         "em_andamento": 2,
         "paradas_3d": 1
       },
-      "demandas": [
+      "duplas": [
         {
-          "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-          "cliente_nome": "João Silva",
-          "tipo": "emissao",
-          "status": "pendente",
-          "resumo_curto": "GRU → MIA",
-          "dias_parada": 4
+          "dupla_id": 1,
+          "dupla_nome": "Equipe 1 - Guilherme + Carla",
+          "contagens": { "novas_24h": 2, "pendentes": 3, "em_andamento": 1, "paradas_3d": 1 }
+        },
+        {
+          "dupla_id": null,
+          "dupla_nome": null,
+          "contagens": { "novas_24h": 1, "pendentes": 2, "em_andamento": 1, "paradas_3d": 0 }
         }
       ]
     }
@@ -54,9 +57,10 @@ envolvidos.
 }
 ```
 
-`equipe_id` pode ser `null` (cliente sem `perfis.equipe_id`). `demandas` só lista as **ativas**
-(pendente/em_andamento), ordenadas por `dias_parada` decrescente; `contagens` cobre o grupo
-inteiro (inclui as criadas nas últimas 24h mesmo que já não estejam mais ativas).
+`equipe_id` pode ser `null` (cliente sem `perfis.equipe_id`). `duplas` vem em ordem de nome,
+com o bucket `dupla_id: null` ("sem dupla" — cliente fora da carteira) sempre por último;
+`contagens` da equipe é o total (inclui as criadas nas últimas 24h mesmo que já não estejam
+mais ativas).
 
 **Erros:**
 
