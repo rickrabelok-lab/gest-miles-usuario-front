@@ -4,8 +4,6 @@ import {
   Zap,
   LogIn,
   LogOut,
-  Copy,
-  Check,
   FileEdit,
   Bell,
   Info,
@@ -59,7 +57,6 @@ const getDisplayName = (user: { email?: string; user_metadata?: Record<string, u
 
 const DashboardHeader = () => {
   const [bannerVisible, setBannerVisible] = useState(true);
-  const [idCopied, setIdCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -69,20 +66,6 @@ const DashboardHeader = () => {
     () => resolveOptionalHeaderWordmarkImageUrl(brandingData.brandAssets),
     [brandingData.brandAssets],
   );
-
-  const displayedAccountId = user?.id ?? "";
-
-  const copyAccountId = () => {
-    if (!displayedAccountId) return;
-    navigator.clipboard
-      .writeText(displayedAccountId)
-      .then(() => {
-        setIdCopied(true);
-        toast.success("ID da conta copiado. Envie ao gestor para solicitar acesso.");
-        setTimeout(() => setIdCopied(false), 2000);
-      })
-      .catch(() => toast.error("Não foi possível copiar."));
-  };
 
   const handleLogout = async () => {
     try {
@@ -224,33 +207,6 @@ const DashboardHeader = () => {
             <div className="flex flex-1 flex-col overflow-y-auto bg-white px-4 py-5 dark:bg-gray-50">
               {user ? (
                 <>
-                  <section className="mb-5">
-                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A05BE]">
-                      Conta
-                    </p>
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 dark:border-gray-200 dark:bg-gray-100/80">
-                      <p className="text-[11px] font-medium text-gray-500 dark:text-gray-600">
-                        ID da sua conta
-                      </p>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          onClick={copyAccountId}
-                          className="mt-1 flex w-full items-center justify-between gap-2 text-left text-xs font-mono text-gray-900 dark:text-gray-900"
-                        >
-                          <span className="truncate" title={displayedAccountId}>
-                            {displayedAccountId}
-                          </span>
-                          {idCopied ? (
-                            <Check className="h-4 w-4 shrink-0 text-emerald-600" />
-                          ) : (
-                            <Copy className="h-4 w-4 shrink-0 text-[#8A05BE]" />
-                          )}
-                        </button>
-                      </SheetClose>
-                    </div>
-                  </section>
-
                   <section className="mb-5">
                     <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A05BE]">
                       Ações rápidas
