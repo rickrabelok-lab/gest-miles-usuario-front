@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Boot nativo escuro (ink #050008): funde com a abertura animada do WebView,
+     no lugar da splash azul default do Capacitor. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#050008"/>
+</shape>
