@@ -91,3 +91,21 @@ test("webhookAuthOk compara certo e nega vazios", () => {
   assert.equal(webhookAuthOk("segredo-x", undefined), false);
   assert.equal(webhookAuthOk("", ""), false);
 });
+
+test("EXPIRATION com expiração numérica traz guardPeriodEnd (protege re-assinatura de retry atrasado)", () => {
+  const r = mapRevenueCatEvent(evento({ type: "EXPIRATION", expiration_at_ms: FUTURO }), NOW);
+  assert.equal(r.guardPeriodEnd, new Date(FUTURO).toISOString());
+});
+
+test("INITIAL_PURCHASE/CANCELLATION não trazem guardPeriodEnd", () => {
+  assert.equal(mapRevenueCatEvent(evento(), NOW).guardPeriodEnd, null);
+  assert.equal(
+    mapRevenueCatEvent(evento({ type: "CANCELLATION" }), NOW).guardPeriodEnd,
+    null,
+  );
+});
+
+test("EXPIRATION sem expiration_at_ms numérico não traz guardPeriodEnd", () => {
+  const r = mapRevenueCatEvent(evento({ type: "EXPIRATION", expiration_at_ms: undefined }), NOW);
+  assert.equal(r.guardPeriodEnd, null);
+});

@@ -30,6 +30,13 @@ export function webhookAuthOk(headerValue, secret) {
  * Regra dirigida por expiração: acesso enquanto `expiration_at_ms` no futuro
  * (cobre CANCELLATION que mantém acesso e BILLING_ISSUE em grace); EXPIRATION
  * corta. Nunca toca stripe_* nem plano_ativo — isso é decisão do caller também.
+ *
+ * `guardPeriodEnd`: só preenchido pra EXPIRATION com expiração numérica.
+ * O RC retenta entrega de webhook em falha; se um EXPIRATION antigo for
+ * reentregue DEPOIS que o usuário já re-comprou (nova `subscription_current_
+ * period_end` mais no futuro), o caller deve aplicar o update só em linhas
+ * cujo período vigente seja <= esse timestamp — senão o retry atrasado
+ * clobbera a re-assinatura e derruba o acesso de quem já pagou de novo.
  */
 export function mapRevenueCatEvent(event, nowMs) {
   if (!event || typeof event !== "object") return { action: "skip", reason: "payload sem event" };
@@ -44,6 +51,7 @@ export function mapRevenueCatEvent(event, nowMs) {
   const expMs = typeof event.expiration_at_ms === "number" ? event.expiration_at_ms : null;
   const ativo = type !== "EXPIRATION" && expMs !== null && expMs > nowMs;
   const status = ativo ? (event.period_type === "TRIAL" ? "trialing" : "active") : "canceled";
+  const guardPeriodEnd = type === "EXPIRATION" && expMs !== null ? new Date(expMs).toISOString() : null;
 
   return {
     action: "update",
@@ -54,5 +62,6 @@ export function mapRevenueCatEvent(event, nowMs) {
       subscription_current_period_end: expMs !== null ? new Date(expMs).toISOString() : null,
       subscription_provider: event.store === "APP_STORE" ? "apple" : "play",
     },
+    guardPeriodEnd,
   };
 }

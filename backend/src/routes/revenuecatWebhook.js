@@ -29,11 +29,17 @@ router.post("/webhook", async (req, res) => {
 
   try {
     const sb = assertSupabaseService();
-    const { error } = await sb
-      .from("perfis")
-      .update(result.patch)
-      .eq("usuario_id", result.usuarioId);
+    let query = sb.from("perfis").update(result.patch).eq("usuario_id", result.usuarioId);
+    if (result.guardPeriodEnd) {
+      // EXPIRATION reentregue pelo retry do RC não pode derrubar uma re-assinatura
+      // mais nova: só aplica se o período vigente for <= o timestamp expirado.
+      query = query.lte("subscription_current_period_end", result.guardPeriodEnd);
+    }
+    const { data, error } = await query.select("usuario_id");
     if (error) throw error;
+    if (!data || data.length === 0) {
+      console.log("[revenuecat] update sem linha (perfil inexistente ou guard de expiração):", result.usuarioId);
+    }
     return res.json({ received: true });
   } catch (e) {
     console.error("RevenueCat webhook:", e);
