@@ -410,15 +410,23 @@
         }
 
         el.classList.add("gm-ab-on");
+        // rAF pausa com o app em background, setTimeout não: se o fade (t+4900)
+        // já rodou quando o rAF acordar, não re-escurece a barra — só solta a splash.
+        var aberturaEncerrada = false;
         // 2x rAF = 1º frame da abertura pintado -> splash some (emenda sem flash)
         // e a barra acompanha o ink.
         window.requestAnimationFrame(function () {
           window.requestAnimationFrame(function () {
+            if (aberturaEncerrada) {
+              esconderSplash(0);
+              return;
+            }
             esconderSplash(150);
             barra("DARK", "#050008");
           });
         });
         window.setTimeout(function () {
+          aberturaEncerrada = true;
           el.classList.add("gm-ab-out");
           barra("LIGHT", "#F7F7F8");
         }, 4900);
