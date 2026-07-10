@@ -27,7 +27,7 @@ A monetização B2C do app mobile deve ir pela loja (Google Play Billing), não 
 Módulo fino sobre `@revenuecat/purchases-capacitor` (dynamic import — nada de RC no bundle path da web):
 
 - `isRevenueCatAvailable(): boolean` — nativo E `VITE_REVENUECAT_ANDROID_KEY` presente.
-- `configureRevenueCat(appUserID: string): Promise<void>` — `Purchases.configure({ apiKey, appUserID })`; idempotente (configura 1× por launch; troca de usuário via `Purchases.logIn`).
+- `ensureRevenueCatUser(appUserID: string): Promise<void>` — `Purchases.configure({ apiKey, appUserID })`; idempotente (configura 1× por launch; troca de usuário via `Purchases.logIn`).
 - `logOutRevenueCat(): Promise<void>` — `Purchases.logOut()` (ignora erro se não configurado).
 - `getPaywallOfferings(): Promise<PaywallData | null>` — busca a Offering current, extrai packages MONTHLY e ANNUAL (`priceString`, `pricePerYear` p/ cálculo da economia); `null` se indisponível.
 - `purchase(pkg): Promise<PurchaseOutcome>` — `purchasePackage`; mapeia cancelamento pelo usuário (`userCancelled`) vs erro real.
