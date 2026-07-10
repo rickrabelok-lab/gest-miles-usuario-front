@@ -369,13 +369,50 @@
         );
         var reduz =
           window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        // Plugins nativos (splash/status bar): sempre best-effort — indisponíveis
+        // não podem quebrar o boot.
+        var plugins = (nativo && window.Capacitor.Plugins) || {};
+        function esconderSplash(fadeMs) {
+          try {
+            if (plugins.SplashScreen) {
+              plugins.SplashScreen.hide({ fadeOutDuration: fadeMs }).catch(function () {});
+            }
+          } catch (e) {}
+        }
+        function barra(estilo, cor) {
+          try {
+            if (plugins.StatusBar) {
+              plugins.StatusBar.setStyle({ style: estilo }).catch(function () {});
+              // Android 15+ pode ignorar a cor (edge-to-edge do sistema); o estilo
+              // dos ícones é o que garante o contraste.
+              plugins.StatusBar.setBackgroundColor({ color: cor }).catch(function () {});
+            }
+          } catch (e) {}
+        }
+
         if (!nativo || reduz) {
           el.parentNode.removeChild(el);
+          if (nativo) {
+            // Abertura pulada (reduced motion): destrava a splash e aplica a barra do app.
+            esconderSplash(0);
+            barra("LIGHT", "#F7F7F8");
+          }
           return;
         }
+
         el.classList.add("gm-ab-on");
+        // 2x rAF = 1º frame da abertura pintado -> splash some (emenda sem flash)
+        // e a barra acompanha o ink.
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () {
+            esconderSplash(150);
+            barra("DARK", "#050008");
+          });
+        });
         window.setTimeout(function () {
           el.classList.add("gm-ab-out");
+          barra("LIGHT", "#F7F7F8");
         }, 4900);
         window.setTimeout(function () {
           if (el.parentNode) el.parentNode.removeChild(el);
