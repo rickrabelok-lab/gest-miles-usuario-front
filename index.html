@@ -361,14 +361,11 @@
       // dos scripts da página). Na web o nó é removido imediatamente.
       (function () {
         var el = document.getElementById("gm-abertura");
-        if (!el) return;
         var nativo = !!(
           window.Capacitor &&
           typeof window.Capacitor.isNativePlatform === "function" &&
           window.Capacitor.isNativePlatform()
         );
-        var reduz =
-          window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
         // Plugins nativos (splash/status bar): sempre best-effort — indisponíveis
         // não podem quebrar o boot.
@@ -390,6 +387,17 @@
             }
           } catch (e) {}
         }
+
+        if (!el) {
+          // Sem o nó da abertura, a splash não pode ficar presa (launchAutoHide off).
+          if (nativo) {
+            esconderSplash(0);
+            barra("LIGHT", "#F7F7F8");
+          }
+          return;
+        }
+        var reduz =
+          window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
         if (!nativo || reduz) {
           el.parentNode.removeChild(el);
