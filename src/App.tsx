@@ -46,7 +46,7 @@ const SimularCompraMilhasPage = lazy(() => import("./pages/SimularCompraMilhasPa
 const RadarOportunidadesPage = lazy(() => import("./pages/RadarOportunidadesPage"));
 const ClienteInsightsPage = lazy(() => import("./pages/ClienteInsightsPage"));
 const ClienteTimelinePage = lazy(() => import("./pages/ClienteTimelinePage"));
-const AssinaturaClientePage = lazy(() => import("./pages/AssinaturaClientePage"));
+const AssinaturaRoute = lazy(() => import("./pages/AssinaturaRoute"));
 const TermosPage = lazy(() => import("./pages/legal/TermosPage"));
 const PrivacidadePage = lazy(() => import("./pages/legal/PrivacidadePage"));
 const CookiesPage = lazy(() => import("./pages/legal/CookiesPage"));
@@ -107,7 +107,7 @@ const App = () => {
                   path="/assinatura"
                   element={
                     <ClienteOnly>
-                      <AssinaturaClientePage />
+                      <AssinaturaRoute />
                     </ClienteOnly>
                   }
                 />
