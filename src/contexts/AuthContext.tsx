@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
+import { authRedirectUrl, isNativePlatform } from "@/lib/nativeAuth";
 import { mapPerfilRoleForOperationalUi, type AppRole } from "@/lib/roles";
 import { supabase } from "@/lib/supabase";
 
@@ -225,7 +226,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/me`,
+        emailRedirectTo: authRedirectUrl("/me"),
       },
     });
     if (error) throw error;
@@ -245,8 +246,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       email,
       password,
       // Pra onde o link de confirmação volta quando o "Confirm email" está ligado.
-      // Mesmo destino do magic link / OAuth (/me faz o bootstrap pós-auth).
-      options: { emailRedirectTo: `${window.location.origin}/me` },
+      // Mesmo destino do magic link / OAuth (/me faz o bootstrap pós-auth);
+      // no app nativo vira o deep link (authRedirectUrl cuida da troca).
+      options: { emailRedirectTo: authRedirectUrl("/me") },
     });
     if (error) throw error;
     // true when session is created immediately (email confirmation disabled).
@@ -257,16 +259,31 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
-      options: { emailRedirectTo: `${window.location.origin}/me` },
+      options: { emailRedirectTo: authRedirectUrl("/me") },
     });
     if (error) throw error;
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
+    if (isNativePlatform()) {
+      // Google bloqueia OAuth em WebView (disallowed_useragent): abre em
+      // Chrome Custom Tab e o retorno chega pelo deep link (NativeAuthDeepLinkHandler).
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: authRedirectUrl("/me"), skipBrowserRedirect: true },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url: data.url });
+      }
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/me`,
+        redirectTo: authRedirectUrl("/me"),
       },
     });
     if (error) throw error;
