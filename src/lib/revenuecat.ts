@@ -96,6 +96,10 @@ export async function logOutRevenueCat(): Promise<void> {
   try {
     const Purchases = await sdk();
     await Purchases.logOut();
+    // Sentinela: SDK configurado mas sem usuário identificado — o próximo
+    // ensureRevenueCatUser DEVE fazer logIn mesmo que seja o mesmo usuário
+    // (sem isso a compra sairia como $RCAnonymousID e o webhook a ignoraria).
+    configuredUserId = "";
   } catch {
     // logOut de usuário anônimo/não configurado não pode quebrar o sign-out do app
   }
