@@ -14,6 +14,7 @@ import MissingSupabaseConfig from "@/components/MissingSupabaseConfig";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import CookieNotice from "@/components/CookieNotice";
 import NativeAuthDeepLinkHandler from "@/components/NativeAuthDeepLinkHandler";
+import RevenueCatBootstrap from "@/components/RevenueCatBootstrap";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LoyaltyProgramDetails = lazy(() => import("./pages/LoyaltyProgramDetails"));
@@ -45,7 +46,7 @@ const SimularCompraMilhasPage = lazy(() => import("./pages/SimularCompraMilhasPa
 const RadarOportunidadesPage = lazy(() => import("./pages/RadarOportunidadesPage"));
 const ClienteInsightsPage = lazy(() => import("./pages/ClienteInsightsPage"));
 const ClienteTimelinePage = lazy(() => import("./pages/ClienteTimelinePage"));
-const AssinaturaClientePage = lazy(() => import("./pages/AssinaturaClientePage"));
+const AssinaturaRoute = lazy(() => import("./pages/AssinaturaRoute"));
 const TermosPage = lazy(() => import("./pages/legal/TermosPage"));
 const PrivacidadePage = lazy(() => import("./pages/legal/PrivacidadePage"));
 const CookiesPage = lazy(() => import("./pages/legal/CookiesPage"));
@@ -98,6 +99,7 @@ const App = () => {
         <SearchFlightsProvider>
           <BrowserRouter>
             <NativeAuthDeepLinkHandler />
+            <RevenueCatBootstrap />
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<HomeGate />} />
@@ -105,7 +107,7 @@ const App = () => {
                   path="/assinatura"
                   element={
                     <ClienteOnly>
-                      <AssinaturaClientePage />
+                      <AssinaturaRoute />
                     </ClienteOnly>
                   }
                 />

@@ -1,0 +1,111 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { isUuid, mapRevenueCatEvent, webhookAuthOk } from "./revenuecatHelpers.js";
+
+const NOW = 1_800_000_000_000; // fixo p/ determinismo
+const FUTURO = NOW + 30 * 24 * 60 * 60 * 1000;
+const PASSADO = NOW - 1000;
+const UID = "3bac3bf0-2e66-4161-bc91-e107e443e8ba";
+
+const evento = (extra) => ({
+  type: "INITIAL_PURCHASE",
+  app_user_id: UID,
+  product_id: "gm_plus_mensal",
+  expiration_at_ms: FUTURO,
+  period_type: "NORMAL",
+  store: "PLAY_STORE",
+  ...extra,
+});
+
+test("compra inicial com expiração futura vira active", () => {
+  const r = mapRevenueCatEvent(evento(), NOW);
+  assert.equal(r.action, "update");
+  assert.equal(r.usuarioId, UID);
+  assert.equal(r.patch.subscription_status, "active");
+  assert.equal(r.patch.subscription_plan_slug, "gm_plus_mensal");
+  assert.equal(r.patch.subscription_provider, "play");
+  assert.equal(r.patch.subscription_current_period_end, new Date(FUTURO).toISOString());
+});
+
+test("period_type TRIAL vira trialing", () => {
+  const r = mapRevenueCatEvent(evento({ period_type: "TRIAL" }), NOW);
+  assert.equal(r.patch.subscription_status, "trialing");
+});
+
+test("CANCELLATION com expiração futura mantém active (acesso até expirar)", () => {
+  const r = mapRevenueCatEvent(evento({ type: "CANCELLATION" }), NOW);
+  assert.equal(r.patch.subscription_status, "active");
+});
+
+test("BILLING_ISSUE com expiração futura mantém active (grace da loja)", () => {
+  const r = mapRevenueCatEvent(evento({ type: "BILLING_ISSUE" }), NOW);
+  assert.equal(r.patch.subscription_status, "active");
+});
+
+test("expiração no passado vira canceled", () => {
+  const r = mapRevenueCatEvent(evento({ expiration_at_ms: PASSADO }), NOW);
+  assert.equal(r.patch.subscription_status, "canceled");
+});
+
+test("EXPIRATION vira canceled mesmo com timestamp estranho", () => {
+  const r = mapRevenueCatEvent(evento({ type: "EXPIRATION", expiration_at_ms: FUTURO }), NOW);
+  assert.equal(r.patch.subscription_status, "canceled");
+});
+
+test("store APP_STORE vira provider apple", () => {
+  const r = mapRevenueCatEvent(evento({ store: "APP_STORE" }), NOW);
+  assert.equal(r.patch.subscription_provider, "apple");
+});
+
+test("app_user_id anônimo do RC é ignorado", () => {
+  const r = mapRevenueCatEvent(evento({ app_user_id: "$RCAnonymousID:abc123" }), NOW);
+  assert.equal(r.action, "skip");
+});
+
+test("eventos TEST e TRANSFER são ignorados", () => {
+  assert.equal(mapRevenueCatEvent(evento({ type: "TEST" }), NOW).action, "skip");
+  assert.equal(mapRevenueCatEvent(evento({ type: "TRANSFER" }), NOW).action, "skip");
+});
+
+test("payload sem event é ignorado", () => {
+  assert.equal(mapRevenueCatEvent(null, NOW).action, "skip");
+  assert.equal(mapRevenueCatEvent(undefined, NOW).action, "skip");
+});
+
+test("sem expiration_at_ms numérico vira canceled (não dá acesso de graça)", () => {
+  const r = mapRevenueCatEvent(evento({ expiration_at_ms: undefined }), NOW);
+  assert.equal(r.patch.subscription_status, "canceled");
+});
+
+test("isUuid aceita uuid e rejeita lixo", () => {
+  assert.equal(isUuid(UID), true);
+  assert.equal(isUuid("$RCAnonymousID:x"), false);
+  assert.equal(isUuid(""), false);
+  assert.equal(isUuid(null), false);
+});
+
+test("webhookAuthOk compara certo e nega vazios", () => {
+  assert.equal(webhookAuthOk("segredo-x", "segredo-x"), true);
+  assert.equal(webhookAuthOk("segredo-errado", "segredo-x"), false);
+  assert.equal(webhookAuthOk(undefined, "segredo-x"), false);
+  assert.equal(webhookAuthOk("segredo-x", undefined), false);
+  assert.equal(webhookAuthOk("", ""), false);
+});
+
+test("EXPIRATION com expiração numérica traz guardPeriodEnd (protege re-assinatura de retry atrasado)", () => {
+  const r = mapRevenueCatEvent(evento({ type: "EXPIRATION", expiration_at_ms: FUTURO }), NOW);
+  assert.equal(r.guardPeriodEnd, new Date(FUTURO).toISOString());
+});
+
+test("INITIAL_PURCHASE/CANCELLATION não trazem guardPeriodEnd", () => {
+  assert.equal(mapRevenueCatEvent(evento(), NOW).guardPeriodEnd, null);
+  assert.equal(
+    mapRevenueCatEvent(evento({ type: "CANCELLATION" }), NOW).guardPeriodEnd,
+    null,
+  );
+});
+
+test("EXPIRATION sem expiration_at_ms numérico não traz guardPeriodEnd", () => {
+  const r = mapRevenueCatEvent(evento({ type: "EXPIRATION", expiration_at_ms: undefined }), NOW);
+  assert.equal(r.guardPeriodEnd, null);
+});

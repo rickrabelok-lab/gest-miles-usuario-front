@@ -1,5 +1,11 @@
+import { useNavigate } from "react-router-dom";
+
+import { Button } from "@/components/ui/button";
+import { isNativePlatform } from "@/lib/nativeAuth";
+
 /** Tela de upsell mostrada quando um cliente free tenta um recurso do plano pago. */
 export default function PlanoInativoScreen() {
+  const navigate = useNavigate();
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 bg-background p-6 text-center">
       <div className="w-full max-w-sm rounded-2xl border bg-card p-6 shadow-sm">
@@ -7,6 +13,11 @@ export default function PlanoInativoScreen() {
         <p className="mt-2 text-sm text-muted-foreground">
           Este recurso está disponível no plano completo. Fale com a sua agência para liberar o acesso.
         </p>
+        {isNativePlatform() && (
+          <Button className="mt-4 w-full" onClick={() => navigate("/assinatura")}>
+            Ver planos
+          </Button>
+        )}
       </div>
     </div>
   );
