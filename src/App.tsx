@@ -13,6 +13,7 @@ import RequirePaid from "@/components/RequirePaid";
 import MissingSupabaseConfig from "@/components/MissingSupabaseConfig";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import CookieNotice from "@/components/CookieNotice";
+import NativeAuthDeepLinkHandler from "@/components/NativeAuthDeepLinkHandler";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LoyaltyProgramDetails = lazy(() => import("./pages/LoyaltyProgramDetails"));
@@ -96,6 +97,7 @@ const App = () => {
       <AuthProvider>
         <SearchFlightsProvider>
           <BrowserRouter>
+            <NativeAuthDeepLinkHandler />
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<HomeGate />} />
