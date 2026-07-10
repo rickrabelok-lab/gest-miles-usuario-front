@@ -47,6 +47,7 @@ import { useBrandingConfig } from "@/hooks/useBrandingConfig";
 import { supabase } from "@/lib/supabase";
 import { CARD_DESTINATION_TO_AIRPORT_CODE } from "@/lib/airports";
 import type { PersistedProgramState } from "@/lib/program-state";
+import { deliverPdf, renderElementToA4Pdf } from "@/lib/pdfDelivery";
 import airlineLatamLogo from "@/assets/airline-latam.png";
 import airlineAzulLogo from "@/assets/airline-azul.png";
 import airlineGolLogo from "@/assets/airline-gol.png";
@@ -1608,39 +1609,14 @@ const Index = () => {
 
   const handleDownloadEconomiaPdf = async () => {
     if (!economiaReportRef.current) return;
-
-    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-      import("html2canvas"),
-      import("jspdf"),
-    ]);
-
-    const canvas = await html2canvas(economiaReportRef.current, {
-      scale: 2,
-      backgroundColor: "#F7F7F8",
-      useCORS: true,
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pageWidth - 12;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let position = 6;
-    pdf.addImage(imgData, "PNG", 6, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight - 12;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight + 6;
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 6, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight - 12;
+    try {
+      const pdf = await renderElementToA4Pdf(economiaReportRef.current, "#F7F7F8");
+      const dataArquivo = new Date().toISOString().slice(0, 10);
+      await deliverPdf(pdf, `analise-economia-${economiaPeriodoMeses}m-${dataArquivo}.pdf`);
+    } catch (err) {
+      console.warn("[Index] PDF economia:", err);
+      toast.error("Não foi possível gerar o PDF. Tente novamente.");
     }
-
-    const dataArquivo = new Date().toISOString().slice(0, 10);
-    pdf.save(`analise-economia-${economiaPeriodoMeses}m-${dataArquivo}.pdf`);
   };
 
   return (

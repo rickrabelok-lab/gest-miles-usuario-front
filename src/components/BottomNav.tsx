@@ -136,37 +136,6 @@ const BottomNav: FC<BottomNavProps> = () => {
             isActive ? "text-nubank-primary" : "text-[#8E8D93] hover:text-nubank-text",
           );
 
-          if (id === "passagens") {
-            return (
-              <div key={id} className="min-w-0 flex-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.location.assign(new URL(passagensHref, window.location.origin).href);
-                  }}
-                  className={cn(tabClass, "cursor-pointer")}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <span className="relative">
-                    <Icon
-                      className="h-[22px] w-[22px] shrink-0"
-                      strokeWidth={isActive ? 2.25 : 1.75}
-                      aria-hidden
-                    />
-                  </span>
-                  <span
-                    className={cn(
-                      "max-w-full truncate px-0.5 text-center text-[10px] leading-tight",
-                      isActive ? "font-bold" : "font-medium",
-                    )}
-                  >
-                    {label}
-                  </span>
-                </button>
-              </div>
-            );
-          }
-
           return (
             <div key={id} className="min-w-0 flex-1">
               <button
@@ -180,6 +149,10 @@ const BottomNav: FC<BottomNavProps> = () => {
                     goProgramas();
                     return;
                   }
+                  if (id === "passagens") {
+                    navigate(passagensHref);
+                    return;
+                  }
                   if (id === "alertas") {
                     navigate("/vencimentos");
                     return;
@@ -187,6 +160,7 @@ const BottomNav: FC<BottomNavProps> = () => {
                   navigate("/perfil");
                 }}
                 className={tabClass}
+                aria-current={isActive ? "page" : undefined}
               >
                 <span className="relative">
                   <Icon
