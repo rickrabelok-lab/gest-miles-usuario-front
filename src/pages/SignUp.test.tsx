@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
@@ -21,6 +21,8 @@ vi.mock("@/lib/supabase", () => ({ isSupabaseConfigured: true }));
 
 import SignUp from "./SignUp";
 
+type WindowWithCapacitor = Window & { Capacitor?: { isNativePlatform?: () => boolean } };
+
 const renderPage = () =>
   render(
     <MemoryRouter>
@@ -36,6 +38,10 @@ function fillValid() {
 
 describe("SignUp", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  afterEach(() => {
+    delete (window as WindowWithCapacitor).Capacitor;
+  });
 
   it("bloqueia 'Criar conta' até aceitar os termos", () => {
     renderPage();
@@ -65,5 +71,20 @@ describe("SignUp", () => {
     const reenviar = await screen.findByRole("button", { name: /reenviar e-mail de confirmação/i });
     fireEvent.click(reenviar);
     expect(mocks.resendConfirmation).toHaveBeenCalledWith("a@b.com");
+  });
+
+  it("no nativo, ao voltar do OAuth (cancelado na Custom Tab) libera o botão do Google e o submit por senha", async () => {
+    (window as WindowWithCapacitor).Capacitor = { isNativePlatform: () => true };
+    mocks.signInWithGoogle.mockResolvedValue(undefined);
+    renderPage();
+    fillValid();
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /continuar com google/i }));
+
+    const google = await screen.findByRole("button", { name: /continuar com google/i });
+    expect((google as HTMLButtonElement).disabled).toBe(false);
+
+    const criar = screen.getByRole("button", { name: /criar conta/i }) as HTMLButtonElement;
+    expect(criar.disabled).toBe(false);
   });
 });

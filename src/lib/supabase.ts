@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isNativePlatform } from "./nativeAuth";
 
 const rawUrl = (
   import.meta.env.VITE_SUPABASE_URL ??
@@ -33,4 +34,12 @@ const fallbackKey =
 export const supabase: SupabaseClient = createClient(
   isSupabaseConfigured ? rawUrl : fallbackUrl,
   isSupabaseConfigured ? rawKey : fallbackKey,
+  {
+    auth: {
+      // PKCE só no app nativo: o retorno via custom scheme pode ser interceptado
+      // por outro app; com PKCE o `?code=` é inútil sem o verifier local.
+      // Na web mantém o flow implicit (comportamento atual, inalterado).
+      flowType: isNativePlatform() ? "pkce" : "implicit",
+    },
+  },
 );

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { isEmailNotConfirmedError } from "@/lib/authErrors";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { isNativePlatform } from "@/lib/nativeAuth";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -63,6 +64,13 @@ const Auth = () => {
       setMessage(formatAuthError(error));
       setPending(false);
       setPendingAction(null);
+    } finally {
+      // No nativo o retorno do OAuth chega via deep link com a página ainda montada;
+      // se o usuário cancelar na Custom Tab, o pending ficaria travado pra sempre.
+      if (isNativePlatform()) {
+        setPending(false);
+        setPendingAction(null);
+      }
     }
   };
 
