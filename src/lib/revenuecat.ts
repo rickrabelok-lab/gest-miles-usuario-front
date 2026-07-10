@@ -5,6 +5,8 @@
  * daqui serve só pra UX imediata. Spec:
  * docs/superpowers/specs/2026-07-10-mobile-iap-revenuecat-design.md
  */
+import type { PurchasesPackage } from "@revenuecat/purchases-capacitor";
+
 import { isNativePlatform } from "@/lib/nativeAuth";
 
 const RC_ANDROID_KEY = (import.meta.env.VITE_REVENUECAT_ANDROID_KEY ?? "").trim();
@@ -114,7 +116,7 @@ export async function getPaywallOfferings(): Promise<PaywallData | null> {
 export async function purchase(pkg: PaywallPackage): Promise<"purchased" | "cancelled"> {
   const Purchases = await sdk();
   try {
-    await Purchases.purchasePackage({ aPackage: pkg.raw as any });
+    await Purchases.purchasePackage({ aPackage: pkg.raw as PurchasesPackage });
     return "purchased";
   } catch (err) {
     if (isUserCancelledError(err)) return "cancelled";
