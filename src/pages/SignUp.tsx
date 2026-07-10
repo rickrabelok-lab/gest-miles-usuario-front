@@ -10,6 +10,7 @@ import { TERMS_URL, PRIVACY_URL } from "@/lib/legalUrls";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { PENDING_REFERRAL_CODE_KEY } from "@/lib/authFlowStorage";
+import { isNativePlatform } from "@/lib/nativeAuth";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -86,6 +87,13 @@ const SignUp = () => {
       setMessage(formatAuthError(error));
       setPending(false);
       setPendingAction(null);
+    } finally {
+      // No nativo o retorno do OAuth chega via deep link com a página ainda montada;
+      // se o usuário cancelar na Custom Tab, o pending ficaria travado pra sempre.
+      if (isNativePlatform()) {
+        setPending(false);
+        setPendingAction(null);
+      }
     }
   };
 
