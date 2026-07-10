@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const navigateMock = vi.fn();
 vi.mock("react-router-dom", async (importOriginal) => {
   const original = await importOriginal<typeof import("react-router-dom")>();
-  return { ...original, useNavigate: () => navigateMock };
+  return { ...original, useNavigate: () => (...args: unknown[]) => navigateMock(...args) };
 });
 
 const listenerRemoveMock = vi.fn();
@@ -43,7 +43,9 @@ vi.mock("sonner", () => ({
   toast: { error: (...args: unknown[]) => toastErrorMock(...args) },
 }));
 
-import NativeAuthDeepLinkHandler from "./NativeAuthDeepLinkHandler";
+import NativeAuthDeepLinkHandler, {
+  __resetHandledAuthUrlsForTests,
+} from "./NativeAuthDeepLinkHandler";
 
 const DEEP_LINK = "br.com.gestmiles.app://auth-callback";
 
@@ -59,6 +61,7 @@ const renderHandler = () =>
 describe("NativeAuthDeepLinkHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    __resetHandledAuthUrlsForTests();
     appUrlOpenCallback = null;
     launchUrl = null;
     (window as WindowWithCapacitor).Capacitor = { isNativePlatform: () => true };
@@ -94,6 +97,7 @@ describe("NativeAuthDeepLinkHandler", () => {
       expect(setSessionMock).toHaveBeenCalledWith({ access_token: "at", refresh_token: "rt" }),
     );
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/me", { replace: true }));
+    expect(browserCloseMock).toHaveBeenCalled();
   });
 
   it("erro do GoTrue vira toast e volta pro /auth", async () => {
@@ -131,5 +135,24 @@ describe("NativeAuthDeepLinkHandler", () => {
     expect(exchangeCodeForSessionMock).not.toHaveBeenCalled();
     expect(setSessionMock).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("não reprocessa o launch URL quando a identidade do navigate muda (re-render)", async () => {
+    launchUrl = `${DEEP_LINK}?code=stale`;
+    const view = render(
+      <MemoryRouter>
+        <NativeAuthDeepLinkHandler />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(exchangeCodeForSessionMock).toHaveBeenCalledWith("stale"));
+    view.rerender(
+      <MemoryRouter>
+        <NativeAuthDeepLinkHandler />
+      </MemoryRouter>,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const { App } = await import("@capacitor/app");
+    expect(App.getLaunchUrl).toHaveBeenCalledTimes(1);
+    expect(exchangeCodeForSessionMock).toHaveBeenCalledTimes(1);
   });
 });

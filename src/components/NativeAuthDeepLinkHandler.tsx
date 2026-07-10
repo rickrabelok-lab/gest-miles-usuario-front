@@ -1,9 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { isNativePlatform, parseAuthCallbackUrl } from "@/lib/nativeAuth";
 import { supabase } from "@/lib/supabase";
+
+// Estado de módulo (sobrevive a re-runs do efeito e a remounts):
+// getLaunchUrl() devolve a MESMA URL do Intent em toda chamada — sem dedupe
+// durável, qualquer re-run do efeito reprocessaria o deep link do cold start
+// em loop (observado em device real).
+const handledUrls = new Set<string>();
+
+/** Só para testes: limpa o estado de módulo entre casos. */
+export function __resetHandledAuthUrlsForTests() {
+  handledUrls.clear();
+}
 
 /**
  * Recebe o retorno de OAuth/links de e-mail no app nativo (deep link
@@ -12,13 +23,17 @@ import { supabase } from "@/lib/supabase";
  */
 const NativeAuthDeepLinkHandler = () => {
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+
+  useEffect(() => {
+    navigateRef.current = navigate;
+  });
 
   useEffect(() => {
     if (!isNativePlatform()) return;
 
     let disposed = false;
     let removeListener: (() => void) | null = null;
-    const handledUrls = new Set<string>();
 
     const closeBrowser = async () => {
       try {
@@ -40,7 +55,7 @@ const NativeAuthDeepLinkHandler = () => {
 
       if (parsed.kind === "error") {
         toast.error("Não foi possível concluir o login.", { description: parsed.message });
-        navigate("/auth", { replace: true });
+        navigateRef.current("/auth", { replace: true });
         return;
       }
 
@@ -55,11 +70,11 @@ const NativeAuthDeepLinkHandler = () => {
           });
           if (error) throw error;
         }
-        navigate("/me", { replace: true });
+        navigateRef.current("/me", { replace: true });
       } catch (err) {
         console.warn("[NativeAuthDeepLink] falha ao estabelecer sessão:", err);
         toast.error("Não foi possível concluir o login. Tente novamente.");
-        navigate("/auth", { replace: true });
+        navigateRef.current("/auth", { replace: true });
       }
     };
 
@@ -85,7 +100,10 @@ const NativeAuthDeepLinkHandler = () => {
       disposed = true;
       removeListener?.();
     };
-  }, [navigate]);
+    // navigate vem via ref: o efeito NÃO pode depender de `navigate` — a
+    // identidade muda a cada navegação e re-rodar o efeito faz getLaunchUrl
+    // reprocessar o deep link do cold start (loop observado em device).
+  }, []);
 
   return null;
 };
