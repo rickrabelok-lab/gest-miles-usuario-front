@@ -21,6 +21,7 @@ import equipeBillingRoutes from "./routes/equipeBilling.js";
 import { reconcileEquipeBilling } from "./routes/equipeBillingCron.js";
 import accountDeletionRoutes from "./routes/accountDeletion.js";
 import agentResumoRoutes from "./routes/agentResumo.js";
+import revenuecatWebhookRoutes from "./routes/revenuecatWebhook.js";
 
 initSentry();
 
@@ -91,6 +92,7 @@ routes.use("/api/bonus-offers", bonusOffersRoutes);
 routes.use("/api/calendar-prices", calendarPricesRoutes);
 routes.use("/api/demo-flights", demoFlightsRoutes);
 routes.use("/api/stripe", stripeBillingRoutes);
+routes.use("/api/revenuecat", revenuecatWebhookRoutes);
 routes.use("/api/audit-logs", auditLogsRoutes);
 routes.use("/api/program-access", programAccessRoutes);
 routes.use("/api/contact", contactRoutes);
