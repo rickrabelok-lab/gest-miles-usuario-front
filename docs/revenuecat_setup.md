@@ -9,6 +9,11 @@ webhook responde 503.
 Aplicar `supabase/migrations/20260710190000_perfis_subscription_provider.sql`
 (SQL Editor ou MCP). Antes de configurar o webhook no RC.
 
+⚠️ Antes de ativar o webhook: conferir se há assinatura Stripe B2C legada ainda ativa
+(`select usuario_id from perfis where subscription_status in ('active','trialing') and stripe_subscription_id is not null`).
+Se houver, aplicar antes o guard no stripeWebhook (não escrever quando `subscription_provider = 'play'`) —
+os dois caminhos escrevem as mesmas colunas de assinatura do perfis.
+
 ## 2. Google Play Console (~US$25, 1x)
 
 1. Criar conta em https://play.google.com/console (dados fiscais/bancários p/ receber).
@@ -69,3 +74,4 @@ Aplicar `supabase/migrations/20260710190000_perfis_subscription_provider.sql`
 - Webhook 401 → valor do header no RC ≠ `REVENUECAT_WEBHOOK_SECRET`.
 - Webhook 200 mas perfis não muda → `app_user_id` anônimo (compra feita antes do
   login? o bootstrap configura no login) — conferir logs `[revenuecat]` na Vercel.
+- Campo subscription_plan_slug passa a conter o product_id do Play (ex.: gm_plus:gm-plus-mensal), não um slug Stripe.

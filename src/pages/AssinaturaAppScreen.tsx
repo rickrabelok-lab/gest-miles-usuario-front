@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, BadgePercent, Check, Crown } from "lucide-react";
 import { toast } from "sonner";
 
@@ -213,8 +213,8 @@ export default function AssinaturaAppScreen({
 
       <p className="mt-6 text-center text-xs text-nubank-text-secondary">
         Ao assinar você concorda com os{" "}
-        <a href="/termos" className="underline">Termos de Uso</a> e a{" "}
-        <a href="/privacidade" className="underline">Política de Privacidade</a>.
+        <Link to="/termos" className="underline">Termos de Uso</Link> e a{" "}
+        <Link to="/privacidade" className="underline">Política de Privacidade</Link>.
       </p>
     </div>
   );
