@@ -25,8 +25,17 @@ const RECURSOS_PLUS = [
 
 const MANAGE_URL = "https://play.google.com/store/account/subscriptions";
 
+type AssinaturaAppScreenProps = {
+  /** Seam de teste: nº de tentativas e delay do retry do entitlement pós-compra. */
+  retryAttempts?: number;
+  retryDelayMs?: number;
+};
+
 /** Assinatura via loja (Google Play) — só renderizada no app nativo (AssinaturaRoute). */
-export default function AssinaturaAppScreen() {
+export default function AssinaturaAppScreen({
+  retryAttempts = 5,
+  retryDelayMs = 1500,
+}: AssinaturaAppScreenProps = {}) {
   const navigate = useNavigate();
   const { refreshRole } = useAuth();
   const { isPaid } = useEntitlement();
@@ -52,12 +61,12 @@ export default function AssinaturaAppScreen() {
 
   // O webhook (fonte da verdade) aterrissa em segundos; re-lê o perfil até virar.
   const refreshEntitlementWithRetry = useCallback(async () => {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < retryAttempts; i++) {
       await refreshRole();
       if (isPaidRef.current) break;
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, retryDelayMs));
     }
-  }, [refreshRole]);
+  }, [refreshRole, retryAttempts, retryDelayMs]);
 
   const handlePurchase = async (pkg: PaywallPackage) => {
     setBusy(pkg.id);

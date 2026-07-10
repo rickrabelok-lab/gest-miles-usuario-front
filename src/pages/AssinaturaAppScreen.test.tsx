@@ -40,10 +40,10 @@ const PAYWALL = {
   savingsPct: 20,
 };
 
-const renderScreen = () =>
+const renderScreen = (props = {}) =>
   render(
     <MemoryRouter>
-      <AssinaturaAppScreen />
+      <AssinaturaAppScreen retryDelayMs={0} retryAttempts={2} {...props} />
     </MemoryRouter>,
   );
 
@@ -76,6 +76,7 @@ describe("AssinaturaAppScreen", () => {
     await waitFor(() => expect(purchaseMock).toHaveBeenCalled());
     await waitFor(() => expect(toastSuccessMock).toHaveBeenCalled());
     expect(refreshRoleMock).toHaveBeenCalled();
+    await waitFor(() => expect(refreshRoleMock).toHaveBeenCalledTimes(2));
   });
 
   it("compra cancelada pelo usuário é silenciosa (sem toast de erro)", async () => {
@@ -103,5 +104,6 @@ describe("AssinaturaAppScreen", () => {
     await waitFor(() => expect(restoreMock).toHaveBeenCalled());
     expect(refreshRoleMock).toHaveBeenCalled();
     expect(toastSuccessMock).toHaveBeenCalled();
+    await waitFor(() => expect(refreshRoleMock).toHaveBeenCalledTimes(2));
   });
 });
