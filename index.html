@@ -361,19 +361,67 @@
       // dos scripts da página). Na web o nó é removido imediatamente.
       (function () {
         var el = document.getElementById("gm-abertura");
-        if (!el) return;
         var nativo = !!(
           window.Capacitor &&
           typeof window.Capacitor.isNativePlatform === "function" &&
           window.Capacitor.isNativePlatform()
         );
-        var reduz =
-          window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        if (!nativo || reduz) {
-          el.parentNode.removeChild(el);
+
+        // Plugins nativos (splash/status bar): sempre best-effort — indisponíveis
+        // não podem quebrar o boot.
+        var plugins = (nativo && window.Capacitor.Plugins) || {};
+        function esconderSplash(fadeMs) {
+          try {
+            if (plugins.SplashScreen) {
+              plugins.SplashScreen.hide({ fadeOutDuration: fadeMs }).catch(function () {});
+            }
+          } catch (e) {}
+        }
+        function barra(estilo, cor) {
+          try {
+            if (plugins.StatusBar) {
+              plugins.StatusBar.setStyle({ style: estilo }).catch(function () {});
+              // Android 15+ pode ignorar a cor (edge-to-edge do sistema); o estilo
+              // dos ícones é o que garante o contraste.
+              plugins.StatusBar.setBackgroundColor({ color: cor }).catch(function () {});
+            }
+          } catch (e) {}
+        }
+
+        if (!el) {
+          // Sem o nó da abertura, a splash não pode ficar presa (launchAutoHide off).
+          if (nativo) {
+            esconderSplash(0);
+            barra("LIGHT", "#F7F7F8");
+          }
           return;
         }
+        var reduz =
+          window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        if (!nativo || reduz) {
+          el.parentNode.removeChild(el);
+          if (nativo) {
+            // Abertura pulada (reduced motion): destrava a splash e aplica a barra do app.
+            esconderSplash(0);
+            barra("LIGHT", "#F7F7F8");
+          }
+          return;
+        }
+
         el.classList.add("gm-ab-on");
+        // A abertura pinta ink no corpo da WebView, mas em Android 15+/SDK 36 o sistema
+        // força edge-to-edge: a faixa da status bar mostra o fundo claro da window (fora
+        // do alcance do CSS, com setBackgroundColor no-op). Só o contraste dos ícones é
+        // controlável — mantém a barra clara (ícones escuros) o tempo todo pra eles não
+        // ficarem ilegíveis sobre essa faixa.
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () {
+            // 1º frame da abertura pintado -> solta a splash nativa (emenda sem flash).
+            esconderSplash(150);
+            barra("LIGHT", "#F7F7F8");
+          });
+        });
         window.setTimeout(function () {
           el.classList.add("gm-ab-out");
         }, 4900);
