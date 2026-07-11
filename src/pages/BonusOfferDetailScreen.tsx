@@ -7,7 +7,7 @@ import {
   BonusCategory,
   BonusPromotion,
 } from '@/lib/bonusTypes'
-import { isExpiringToday } from '@/lib/bonusUtils'
+import { bonusBadge, isExpiringToday } from '@/lib/bonusUtils'
 import { BonusProgramLogo } from '@/components/bonus/BonusProgramLogo'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
 
@@ -47,6 +47,7 @@ export default function BonusOfferDetailScreen() {
 
   const { promotions, loading } = useBonusPromotions()
   const promo = promotions.find((p) => p.id === id)
+  const badge = promo ? bonusBadge(promo.bonusValue) : null
 
   if (loading) {
     return (
@@ -116,20 +117,27 @@ export default function BonusOfferDetailScreen() {
       <div className="flex flex-col gap-4 px-5 pb-24 pt-4">
         {activeTab === 'promotion' ? (
           <>
-            {/* Hero */}
+            {/* Hero — a manchete curada é a tese; o valor grande só entra quando é token curto */}
             <div className="rounded-[24px] bg-white px-5 py-6 text-center shadow-nubank">
-              <div className="flex items-baseline justify-center gap-2">
-                <span className="font-display text-[56px] font-bold leading-none tracking-tight tabular-nums text-primary">
-                  {promo.bonusValue}
-                </span>
-                <span className="text-base font-medium text-nubank-text-secondary">
-                  {promo.bonusLabel}
-                </span>
-              </div>
+              <h2 className="font-display text-[19px] font-bold leading-snug tracking-tight text-nubank-text">
+                {promo.title}
+              </h2>
+              {badge && (
+                <div className="mt-3 flex items-baseline justify-center gap-2">
+                  <span className="font-display text-[44px] font-bold leading-none tracking-tight tabular-nums text-primary">
+                    {badge.value}
+                  </span>
+                  {badge.label && (
+                    <span className="text-base font-medium text-nubank-text-secondary">
+                      {badge.label}
+                    </span>
+                  )}
+                </div>
+              )}
               <p className="mt-2 text-[13.5px] text-nubank-text-secondary">
                 {promo.category === 'transfer'
                   ? `Transfira seus pontos para o ${promo.targetProgram}`
-                  : promo.targetProgram}
+                  : CATEGORY_SUBTITLE[promo.category]}
               </p>
               {promo.participatingBanks && promo.participatingBanks.length > 0 && (
                 <div className="mt-3.5 flex flex-wrap justify-center gap-1.5">
@@ -199,7 +207,7 @@ export default function BonusOfferDetailScreen() {
               </div>
             )}
 
-            {/* CTA */}
+            {/* CTA — toda promoção tem link: oficial do programa ou o post da fonte */}
             {promo.ctaUrl && (
               <div className="flex gap-2.5">
                 <a
@@ -208,7 +216,7 @@ export default function BonusOfferDetailScreen() {
                   rel="noopener noreferrer"
                   className="gradient-primary flex h-[52px] flex-1 items-center justify-center rounded-[18px] text-[15px] font-bold text-white shadow-[0_6px_18px_-4px_rgba(138,5,190,0.5)]"
                 >
-                  Quero aproveitar
+                  {promo.ctaIsFallback ? 'Ver promoção na fonte' : 'Quero aproveitar'}
                 </a>
                 <button
                   type="button"

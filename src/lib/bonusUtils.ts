@@ -25,3 +25,23 @@ export function isExpiringToday(expiresAt?: string): boolean {
     expiry.getDate() === today.getDate()
   )
 }
+
+export function formatExpiryShort(expiresAt?: string): string | null {
+  if (!expiresAt) return null
+  if (isExpiringToday(expiresAt)) return 'encerra hoje'
+  const date = new Date(expiresAt)
+  return `até ${date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}`
+}
+
+/**
+ * O tratamento tipográfico grande (valor em destaque) só funciona com token CURTO.
+ * bonus_value vem livre do LLM: curto => badge; longo => o título carrega a promoção.
+ * Percentual ganha rótulo; valor com unidade embutida ("21 pts/R$") não repete rótulo.
+ */
+export function bonusBadge(bonusValue?: string): { value: string; label?: string } | null {
+  const value = (bonusValue ?? '').trim()
+  if (!value || value.length > 12) return null
+  if (/^(até\s+)?-\d+([.,]\d+)?\s*%$/i.test(value)) return { value, label: 'de desconto' }
+  if (/^(até\s+)?\d+([.,]\d+)?\s*%$/i.test(value)) return { value, label: 'de bônus' }
+  return { value }
+}

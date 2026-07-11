@@ -17,6 +17,7 @@ function promo(overrides: Partial<BonusPromotion>): BonusPromotion {
     id: 'p1',
     category: 'transfer',
     targetProgram: 'Smiles',
+    title: 'Promoção de teste',
     bonusValue: '100%',
     bonusLabel: 'de bônus',
     isActive: true,

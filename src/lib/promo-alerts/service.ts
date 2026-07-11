@@ -27,10 +27,17 @@ export function mapPromoAlertRow(row: Record<string, unknown>): BonusPromotion |
     ? (row.source_links as { name: string; url: string }[])
     : undefined
 
+  const program = targetProgram ?? sourceProgram ?? 'Programa'
+  const officialCta = typeof row.cta_url === 'string' && row.cta_url ? row.cta_url : undefined
+  const links = sourceLinks && sourceLinks.length > 0 ? sourceLinks : undefined
+  // Toda promoção precisa de link clicável: sem cta oficial, cai no post da fonte.
+  const fallbackCta = links?.[0]?.url
+
   return {
     id: String(row.id),
     category,
-    targetProgram: targetProgram ?? sourceProgram ?? 'Programa',
+    targetProgram: program,
+    title: typeof row.title === 'string' && row.title ? row.title : program,
     bonusValue: typeof row.bonus_value === 'string' ? row.bonus_value : '',
     bonusLabel: BONUS_LABEL[category],
     participatingBanks: category === 'transfer' && sourceProgram ? [sourceProgram] : undefined,
@@ -38,9 +45,10 @@ export function mapPromoAlertRow(row: Record<string, unknown>): BonusPromotion |
     expiresAt: validUntil ? `${validUntil}T23:59:00` : undefined,
     isActive: true,
     isHighlight: false,
-    ctaUrl: typeof row.cta_url === 'string' && row.cta_url ? row.cta_url : undefined,
+    ctaUrl: officialCta ?? fallbackCta,
+    ctaIsFallback: !officialCta && !!fallbackCta,
     rules: typeof row.details === 'string' && row.details ? row.details : undefined,
-    sourceLinks: sourceLinks && sourceLinks.length > 0 ? sourceLinks : undefined,
+    sourceLinks: links,
   }
 }
 
