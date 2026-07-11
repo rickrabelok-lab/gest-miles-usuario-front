@@ -46,7 +46,6 @@ export function mapPromoAlertRow(row: Record<string, unknown>): BonusPromotion |
     isActive: true,
     isHighlight: false,
     ctaUrl: officialCta ?? fallbackCta,
-    ctaIsFallback: !officialCta && !!fallbackCta,
     rules: typeof row.details === 'string' && row.details ? row.details : undefined,
     sourceLinks: links,
   }

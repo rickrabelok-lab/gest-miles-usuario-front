@@ -207,7 +207,7 @@ export default function BonusOfferDetailScreen() {
               </div>
             )}
 
-            {/* CTA — toda promoção tem link: oficial do programa ou o post da fonte */}
+            {/* CTA — toda promoção tem link de participação */}
             {promo.ctaUrl && (
               <div className="flex gap-2.5">
                 <a
@@ -216,7 +216,7 @@ export default function BonusOfferDetailScreen() {
                   rel="noopener noreferrer"
                   className="gradient-primary flex h-[52px] flex-1 items-center justify-center rounded-[18px] text-[15px] font-bold text-white shadow-[0_6px_18px_-4px_rgba(138,5,190,0.5)]"
                 >
-                  {promo.ctaIsFallback ? 'Ver promoção na fonte' : 'Quero aproveitar'}
+                  Participar da promoção
                 </a>
                 <button
                   type="button"
@@ -238,18 +238,15 @@ export default function BonusOfferDetailScreen() {
               {promo.rules ??
                 'Consulte o site do programa para mais informações sobre as regras desta promoção.'}
             </p>
-            {promo.sourceLinks && promo.sourceLinks.length > 0 && (
-              <p className="mt-3 text-[12px] text-nubank-text-secondary">
-                Fontes:{' '}
-                {promo.sourceLinks.map((s, i) => (
-                  <Fragment key={s.url}>
-                    {i > 0 && ' · '}
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="underline">
-                      {s.name}
-                    </a>
-                  </Fragment>
-                ))}
-              </p>
+            {promo.ctaUrl && (
+              <a
+                href={promo.ctaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gradient-primary mt-4 flex h-12 w-full items-center justify-center rounded-[16px] text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(138,5,190,0.45)]"
+              >
+                Participar da promoção
+              </a>
             )}
           </div>
         )}
