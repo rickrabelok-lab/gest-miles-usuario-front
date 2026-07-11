@@ -1,0 +1,310 @@
+[
+  {
+    "entrada_normalizada": {
+      "source": "melhorescartoes",
+      "external_id": "https://www.melhorescartoes.com.br/?p=127863",
+      "title": "Ganhe até 17 pontos Livelo por real em compras na Insider, O Boticário, Riachuelo e mais parceiros",
+      "link": "https://www.melhorescartoes.com.br/livelo-parceiros-17-pontos-jul26.html",
+      "content": " A Livelo está com ofertas de compras bonificadas em diversos parceiros. Confira nossa lista para acumular até 17 pontos por real em sites como Mondaine, Coffee ++, Insider e Telhanorte como um novo parceiro, com 2 pontos para cada 1 real gasto. A validade das ofertas depende de cada parceiro, sendo as melhores condições para primeira compra ou categorias e produtos selecionados. Veja nossos destaques: PARCEIRO PONTUAÇÃO PERÍODO LINK Mondaine até 17:1 09/07 Clique aqui Seculus até 15:1 09/07 Clique aqui Coffee ++ até 10:1 12/07 Clique aqui O Boticário até 10:1 12/07 Clique aqui C&A até 10:1 09/07 Clique aqui Beleza na Web até 8:1 12/07 Clique aqui Insider até 8:1 12/07 Clique aqui Riachuelo até 5:1 09/07 Clique aqui Pontofrio até 5:1 13/07 Clique aqui Extra até 5:1 12/07 Clique aqui Telhanorte até 2:1 12/07 Clique aqui Importante! Lembre-se de conferir os termos e condições de cada oferta. Em algumas lojas, além de fazer a compra por meio do link do parceiro, é necessário o uso de cupom ou confirmação do acúmulo de pontos ao final da compra. Sempre vale a pena comparar o preço do produto desejado em outras lojas, para ter certeza de que a promoção vale a pena para você. Tire prints ou faça a gravação da tela durante o processo de compra, caso precise contestar algo no futuro. O post Ganhe até 17 pontos Livelo por real em compras na Insider, O Boticário, Riachuelo e mais parceiros apareceu primeiro em Melhores Cartões . ",
+      "pub_date": "Thu, 09 Jul 2026 15:15:29 +0000"
+    },
+    "json_extraido": {
+      "is_promo": true,
+      "category": "shopping",
+      "source_program": "Livelo",
+      "target_program": null,
+      "title": "Até 17 pontos Livelo por real em parceiros",
+      "bonus_value": "até 17:1",
+      "bonus_numeric": 17,
+      "tiers": [
+        {
+          "label": "Mondaine",
+          "value": "17:1",
+          "isBest": true
+        },
+        {
+          "label": "Seculus",
+          "value": "15:1",
+          "isBest": false
+        },
+        {
+          "label": "Coffee ++",
+          "value": "10:1",
+          "isBest": false
+        },
+        {
+          "label": "O Boticário",
+          "value": "10:1",
+          "isBest": false
+        },
+        {
+          "label": "Insider",
+          "value": "8:1",
+          "isBest": false
+        },
+        {
+          "label": "Riachuelo",
+          "value": "5:1",
+          "isBest": false
+        },
+        {
+          "label": "Telhanorte",
+          "value": "2:1",
+          "isBest": false
+        }
+      ],
+      "valid_from": "2026-07-09",
+      "valid_until": "2026-07-13",
+      "details": "Promoção de pontuação bonificada em múltiplos parceiros. Pontuação varia por loja: até 17:1 na Mondaine, 15:1 Seculus, 10:1 Coffee++/O Boticário, 8:1 Insider, 5:1 Riachuelo, 2:1 Telhanorte. Válida por loja até datas específicas. Alguns parceiros exigem cupom ou confirmação ao final da compra.",
+      "cta_url": null,
+      "confidence": 0.92,
+      "canonical_key": "shopping:livelo>x:17:2026-07-13",
+      "source_name": "Melhores Cartões",
+      "source_url": "https://www.melhorescartoes.com.br/livelo-parceiros-17-pontos-jul26.html",
+      "raw_title": "Ganhe até 17 pontos Livelo por real em compras na Insider, O Boticário, Riachuelo e mais parceiros"
+    }
+  },
+  {
+    "entrada_normalizada": {
+      "source": "melhorescartoes",
+      "external_id": "https://www.melhorescartoes.com.br/?p=127741",
+      "title": "Livelo oferece compra de pontos com até 55% de desconto e mais 5% OFF no Pix – milheiro a partir de R$ 29,92",
+      "link": "https://www.melhorescartoes.com.br/compra-pontos-livelo-55off-5-pix-jul26.html",
+      "content": " A Livelo está com uma nova oferta que garante até 55% de desconto na compra de pontos, e quem fizer o pagamento via Pix recebe mais 5% de desconto sobre o valor final da transação. A campanha é válida para todos os clientes Livelo , com desconto maior para os assinantes do Clube Livelo, e vale somente hoje, 8 de julho. Veja o custo do milheiro em cada regra, conforme a modalidade de pagamento escolhida: Regra Valor milheiro (Pix: +5% OFF) Valor milheiro (cartão) Assinantes Clube Livelo (55% OFF) R$ 29,92 R$ 31,50 Demais clientes (50% OFF) R$ 33,25 R$ 35 Para aproveitar, basta acessar o site da Livelo , escolher a quantidade de pontos que deseja comprar e realizar o pagamento via Pix ou cartão de crédito. Para pagamentos com cartão de crédito, a compra pode ser parcelada em até 12 vezes sem juros. Além disso, é possível comprar até 300.000 pontos por CPF em um período de 30 dias. Os pontos serão creditados em até 48 horas úteis após a confirmação do pagamento. Confira aqui o regulamento completo da promoção. O post Livelo oferece compra de pontos com até 55% de desconto e mais 5% OFF no Pix – milheiro a partir de R$ 29,92 apareceu primeiro em Melhores Cartões . ",
+      "pub_date": "Wed, 08 Jul 2026 13:48:44 +0000"
+    },
+    "json_extraido": {
+      "is_promo": true,
+      "category": "shopping",
+      "source_program": "Livelo",
+      "target_program": null,
+      "title": "Livelo: compra de pontos com até 55% desconto",
+      "bonus_value": "55%",
+      "bonus_numeric": 55,
+      "tiers": [
+        {
+          "label": "Clube Livelo + Pix",
+          "value": "R$ 29,92/mil",
+          "isBest": true
+        },
+        {
+          "label": "Clube Livelo + cartão",
+          "value": "R$ 31,50/mil",
+          "isBest": false
+        },
+        {
+          "label": "Clientes comuns + Pix",
+          "value": "R$ 33,25/mil",
+          "isBest": false
+        },
+        {
+          "label": "Clientes comuns + cartão",
+          "value": "R$ 35,00/mil",
+          "isBest": false
+        }
+      ],
+      "valid_from": "2026-07-08",
+      "valid_until": "2026-07-08",
+      "details": "Desconto na compra de pontos Livelo: 55% para assinantes Clube, 50% para demais clientes. Pix adiciona 5% OFF. Máx 300k pontos/CPF em 30 dias. Crédito em até 48h úteis. Parcelamento em até 12x sem juros via cartão.",
+      "cta_url": "https://www.livelo.com.br",
+      "confidence": 0.92,
+      "canonical_key": "shopping:livelo>x:55:2026-07-08",
+      "source_name": "Melhores Cartões",
+      "source_url": "https://www.melhorescartoes.com.br/compra-pontos-livelo-55off-5-pix-jul26.html",
+      "raw_title": "Livelo oferece compra de pontos com até 55% de desconto e mais 5% OFF no Pix – milheiro a partir de R$ 29,92"
+    }
+  },
+  {
+    "entrada_normalizada": {
+      "source": "melhorescartoes",
+      "external_id": "https://www.melhorescartoes.com.br/?p=127835",
+      "title": "Últimos dias! Abra a conta Nomad e ganhe até 50 mil milhas Smiles",
+      "link": "https://www.melhoresdestinos.com.br/milhas/smiles-nomad-promocao-9jul26",
+      "content": " Últimos dias para aproveitar a super promoção da Nomad, que está oferecendo até 50 mil milhas Smiles para novos clientes. Para aproveitar, basta abrir uma conta sem taxa de abertura ou de manutenção através do link da oferta , utilizando o código de convidado MD50MIL e fazer a sua primeira operação de câmbio de pelo menos 100 dólares em até 15 dias. Você vai receber 25 milhas Smiles por dólar convertido até o limite de 50 mil milhas se for cliente Clube Smiles, Diamante ou Magno, ou 15 milhas Smiles por dólar até o limite de 25 mil milhas para os demais participantes. Além das milhas Smiles bônus, quem participar ainda ganha um eSIM (chip virtual para celular) da Nomad com 3GB de dados de internet para utilizar onde quiser, válido por 30 dias. Os participantes podem resgatar o eSIM até o dia 10 de setembro. O post Últimos dias! Abra a conta Nomad e ganhe até 50 mil milhas Smiles apareceu primeiro em Melhores Cartões . ",
+      "pub_date": "Thu, 09 Jul 2026 12:30:10 +0000"
+    },
+    "json_extraido": {
+      "is_promo": true,
+      "category": "cards",
+      "source_program": "Nomad",
+      "target_program": "Smiles",
+      "title": "Abra conta Nomad e ganhe até 50 mil milhas Smiles",
+      "bonus_value": "25 pts/USD ou 15 pts/USD",
+      "bonus_numeric": 50,
+      "tiers": [
+        {
+          "label": "Clube/Diamante/Magno Smiles",
+          "value": "25 milhas por USD (até 50 mil)",
+          "isBest": true
+        },
+        {
+          "label": "Demais participantes",
+          "value": "15 milhas por USD (até 25 mil)",
+          "isBest": false
+        }
+      ],
+      "valid_from": "2026-07-09",
+      "valid_until": "2026-09-10",
+      "details": "Abra conta Nomad com código MD50MIL. Faça câmbio mínimo de 100 USD em até 15 dias. Receba milhas Smiles conforme tier. Ganha bônus eSIM Nomad 3GB válido 30 dias, resgate até 10 set.",
+      "cta_url": null,
+      "confidence": 0.92,
+      "canonical_key": "cards:nomad>smiles:50:2026-09-10",
+      "source_name": "Melhores Cartões",
+      "source_url": "https://www.melhoresdestinos.com.br/milhas/smiles-nomad-promocao-9jul26",
+      "raw_title": "Últimos dias! Abra a conta Nomad e ganhe até 50 mil milhas Smiles"
+    }
+  },
+  {
+    "entrada_normalizada": {
+      "source": "melhoresdestinos",
+      "external_id": "https://www.melhoresdestinos.com.br/?post_type=milhas&p=610873",
+      "title": "Últimos dias! Peça o cartão Azul Itaú e ganhe 100.000 pontos bônus",
+      "link": "https://www.melhoresdestinos.com.br/milhas/ultimos-dias-cartao-azul-100k-abr26",
+      "content": "Se você ainda não pediu o seu cartão Azul Itaú, corre, que ainda dá tempo! São 100.000 pontos bônus para quem solicitar o cartão Mastercard Skyline ou Visa Infinite até a próxima quarta-feira (29/04) e cumprir uma meta de gastos. Clique aqui para solicitar o cartão Azul Mastercard Skyline Clique aqui para solicitar o cartão&#8230;",
+      "pub_date": "Mon, 27 Apr 2026 11:31:11 +0000"
+    },
+    "json_extraido": {
+      "is_promo": true,
+      "category": "cards",
+      "source_program": "Azul Fidelidade",
+      "target_program": null,
+      "title": "Cartão Azul Itaú: 100 mil pontos bônus até 29/4",
+      "bonus_value": "100.000 pontos",
+      "bonus_numeric": 100000,
+      "tiers": null,
+      "valid_from": "2026-04-27",
+      "valid_until": "2026-04-29",
+      "details": "Bônus de 100 mil pontos Azul Fidelidade ao solicitar cartão Mastercard Skyline ou Visa Infinite até 29 de abril de 2026, com cumprimento de meta de gastos obrigatória.",
+      "cta_url": null,
+      "confidence": 0.95,
+      "canonical_key": "cards:azul-fidelidade>x:100000:2026-04-29",
+      "source_name": "Melhores Destinos",
+      "source_url": "https://www.melhoresdestinos.com.br/milhas/ultimos-dias-cartao-azul-100k-abr26",
+      "raw_title": "Últimos dias! Peça o cartão Azul Itaú e ganhe 100.000 pontos bônus"
+    }
+  },
+  {
+    "entrada_normalizada": {
+      "source": "melhorescartoes",
+      "external_id": "https://www.melhorescartoes.com.br/?p=127818",
+      "title": "Smiles oferece até 70% de bônus na transferência de pontos de todos os parceiros",
+      "link": "https://www.melhorescartoes.com.br/prorrogado-smiles-70-bonus-jul26.html",
+      "content": " A Smiles prorrogou a promoção que oferece até 70% de bônus na transferência de pontos do cartão de crédito, além de um cupom de desconto de 79% na compra de milhas para quem transferir os pontos durante a promoção. Agora, a oferta é válida até às 23h59 dessa sexta-feira (10/07). Confira como funciona a bonificação: 70% de bônus – Assinantes Clube Smiles/Clientes Diamante/Magno 40% de bônus – Demais clientes. Para aproveitar, é necessário fazer o cadastro na página da promoção ANTES de transferir seus pontos. Ainda não faz parte do Clube Smiles? Clique aqui para assinar o plano 2.000 e receber na hora 16.000 milhas bônus! O bônus é limitado a 300.000 por CPF ou Conta Família. As milhas serão creditadas na conta Smiles até 23/07/2026, com validade de 12 meses. As demais milhas serão válidas entre 3 e 10 anos, a depender do status Smiles do participante. O desconto para compra tem limite de 100.000 milhas. Antes de transferir seus pontos, confira o regulamento completo e faça seu cadastro na página da promoção . O post Smiles oferece até 70% de bônus na transferência de pontos de todos os parceiros apareceu primeiro em Melhores Cartões . ",
+      "pub_date": "Thu, 09 Jul 2026 11:11:49 +0000"
+    },
+    "json_extraido": {
+      "is_promo": true,
+      "category": "transfer",
+      "source_program": null,
+      "target_program": "Smiles",
+      "title": "Smiles: até 70% bônus em transferência de pontos",
+      "bonus_value": "70%",
+      "bonus_numeric": 70,
+      "tiers": [
+        {
+          "label": "Assinantes Clube Smiles/Clientes Diamante/Magno",
+          "value": "70%",
+          "isBest": true
+        },
+        {
+          "label": "Demais clientes",
+          "value": "40%",
+          "isBest": false
+        }
+      ],
+      "valid_from": "2026-07-09",
+      "valid_until": "2026-07-10",
+      "details": "Bônus na transferência de pontos de cartão para Smiles. Limite de 300.000 milhas por CPF. Milhas creditadas até 23/07/2026 com validade de 12 meses. Cupom de 79% desconto na compra de milhas (limite 100.000). Cadastro prévio obrigatório.",
+      "cta_url": null,
+      "confidence": 0.92,
+      "canonical_key": "transfer:x>smiles:70:2026-07-10",
+      "source_name": "Melhores Cartões",
+      "source_url": "https://www.melhorescartoes.com.br/prorrogado-smiles-70-bonus-jul26.html",
+      "raw_title": "Smiles oferece até 70% de bônus na transferência de pontos de todos os parceiros"
+    }
+  },
+  {
+    "entrada_normalizada": {
+      "source": "melhorescartoes",
+      "external_id": "https://www.melhorescartoes.com.br/?p=127789",
+      "title": "Inter e Azul: envie pontos mais dinheiro com bônus e consiga milheiro a partir de R$ 13,44",
+      "link": "https://www.melhoresdestinos.com.br/milhas/azul-inter-pontos-dinheiro-115-bonus-jul26",
+      "content": " O Azul Fidelidade está oferecendo até 115% de bônus na transferência de pontos do Inter Loop . E, como toda promoção bonificada, ela também pode ser uma oportunidade para fabricar pontos baratos. &nbsp; &nbsp; O post Inter e Azul: envie pontos mais dinheiro com bônus e consiga milheiro a partir de R$ 13,44 apareceu primeiro em Melhores Cartões . ",
+      "pub_date": "Wed, 08 Jul 2026 19:51:05 +0000"
+    },
+    "json_extraido": {
+      "is_promo": true,
+      "category": "transfer",
+      "source_program": "Inter",
+      "target_program": "Azul Fidelidade",
+      "title": "Inter oferece até 115% de bônus em transferência para Azul",
+      "bonus_value": "115%",
+      "bonus_numeric": 115,
+      "tiers": null,
+      "valid_from": "2026-07-08",
+      "valid_until": null,
+      "details": "Promoção de transferência de pontos do programa Inter Loop para Azul Fidelidade com bônus de até 115%. Permite fabricar pontos a partir de R$ 13,44 por milha.",
+      "cta_url": null,
+      "confidence": 0.82,
+      "canonical_key": "transfer:inter>azul-fidelidade:115:sem-data",
+      "source_name": "Melhores Cartões",
+      "source_url": "https://www.melhoresdestinos.com.br/milhas/azul-inter-pontos-dinheiro-115-bonus-jul26",
+      "raw_title": "Inter e Azul: envie pontos mais dinheiro com bônus e consiga milheiro a partir de R$ 13,44"
+    }
+  },
+  {
+    "entrada_normalizada": {
+      "source": "melhorescartoes",
+      "external_id": "https://www.melhorescartoes.com.br/?p=127724",
+      "title": "Azul e Natura: ganhe até 21 pontos por real em compras",
+      "link": "https://www.melhorescartoes.com.br/azul-natura-21-pontos-jul26.html",
+      "content": " O Azul Fidelidade está oferecendo até 21 pontos por real em compras no site ou no aplicativo da Natura. Para aproveitar, basta inserir o cupom PONTOSAZUL na finalização do pedido. A maior pontuação vale para assinantes do Clube Azul, enquanto os demais clientes recebem 15 pontos por real gasto. A promoção é válida até domingo, 12 de julho . Importante: Para receber a pontuação máxima, a adesão ao Clube Azul deve ter sido feita até 24 horas antes da data de compra. Os pontos serão creditados em até 30 dias úteis após a entrega do produto. Confira o regulamento no site da parceria . Dica: vale a pena comparar o preço do produto desejado em outras lojas, para ter certeza de que a promoção vale a pena para você. Tire prints ou faça a gravação da tela durante o processo de compra, caso precise contestar algo no futuro. O post Azul e Natura: ganhe até 21 pontos por real em compras apareceu primeiro em Melhores Cartões . ",
+      "pub_date": "Wed, 08 Jul 2026 11:54:16 +0000"
+    },
+    "json_extraido": {
+      "is_promo": true,
+      "category": "miles",
+      "source_program": "Azul Fidelidade",
+      "target_program": null,
+      "title": "Azul Fidelidade: até 21 pts/R$ em compras Natura",
+      "bonus_value": "21 pts/R$",
+      "bonus_numeric": 21,
+      "tiers": [
+        {
+          "label": "Clube Azul",
+          "value": "21 pts/R$",
+          "isBest": true
+        },
+        {
+          "label": "Cliente regular",
+          "value": "15 pts/R$",
+          "isBest": false
+        }
+      ],
+      "valid_from": "2026-07-08",
+      "valid_until": "2026-07-12",
+      "details": "Compre no site ou app Natura e insira cupom PONTOSAZUL. Clube Azul recebe 21 pts/R$, demais clientes 15 pts/R$. Adesão ao clube deve ser anterior em 24h. Pontos creditados em até 30 dias úteis após entrega.",
+      "cta_url": null,
+      "confidence": 0.92,
+      "canonical_key": "miles:azul-fidelidade>x:21:2026-07-12",
+      "source_name": "Melhores Cartões",
+      "source_url": "https://www.melhorescartoes.com.br/azul-natura-21-pontos-jul26.html",
+      "raw_title": "Azul e Natura: ganhe até 21 pontos por real em compras"
+    }
+  },
+  {
+    "entrada_normalizada": {
+      "source": "melhorescartoes",
+      "external_id": "https://www.melhorescartoes.com.br/?p=127800",
+      "title": "Esfera vai piorar a paridade para envio de pontos para o programa da Etihad Airways",
+      "link": "https://www.melhoresdestinos.com.br/milhas/mudanca-paridade-esfera-etihad-guest",
+      "content": " Em novembro do ano passado, a Esfera fechou parceria com os programas internacionais das companhias Etihad Airways (Etihad Guest) e Turkish Airlines (Miles&Smiles) &#8211; relembre aqui . No lançamento, as parcerias já não era muito vantajosas por conta do deságio. Para o Etihad Guest, clientes Clube Esfera precisam de 3,3 pontos para ganhar 1 ponto no programa da Etihad. Já os demais clientes precisam de 3,5 pontos para gerar o mesmo ponto no programa. Porém, as conversões entre os programas irão mudar para pior a partir do dia 31 de julho. O post Esfera vai piorar a paridade para envio de pontos para o programa da Etihad Airways apareceu primeiro em Melhores Cartões . ",
+      "pub_date": "Wed, 08 Jul 2026 20:20:50 +0000"
+    },
+    "json_extraido": {
+      "is_promo": false,
+      "source": "melhorescartoes",
+      "link": "https://www.melhoresdestinos.com.br/milhas/mudanca-paridade-esfera-etihad-guest"
+    }
+  }
+]
