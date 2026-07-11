@@ -28,6 +28,17 @@ router.get("/", async (_req, res) => {
 const ACTION_LABEL = { approve: "Aprovar", reject: "Rejeitar" };
 const DONE_LABEL = { approve: "aprovada ✅", reject: "rejeitada ❌" };
 
+/** Escapa caracteres HTML especiais para prevenir XSS em valores de banco/request. */
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[c]));
+}
+
 function page(title, body) {
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title}</title><style>body{font-family:system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#F7F7F8;color:#1F1F1F;margin:0;padding:24px;text-align:center}button{background:#8A05BE;color:#fff;border:0;border-radius:14px;padding:14px 32px;font-size:16px;font-weight:600;cursor:pointer}</style></head><body><div>${body}</div></body></html>`;
 }
@@ -86,7 +97,9 @@ router.post("/moderate/:id", async (req, res) => {
     if (!data) {
       return res.status(404).send(page("Não encontrada", "<p>Promoção não encontrada (ou já expirada).</p>"));
     }
-    return res.send(page("Feito", `<h2>Promoção ${DONE_LABEL[action]}</h2><p>${data.title}</p>`));
+    // action e token foram já verificados (action ∈ allowlist, token validado por HMAC) — sem XSS.
+    // data.title escapa para prevenir injeção de HTML via valor de banco (LLM-extraído de posts externos).
+    return res.send(page("Feito", `<h2>Promoção ${DONE_LABEL[action]}</h2><p>${esc(data.title)}</p>`));
   } catch (err) {
     return serverError(res, "Erro ao moderar promoção", err, "[promo-alerts]");
   }
