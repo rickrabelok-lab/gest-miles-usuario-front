@@ -1,5 +1,5 @@
 // src/lib/bonusUtils.ts
-import { BonusCategory } from '@/lib/bonusMockData'
+import { BonusCategory } from '@/lib/bonusTypes'
 
 export interface CategoryConfig {
   emoji: string

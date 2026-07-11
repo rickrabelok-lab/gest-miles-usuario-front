@@ -2,7 +2,7 @@
 import { Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
-import { BONUS_PROMOTIONS_SOURCE_NOTICE, BonusPromotion } from '@/lib/bonusMockData'
+import { BONUS_PROMOTIONS_SOURCE_NOTICE, BonusPromotion } from '@/lib/bonusTypes'
 import { CATEGORY_CONFIG, isExpiringToday } from '@/lib/bonusUtils'
 import { BonusProgramLogo } from '@/components/bonus/BonusProgramLogo'
 
@@ -42,7 +42,8 @@ function QuickItem({ promo }: { promo: BonusPromotion }) {
 
 export default function BonusPromotionsSection() {
   const navigate = useNavigate()
-  const { promotions, highlight, activeCount, expiringToday } = useBonusPromotions()
+  const { promotions, highlight, activeCount, expiringToday, loading } = useBonusPromotions()
+  if (loading || promotions.length === 0) return null
 
   const quickList = promotions.filter(p => !p.isHighlight).slice(0, 3)
 

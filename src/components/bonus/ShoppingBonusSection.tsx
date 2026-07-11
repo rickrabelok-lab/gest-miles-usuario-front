@@ -20,9 +20,11 @@ export function ShoppingBonusSection({ sectionRef }: Props) {
     <div ref={sectionRef} className="mb-6">
       <div className="mb-2.5 flex items-baseline justify-between">
         <h3 className="section-label mb-0">Compras online</h3>
-        <span className="text-[11px] font-medium text-nubank-text-secondary">
-          {maxStores}+ lojas
-        </span>
+        {maxStores > 0 && (
+          <span className="text-[11px] font-medium text-nubank-text-secondary">
+            {maxStores}+ lojas
+          </span>
+        )}
       </div>
 
       <div className="rounded-[20px] bg-white py-1 shadow-nubank">

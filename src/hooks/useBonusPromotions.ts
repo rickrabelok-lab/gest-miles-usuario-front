@@ -1,32 +1,50 @@
 // src/hooks/useBonusPromotions.ts
 import { useMemo } from 'react'
-import { BONUS_PROMOTIONS, BonusCategory, BonusPromotion } from '@/lib/bonusMockData'
+import { useQuery } from '@tanstack/react-query'
+import { getActivePromoAlerts, pickHighlightId } from '@/lib/promo-alerts/service'
+import type { BonusCategory, BonusPromotion } from '@/lib/bonusTypes'
 import { isExpiringToday } from '@/lib/bonusUtils'
+
+const LOAD_ERROR_MESSAGE = 'Não foi possível carregar as promoções no momento.'
 
 export function useBonusPromotions(category?: BonusCategory): {
   promotions: BonusPromotion[]
   highlight: BonusPromotion | null
   activeCount: number
   expiringToday: number
+  loading: boolean
+  error: string | null
 } {
-  const promotions = useMemo(() => {
-    const active = BONUS_PROMOTIONS.filter(p => p.isActive)
-    return category ? active.filter(p => p.category === category) : active
-  }, [category])
+  const { data, isPending, isError } = useQuery({
+    queryKey: ['promo-alerts'],
+    queryFn: ({ signal }) => getActivePromoAlerts({ signal }),
+  })
 
-  // highlight is intentionally global (ignores category) — it is only consumed by
-  // BonusOfferSection which calls this hook without a category argument.
-  const highlight = useMemo(
-    () => BONUS_PROMOTIONS.find(p => p.isActive && p.isHighlight) ?? null,
-    []
+  const withHighlight = useMemo(() => {
+    const all = data ?? []
+    const highlightId = pickHighlightId(all)
+    return all.map((p) => (p.id === highlightId ? { ...p, isHighlight: true } : p))
+  }, [data])
+
+  const promotions = useMemo(
+    () => (category ? withHighlight.filter((p) => p.category === category) : withHighlight),
+    [withHighlight, category],
   )
 
-  const activeCount = promotions.length
+  // highlight é global de propósito (ignora categoria) — só a Home consome sem argumento.
+  const highlight = useMemo(() => withHighlight.find((p) => p.isHighlight) ?? null, [withHighlight])
 
   const expiringToday = useMemo(
-    () => promotions.filter(p => isExpiringToday(p.expiresAt)).length,
-    [promotions]
+    () => promotions.filter((p) => isExpiringToday(p.expiresAt)).length,
+    [promotions],
   )
 
-  return { promotions, highlight, activeCount, expiringToday }
+  return {
+    promotions,
+    highlight,
+    activeCount: promotions.length,
+    expiringToday,
+    loading: isPending,
+    error: isError ? LOAD_ERROR_MESSAGE : null,
+  }
 }

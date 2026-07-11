@@ -1,0 +1,466 @@
+{
+  "name": "gm-promo-ingest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "gmpi-cron",
+      "name": "gmpi-cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Fontes fase 1 (spec 2026-07-11). Passageiro de Primeira FORA por decisão do owner.\nreturn [\n  { json: { source: 'melhorescartoes', url: 'https://www.melhorescartoes.com.br/c/promocoes-milhas/feed/' } },\n  { json: { source: 'pontospravoar', url: 'https://pontospravoar.com/category/promocoes/feed/' } },\n  { json: { source: 'melhoresdestinos', url: 'https://www.melhoresdestinos.com.br/milhas/feed' } },\n]"
+      },
+      "id": "gmpi-feeds",
+      "name": "gmpi-feeds",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "gmpi-rss",
+      "name": "gmpi-rss",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// RSS item -> shape estável. source vem do node gmpi-feeds via pairedItem.\nconst src = $('gmpi-feeds').item.json.source\nconst j = $json\nconst externalId = (j.guid || j.link || '').toString().slice(0, 500)\nif (!externalId) return null // item sem id rastreável: ignora\nconst content = (j['content:encoded'] || j.content || j.contentSnippet || '')\n  .toString()\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .slice(0, 6000)\nreturn {\n  json: {\n    source: src,\n    external_id: externalId,\n    title: (j.title || '').toString().slice(0, 300),\n    link: (j.link || '').toString(),\n    content,\n    pub_date: (j.pubDate || j.isoDate || '').toString(),\n  },\n}"
+      },
+      "id": "gmpi-normalize",
+      "name": "gmpi-normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "insert into public.promo_ingest_seen (source, external_id)\nvalues ($1, $2)\non conflict do nothing\nreturning source, external_id;",
+        "options": {
+          "queryReplacement": "={{ [$json.source, $json.external_id] }}"
+        }
+      },
+      "id": "gmpi-unseen",
+      "name": "gmpi-unseen",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        880,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "Ucn1qbvcmYC4XHpa",
+          "name": "CRED_POSTGRES_AGENTE"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 1024, system: 'Você extrai promoções de milhas/pontos de posts de blogs brasileiros. Hoje é ' + $now.toFormat('yyyy-MM-dd') + '. Responda APENAS com um objeto JSON válido, sem markdown, sem texto fora do JSON, com estas chaves:\\nis_promo (bool): true só se o post anuncia uma promoção acionável de programa de fidelidade (bônus de transferência, compra de pontos/milhas com desconto ou bônus, pontos por real em loja/portal, oferta de cartão). Passagem aérea promocional de rota específica, notícia, análise ou guia => false.\\ncategory: \"transfer\" | \"shopping\" | \"miles\" | \"cards\".\\nsource_program: origem dos pontos (banco/programa, ex. \"Livelo\", \"Esfera\", \"Itaú\") ou null.\\ntarget_program: destino (ex. \"Smiles\", \"LATAM Pass\", \"Azul Fidelidade\") ou null.\\ntitle: manchete própria, factual, máx 70 caracteres, pt-BR. NUNCA copie frases do post.\\nbonus_value: ex. \"100%\", \"10 pts/R$\", \"-30%\".\\nbonus_numeric: número comparável (100, 10, 30) ou null.\\ntiers: [{\"label\",\"value\",\"isBest\"}] quando o bônus varia por perfil/clube, senão null.\\nvalid_from, valid_until: \"YYYY-MM-DD\" ou null (não invente datas).\\ndetails: regras essenciais em texto próprio, máx 400 caracteres.\\ncta_url: URL da promoção NO SITE DO PROGRAMA se citada no post, senão null.\\nconfidence: 0 a 1 (quão certo você está de que os campos refletem o post).', messages: [ { role: 'user', content: 'TÍTULO: ' + $('gmpi-normalize').item.json.title + '\\nLINK: ' + $('gmpi-normalize').item.json.link + '\\nDATA: ' + $('gmpi-normalize').item.json.pub_date + '\\nCONTEÚDO: ' + $('gmpi-normalize').item.json.content } ] }) }}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "gmpi-extract",
+      "name": "gmpi-extract",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "kOWHaIShekMAauG4",
+          "name": "CRED_RRV_ANTHROPIC"
+        }
+      },
+      "notes": "AJUSTE DO CONTROLLER: reusa a credencial existente CRED_RRV_ANTHROPIC (id kOWHaIShekMAauG4, httpHeaderAuth x-api-key) em vez de criar CRED_ANTHROPIC nova. Follow-up: owner pode trocar por credencial dedicada depois."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Valida o JSON do LLM e calcula a chave canônica (determinística, fora do LLM).\nconst norm = $('gmpi-normalize').item.json\nlet out\ntry {\n  const text = $json.content?.[0]?.text ?? ''\n  out = JSON.parse(text.replace(/^[\\s`]*json/i, '').replace(/`+/g, '').trim())\n} catch (e) {\n  return { json: { is_promo: false, parse_error: true, source: norm.source, link: norm.link } }\n}\nconst CATS = ['transfer', 'shopping', 'miles', 'cards']\nif (!out || out.is_promo !== true || !CATS.includes(out.category) || !out.title) {\n  return { json: { is_promo: false, source: norm.source, link: norm.link } }\n}\nconst slug = (s) => (s || 'x').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-')\nconst canonicalKey = [\n  out.category,\n  slug(out.source_program) + '>' + slug(out.target_program),\n  out.bonus_numeric ?? slug(out.bonus_value),\n  out.valid_until || 'sem-data',\n].join(':')\nreturn {\n  json: {\n    is_promo: true,\n    ...out,\n    canonical_key: canonicalKey,\n    source_name:\n      { melhorescartoes: 'Melhores Cartões', pontospravoar: 'Pontos pra Voar', melhoresdestinos: 'Melhores Destinos' }[norm.source] || norm.source,\n    source_url: norm.link,\n    raw_title: norm.title,\n  },\n}"
+      },
+      "id": "gmpi-parse",
+      "name": "gmpi-parse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.is_promo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "leftValue": "={{ $json.confidence ?? 0 }}",
+              "rightValue": 0.5,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "gmpi-is-promo",
+      "name": "gmpi-is-promo",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1540,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "insert into public.promo_alerts\n  (category, source_program, target_program, title, bonus_value, bonus_numeric,\n   tiers, valid_from, valid_until, details, cta_url, source_links, canonical_key, confidence, raw)\nvalues\n  ($1, $2, $3, $4, $5, $6, $7::jsonb, nullif($8,'')::date, nullif($9,'')::date, $10, $11,\n   jsonb_build_array(jsonb_build_object('name', $12::text, 'url', $13::text)), $14, $15, $16::jsonb)\non conflict (canonical_key) do update set\n  source_links = (\n    select jsonb_agg(distinct e) from jsonb_array_elements(\n      promo_alerts.source_links || excluded.source_links\n    ) as e\n  ),\n  updated_at = now()\nreturning id, status, (xmax = 0) as is_new;",
+        "options": {
+          "queryReplacement": "={{ [$json.category, $json.source_program, $json.target_program, $json.title, $json.bonus_value, $json.bonus_numeric, JSON.stringify($json.tiers ?? null), $json.valid_from || '', $json.valid_until || '', $json.details, $json.cta_url, $json.source_name, $json.source_url, $json.canonical_key, $json.confidence, JSON.stringify($json)] }}"
+        }
+      },
+      "id": "gmpi-upsert",
+      "name": "gmpi-upsert",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1760,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "Ucn1qbvcmYC4XHpa",
+          "name": "CRED_POSTGRES_AGENTE"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.is_new }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "gmpi-only-new",
+      "name": "gmpi-only-new",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1980,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://gest-miles-usuario-front-slzj.vercel.app/api/agent/promo-message/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "gmpi-message",
+      "name": "gmpi-message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        140
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8JJba9f768EANZ33",
+          "name": "CRED_RESUMO_APIKEY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select grupo_interno_jid, instance from public.agent_tenants where id = 3;",
+        "options": {}
+      },
+      "id": "gmpi-tenant",
+      "name": "gmpi-tenant",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        2420,
+        140
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "Ucn1qbvcmYC4XHpa",
+          "name": "CRED_POSTGRES_AGENTE"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $json.instance }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.grupo_interno_jid }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('gmpi-message').item.json.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "gmpi-notify",
+      "name": "gmpi-notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        140
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "qzR4JN04NUY3GPeQ",
+          "name": "CRED_EVOLUTION_HEADER"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "gmpi-cron": {
+      "main": [
+        [
+          {
+            "node": "gmpi-feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-feeds": {
+      "main": [
+        [
+          {
+            "node": "gmpi-rss",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-rss": {
+      "main": [
+        [
+          {
+            "node": "gmpi-normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-normalize": {
+      "main": [
+        [
+          {
+            "node": "gmpi-unseen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-unseen": {
+      "main": [
+        [
+          {
+            "node": "gmpi-extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-extract": {
+      "main": [
+        [
+          {
+            "node": "gmpi-parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-parse": {
+      "main": [
+        [
+          {
+            "node": "gmpi-is-promo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-is-promo": {
+      "main": [
+        [
+          {
+            "node": "gmpi-upsert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "gmpi-upsert": {
+      "main": [
+        [
+          {
+            "node": "gmpi-only-new",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-only-new": {
+      "main": [
+        [
+          {
+            "node": "gmpi-message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "gmpi-message": {
+      "main": [
+        [
+          {
+            "node": "gmpi-tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-tenant": {
+      "main": [
+        [
+          {
+            "node": "gmpi-notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo"
+  }
+}

@@ -3,13 +3,13 @@ import { Fragment, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AlertTriangle, ArrowLeft } from 'lucide-react'
 import {
-  BONUS_PROMOTIONS,
   BONUS_PROMOTIONS_SOURCE_NOTICE,
   BonusCategory,
   BonusPromotion,
-} from '@/lib/bonusMockData'
+} from '@/lib/bonusTypes'
 import { isExpiringToday } from '@/lib/bonusUtils'
 import { BonusProgramLogo } from '@/components/bonus/BonusProgramLogo'
+import { useBonusPromotions } from '@/hooks/useBonusPromotions'
 
 type ActiveTab = 'promotion' | 'rules'
 
@@ -45,7 +45,16 @@ export default function BonusOfferDetailScreen() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<ActiveTab>('promotion')
 
-  const promo = BONUS_PROMOTIONS.find(p => p.id === id)
+  const { promotions, loading } = useBonusPromotions()
+  const promo = promotions.find((p) => p.id === id)
+
+  if (loading) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-md items-center justify-center bg-nubank-bg">
+        <p className="text-sm text-nubank-text-secondary">Carregando…</p>
+      </div>
+    )
+  }
 
   if (!promo) {
     return (
@@ -221,6 +230,19 @@ export default function BonusOfferDetailScreen() {
               {promo.rules ??
                 'Consulte o site do programa para mais informações sobre as regras desta promoção.'}
             </p>
+            {promo.sourceLinks && promo.sourceLinks.length > 0 && (
+              <p className="mt-3 text-[12px] text-nubank-text-secondary">
+                Fontes:{' '}
+                {promo.sourceLinks.map((s, i) => (
+                  <Fragment key={s.url}>
+                    {i > 0 && ' · '}
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="underline">
+                      {s.name}
+                    </a>
+                  </Fragment>
+                ))}
+              </p>
+            )}
           </div>
         )}
       </div>
