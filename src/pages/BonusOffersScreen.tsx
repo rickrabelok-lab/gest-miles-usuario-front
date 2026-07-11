@@ -2,7 +2,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { BONUS_PROMOTIONS_SOURCE_NOTICE, BonusCategory } from '@/lib/bonusMockData'
+import { BONUS_PROMOTIONS_SOURCE_NOTICE, BonusCategory } from '@/lib/bonusTypes'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
 import { TransferBonusSection } from '@/components/bonus/TransferBonusSection'
 import { ShoppingBonusSection } from '@/components/bonus/ShoppingBonusSection'
@@ -20,7 +20,7 @@ const PILLS: { id: BonusCategory | 'all'; label: string }[] = [
 export default function BonusOffersScreen() {
   const navigate = useNavigate()
   const [activePill, setActivePill] = useState<BonusCategory | 'all'>('all')
-  const { activeCount, expiringToday } = useBonusPromotions()
+  const { activeCount, expiringToday, loading } = useBonusPromotions()
 
   const transferRef = useRef<HTMLDivElement>(null)
   const shoppingRef = useRef<HTMLDivElement>(null)
@@ -92,6 +92,14 @@ export default function BonusOffersScreen() {
             {BONUS_PROMOTIONS_SOURCE_NOTICE}
           </p>
         </div>
+        {loading && (
+          <p className="py-10 text-center text-sm text-nubank-text-secondary">Carregando promoções…</p>
+        )}
+        {!loading && activeCount === 0 && (
+          <p className="py-10 text-center text-sm text-nubank-text-secondary">
+            Nenhuma promoção ativa no momento. Volte em breve!
+          </p>
+        )}
         <TransferBonusSection sectionRef={transferRef} />
         <ShoppingBonusSection sectionRef={shoppingRef} />
         <MilesBonusSection sectionRef={milesRef} />
