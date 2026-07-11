@@ -29,7 +29,7 @@ router.get("/promo-message/:id", async (req, res) => {
     const service = assertSupabaseService();
     const { data, error } = await service
       .from("promo_alerts")
-      .select("id, category, source_program, target_program, title, bonus_value, valid_until, confidence, details, source_links")
+      .select("id, category, source_program, target_program, title, bonus_value, valid_until, confidence, details, cta_url, source_links")
       .eq("id", req.params.id)
       .maybeSingle();
     if (error) {

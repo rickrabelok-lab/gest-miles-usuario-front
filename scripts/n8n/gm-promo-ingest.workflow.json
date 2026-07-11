@@ -89,6 +89,52 @@
     },
     {
       "parameters": {
+        "url": "={{ $json.link }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "gmpi-fetch-post",
+      "name": "gmpi-fetch-post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        990,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "Busca o ARTIGO COMPLETO do post: o resumo do RSS não traz o link de participação da promoção (fica no corpo). Falhou => segue com o resumo do RSS."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Junta metadados (gmpi-unseen carrega via RETURNING) + corpo do artigo.\n// Preserva os hrefs como 'texto (url)' pro LLM enxergar o link de participação.\nconst meta = $('gmpi-unseen').item.json\nlet articleText = ''\nconst html = typeof $json.data === 'string' ? $json.data : ''\nif (html && html.length > 200) {\n  // Corta no <article>: header/menu dos blogs consomem o orçamento de texto antes do corpo.\n  const artIdx = html.search(/<article\\b/i)\n  const scope = artIdx > 0 ? html.slice(artIdx) : html\n  articleText = scope\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')\n    .replace(/<a\\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi, (m, href, txt) => {\n      const t = txt.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim()\n      return href.startsWith('http') ? ` ${t} (${href}) ` : ` ${t} `\n    })\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .slice(0, 12000)\n}\nif (!articleText) articleText = meta.content || ''\nreturn { json: { ...meta, article_text: articleText } }"
+      },
+      "id": "gmpi-prep",
+      "name": "gmpi-prep",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1045,
+        300
+      ]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.anthropic.com/v1/messages",
         "sendHeaders": true,
@@ -102,7 +148,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 1024, system: 'Você extrai promoções de milhas/pontos de posts de blogs brasileiros. Hoje é ' + $now.toFormat('yyyy-MM-dd') + '. Responda APENAS com um objeto JSON válido, sem markdown, sem texto fora do JSON, com estas chaves:\\nis_promo (bool): true só se o post anuncia uma promoção acionável de programa de fidelidade (bônus de transferência, compra de pontos/milhas com desconto ou bônus, pontos por real em loja/portal, oferta de cartão). Passagem aérea promocional de rota específica, notícia, análise ou guia => false.\\ncategory: \"transfer\" | \"shopping\" | \"miles\" | \"cards\".\\nsource_program: origem dos pontos (banco/programa, ex. \"Livelo\", \"Esfera\", \"Itaú\") ou null.\\ntarget_program: destino (ex. \"Smiles\", \"LATAM Pass\", \"Azul Fidelidade\") ou null.\\ntitle: manchete própria, factual, máx 70 caracteres, pt-BR. NUNCA copie frases do post.\\nbonus_value: token CURTO de exibição, máximo 12 caracteres (ex. \"100%\", \"10 pts/R$\", \"-30%\"); se o benefício não couber num token curto, null (o title carrega a promoção).\\nbonus_numeric: número comparável (100, 10, 30) ou null.\\ntiers: [{\"label\",\"value\",\"isBest\"}] quando o bônus varia por perfil/clube, senão null.\\nvalid_from, valid_until: \"YYYY-MM-DD\" ou null (não invente datas).\\ndetails: regras essenciais em texto próprio, máx 400 caracteres.\\ncta_url: URL da promoção NO SITE DO PROGRAMA se citada no post, senão null.\\nconfidence: 0 a 1 (quão certo você está de que os campos refletem o post).', messages: [ { role: 'user', content: 'TÍTULO: ' + $json.title + '\\nLINK: ' + $json.link + '\\nDATA: ' + $json.pub_date + '\\nCONTEÚDO: ' + $json.content } ] }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 1024, system: 'Você extrai promoções de milhas/pontos de posts de blogs brasileiros. Hoje é ' + $now.toFormat('yyyy-MM-dd') + '. Responda APENAS com um objeto JSON válido, sem markdown, sem texto fora do JSON, com estas chaves:\\nis_promo (bool): true só se o post anuncia uma promoção acionável de programa de fidelidade (bônus de transferência, compra de pontos/milhas com desconto ou bônus, pontos por real em loja/portal, oferta de cartão). Passagem aérea promocional de rota específica, notícia, análise ou guia => false.\\ncategory: \"transfer\" | \"shopping\" | \"miles\" | \"cards\".\\nsource_program: origem dos pontos (banco/programa, ex. \"Livelo\", \"Esfera\", \"Itaú\") ou null.\\ntarget_program: destino (ex. \"Smiles\", \"LATAM Pass\", \"Azul Fidelidade\") ou null.\\ntitle: manchete própria, factual, máx 70 caracteres, pt-BR. NUNCA copie frases do post.\\nbonus_value: token CURTO de exibição, máximo 12 caracteres (ex. \"100%\", \"10 pts/R$\", \"-30%\"); se o benefício não couber num token curto, null (o title carrega a promoção).\\nbonus_numeric: número comparável (100, 10, 30) ou null.\\ntiers: [{\"label\",\"value\",\"isBest\"}] quando o bônus varia por perfil/clube, senão null.\\nvalid_from, valid_until: \"YYYY-MM-DD\" ou null (não invente datas).\\ndetails: regras essenciais em texto próprio, máx 400 caracteres.\\ncta_url: o link DE PARTICIPAÇÃO que o artigo indica ao leitor (página de campanha/parceiro/hotsite/cadastro; os links aparecem no texto como \"âncora (url)\"; pode conter códigos de indicação). Se houver mais de um, escolha o que o texto manda clicar pra participar/aproveitar. NUNCA use URL de blog (pontospravoar, melhorescartoes, melhoresdestinos). null se o artigo não trouxer link externo de participação.\\nconfidence: 0 a 1 (quão certo você está de que os campos refletem o post).', messages: [ { role: 'user', content: 'TÍTULO: ' + $json.title + '\\nLINK DO POST (não usar como cta_url): ' + $json.link + '\\nDATA: ' + $json.pub_date + '\\nARTIGO: ' + $json.article_text } ] }) }}",
         "options": {},
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth"
@@ -128,7 +174,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Valida o JSON do LLM e calcula a chave canônica (determinística, fora do LLM).\n// norm vem de gmpi-unseen (que carrega o payload no RETURNING): a referência só\n// atravessa o httpRequest 1:1 — nunca um Postgres que muda a contagem de itens.\nconst norm = $('gmpi-unseen').item.json\nlet out\ntry {\n  const text = $json.content?.[0]?.text ?? ''\n  out = JSON.parse(text.replace(/^[\\s`]*json/i, '').replace(/`+/g, '').trim())\n} catch (e) {\n  return { json: { is_promo: false, parse_error: true, source: norm.source, link: norm.link } }\n}\nconst CATS = ['transfer', 'shopping', 'miles', 'cards']\nif (!out || out.is_promo !== true || !CATS.includes(out.category) || !out.title) {\n  return { json: { is_promo: false, source: norm.source, link: norm.link } }\n}\nconst slug = (s) => (s || 'x').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-')\nconst canonicalKey = [\n  out.category,\n  slug(out.source_program) + '>' + slug(out.target_program),\n  out.bonus_numeric ?? slug(out.bonus_value),\n  out.valid_until || 'sem-data',\n].join(':')\nreturn {\n  json: {\n    is_promo: true,\n    ...out,\n    canonical_key: canonicalKey,\n    source_name:\n      { melhorescartoes: 'Melhores Cartões', pontospravoar: 'Pontos pra Voar', melhoresdestinos: 'Melhores Destinos' }[norm.source] || norm.source,\n    source_url: norm.link,\n    raw_title: norm.title,\n  },\n}"
+        "jsCode": "// Valida o JSON do LLM e calcula a chave canônica (determinística, fora do LLM).\n// norm vem de gmpi-unseen (que carrega o payload no RETURNING): a referência só\n// atravessa o httpRequest 1:1 — nunca um Postgres que muda a contagem de itens.\nconst norm = $('gmpi-unseen').item.json\nlet out\ntry {\n  const text = $json.content?.[0]?.text ?? ''\n  out = JSON.parse(text.replace(/^[\\s`]*json/i, '').replace(/`+/g, '').trim())\n} catch (e) {\n  return { json: { is_promo: false, parse_error: true, source: norm.source, link: norm.link } }\n}\nconst CATS = ['transfer', 'shopping', 'miles', 'cards']\nif (!out || out.is_promo !== true || !CATS.includes(out.category) || !out.title) {\n  return { json: { is_promo: false, source: norm.source, link: norm.link } }\n}\n// Higiene do link de participação: nunca blog, sem utm_* (cliente não vê a origem).\n// Regex puro: o sandbox do Code node NÃO expõe o global URL (new URL lançava e o catch anulava tudo).\nif (out.cta_url) {\n  const cu = String(out.cta_url)\n  if (!/^https?:\\/\\//i.test(cu) || /pontospravoar|melhorescartoes|melhoresdestinos/i.test(cu)) {\n    out.cta_url = null\n  } else {\n    out.cta_url = cu\n      .replace(/([?&])utm_[^=&#]+=[^&#]*/gi, '$1')\n      .replace(/\\?&/, '?')\n      .replace(/&&+/g, '&')\n      .replace(/[?&]+$/, '')\n  }\n}\nconst slug = (s) => (s || 'x').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-')\nconst canonicalKey = [\n  out.category,\n  slug(out.source_program) + '>' + slug(out.target_program),\n  out.bonus_numeric ?? slug(out.bonus_value),\n  out.valid_until || 'sem-data',\n].join(':')\nreturn {\n  json: {\n    is_promo: true,\n    ...out,\n    canonical_key: canonicalKey,\n    source_name:\n      { melhorescartoes: 'Melhores Cartões', pontospravoar: 'Pontos pra Voar', melhoresdestinos: 'Melhores Destinos' }[norm.source] || norm.source,\n    source_url: norm.link,\n    raw_title: norm.title,\n  },\n}"
       },
       "id": "gmpi-parse",
       "name": "gmpi-parse",
@@ -380,6 +426,28 @@
       ]
     },
     "gmpi-unseen": {
+      "main": [
+        [
+          {
+            "node": "gmpi-fetch-post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-fetch-post": {
+      "main": [
+        [
+          {
+            "node": "gmpi-prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmpi-prep": {
       "main": [
         [
           {
