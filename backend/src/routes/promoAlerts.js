@@ -72,7 +72,7 @@ router.get("/moderate/:id", (req, res) => {
   return res.send(
     page(
       `${verb} promoção`,
-      `<h2>${verb} esta promoção?</h2><form method="POST" action="/api/promo-alerts/moderate/${req.params.id}?action=${action}&token=${token}"><button type="submit">${verb}</button></form>`,
+      `<h2>${verb} esta promoção?</h2><form method="POST" action="/api/promo-alerts/moderate/${esc(req.params.id)}?action=${action}&token=${token}"><button type="submit">${verb}</button></form>`,
     ),
   );
 });
