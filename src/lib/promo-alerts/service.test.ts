@@ -21,6 +21,8 @@ describe('mapPromoAlertRow', () => {
     const promo = mapPromoAlertRow(row)!
     expect(promo.id).toBe('abc')
     expect(promo.category).toBe('transfer')
+    expect(promo.title).toBe('Livelo dá 100% pra Smiles')
+    expect(promo.ctaIsFallback).toBe(false)
     expect(promo.targetProgram).toBe('Smiles')
     expect(promo.bonusValue).toBe('100%')
     expect(promo.bonusLabel).toBe('de bônus')
@@ -47,6 +49,18 @@ describe('mapPromoAlertRow', () => {
 
   it('sem valid_until não define expiresAt', () => {
     expect(mapPromoAlertRow({ ...row, valid_until: null })!.expiresAt).toBeUndefined()
+  })
+
+  it('sem cta oficial cai no post da fonte (toda promo tem link clicável)', () => {
+    const promo = mapPromoAlertRow({ ...row, cta_url: null })!
+    expect(promo.ctaUrl).toBe('https://exemplo.com/post')
+    expect(promo.ctaIsFallback).toBe(true)
+  })
+
+  it('sem cta e sem fontes fica sem link (e sem fallback fantasma)', () => {
+    const promo = mapPromoAlertRow({ ...row, cta_url: null, source_links: [] })!
+    expect(promo.ctaUrl).toBeUndefined()
+    expect(promo.ctaIsFallback).toBe(false)
   })
 })
 

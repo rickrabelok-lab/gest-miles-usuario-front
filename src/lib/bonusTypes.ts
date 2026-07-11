@@ -12,6 +12,8 @@ export interface BonusPromotion {
   id: string
   category: BonusCategory
   targetProgram: string
+  /** Manchete curada (copy própria do pipeline) — protagonista dos cards. */
+  title: string
   bonusValue: string
   bonusLabel: string
   participatingBanks?: string[]
@@ -22,6 +24,8 @@ export interface BonusPromotion {
   isActive: boolean
   isHighlight: boolean
   ctaUrl?: string
+  /** true quando ctaUrl caiu no fallback (post da fonte, não o site do programa). */
+  ctaIsFallback?: boolean
   rules?: string
   sourceLinks?: { name: string; url: string }[]
 }
