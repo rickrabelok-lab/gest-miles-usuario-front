@@ -116,8 +116,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "select grupo_interno_jid, instance from public.agent_tenants where id = 3;",
-        "options": {}
+        "query": "-- $1 carrega a mensagem adiante: referência $('nó').item não atravessa node Postgres (paired_item_multiple_matches)\nselect grupo_interno_jid, instance, $1::text as text from public.agent_tenants where id = 3;",
+        "options": {
+          "queryReplacement": "={{ [$json.text] }}"
+        }
       },
       "id": "gmph-tenant",
       "name": "gmph-tenant",
@@ -149,7 +151,7 @@
             },
             {
               "name": "text",
-              "value": "={{ $('gmph-msg').item.json.text }}"
+              "value": "={{ $json.text }}"
             }
           ]
         },
