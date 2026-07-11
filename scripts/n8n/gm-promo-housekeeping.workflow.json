@@ -1,0 +1,247 @@
+{
+  "name": "gm-promo-housekeeping",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "gmph-cron",
+      "name": "gmph-cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update public.promo_alerts\nset status = 'expired', updated_at = now()\nwhere status in ('pending', 'approved')\n  and valid_until is not null\n  and valid_until < current_date;",
+        "options": {}
+      },
+      "id": "gmph-expire",
+      "name": "gmph-expire",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        220,
+        300
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "Ucn1qbvcmYC4XHpa",
+          "name": "CRED_POSTGRES_AGENTE"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select\n  coalesce((\n    select string_agg(s.source || ' (último item ' || to_char(s.last_seen, 'DD/MM HH24:MI') || ')', ', ')\n    from (\n      select source, max(seen_at) as last_seen\n      from public.promo_ingest_seen\n      group by source\n      having max(seen_at) < now() - interval '48 hours'\n    ) s\n  ), '') as silent_sources,\n  (select count(*) from public.promo_alerts\n    where status = 'pending' and created_at < now() - interval '24 hours') as stale_pending;",
+        "options": {}
+      },
+      "id": "gmph-health",
+      "name": "gmph-health",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        440,
+        300
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "Ucn1qbvcmYC4XHpa",
+          "name": "CRED_POSTGRES_AGENTE"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.silent_sources !== '' || Number($json.stale_pending) > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "gmph-needs-alert",
+      "name": "gmph-needs-alert",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const lines = ['🩺 *Saúde do radar de promoções*']\nif ($json.silent_sources) lines.push(`⚠️ Fontes silenciosas há 48h+: ${$json.silent_sources}`)\nif (Number($json.stale_pending) > 0) lines.push(`⏳ ${$json.stale_pending} promoção(ões) aguardando curadoria há 24h+`)\nreturn { json: { text: lines.join('\\n') } }"
+      },
+      "id": "gmph-msg",
+      "name": "gmph-msg",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select grupo_interno_jid, instance from public.agent_tenants where id = 3;",
+        "options": {}
+      },
+      "id": "gmph-tenant",
+      "name": "gmph-tenant",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1100,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "Ucn1qbvcmYC4XHpa",
+          "name": "CRED_POSTGRES_AGENTE"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $json.instance }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.grupo_interno_jid }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('gmph-msg').item.json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "gmph-notify",
+      "name": "gmph-notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        220
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "qzR4JN04NUY3GPeQ",
+          "name": "CRED_EVOLUTION_HEADER"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "gmph-cron": {
+      "main": [
+        [
+          {
+            "node": "gmph-expire",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmph-expire": {
+      "main": [
+        [
+          {
+            "node": "gmph-health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmph-health": {
+      "main": [
+        [
+          {
+            "node": "gmph-needs-alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmph-needs-alert": {
+      "main": [
+        [
+          {
+            "node": "gmph-msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "gmph-msg": {
+      "main": [
+        [
+          {
+            "node": "gmph-tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gmph-tenant": {
+      "main": [
+        [
+          {
+            "node": "gmph-notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo"
+  }
+}
