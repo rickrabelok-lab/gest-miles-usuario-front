@@ -22,6 +22,8 @@ import { reconcileEquipeBilling } from "./routes/equipeBillingCron.js";
 import accountDeletionRoutes from "./routes/accountDeletion.js";
 import agentResumoRoutes from "./routes/agentResumo.js";
 import revenuecatWebhookRoutes from "./routes/revenuecatWebhook.js";
+import promoAlertsRoutes from "./routes/promoAlerts.js";
+import agentPromoRoutes from "./routes/agentPromo.js";
 
 initSentry();
 
@@ -102,6 +104,8 @@ routes.use("/api/equipe-billing", equipeBillingRoutes);
 routes.get("/api/equipe-billing/cron/reconcile", reconcileEquipeBilling);
 routes.use("/api/account", accountDeletionRoutes);
 routes.use("/api/agent", agentResumoRoutes);
+routes.use("/api/promo-alerts", promoAlertsRoutes);
+routes.use("/api/agent", agentPromoRoutes);
 
 routes.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
