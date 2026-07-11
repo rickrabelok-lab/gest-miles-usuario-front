@@ -24,11 +24,9 @@ export interface BonusPromotion {
   isActive: boolean
   isHighlight: boolean
   ctaUrl?: string
-  /** true quando ctaUrl caiu no fallback (post da fonte, não o site do programa). */
-  ctaIsFallback?: boolean
   rules?: string
   sourceLinks?: { name: string; url: string }[]
 }
 
 export const BONUS_PROMOTIONS_SOURCE_NOTICE =
-  'Promoções detectadas automaticamente e revisadas pela equipe. Confirme validade e regras no site do programa antes de agir.'
+  'Promoções selecionadas e verificadas pela nossa equipe. Confirme as regras no site do programa antes de participar.'
