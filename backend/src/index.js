@@ -47,6 +47,9 @@ const allowedCorsOrigins = [
     process.env.CORS_ORIGINS || "",
     process.env.PUBLIC_APP_URL || "",
     process.env.PUBLIC_MANAGER_URL || "",
+    // Próprio domínio da API: as páginas de moderação de promoções são servidas
+    // por ela, e browser manda Origin em todo POST de formulário (same-origin incluso).
+    process.env.PUBLIC_API_URL || "",
   ]
     .join(",")
     .split(",")
