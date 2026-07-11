@@ -67,9 +67,9 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "insert into public.promo_ingest_seen (source, external_id)\nvalues ($1, $2)\non conflict do nothing\nreturning source, external_id;",
+        "query": "-- RETURNING carrega o payload adiante: referências $('nó').item NÃO atravessam node Postgres\n-- quando a contagem de itens diverge (paired_item_multiple_matches — bug real de 2026-07-11).\ninsert into public.promo_ingest_seen (source, external_id)\nvalues ($1, $2)\non conflict do nothing\nreturning source, external_id, $3::text as title, $4::text as link, $5::text as content, $6::text as pub_date;",
         "options": {
-          "queryReplacement": "={{ [$json.source, $json.external_id] }}"
+          "queryReplacement": "={{ [$json.source, $json.external_id, $json.title, $json.link, $json.content, $json.pub_date] }}"
         }
       },
       "id": "gmpi-unseen",
@@ -102,7 +102,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 1024, system: 'Você extrai promoções de milhas/pontos de posts de blogs brasileiros. Hoje é ' + $now.toFormat('yyyy-MM-dd') + '. Responda APENAS com um objeto JSON válido, sem markdown, sem texto fora do JSON, com estas chaves:\\nis_promo (bool): true só se o post anuncia uma promoção acionável de programa de fidelidade (bônus de transferência, compra de pontos/milhas com desconto ou bônus, pontos por real em loja/portal, oferta de cartão). Passagem aérea promocional de rota específica, notícia, análise ou guia => false.\\ncategory: \"transfer\" | \"shopping\" | \"miles\" | \"cards\".\\nsource_program: origem dos pontos (banco/programa, ex. \"Livelo\", \"Esfera\", \"Itaú\") ou null.\\ntarget_program: destino (ex. \"Smiles\", \"LATAM Pass\", \"Azul Fidelidade\") ou null.\\ntitle: manchete própria, factual, máx 70 caracteres, pt-BR. NUNCA copie frases do post.\\nbonus_value: ex. \"100%\", \"10 pts/R$\", \"-30%\".\\nbonus_numeric: número comparável (100, 10, 30) ou null.\\ntiers: [{\"label\",\"value\",\"isBest\"}] quando o bônus varia por perfil/clube, senão null.\\nvalid_from, valid_until: \"YYYY-MM-DD\" ou null (não invente datas).\\ndetails: regras essenciais em texto próprio, máx 400 caracteres.\\ncta_url: URL da promoção NO SITE DO PROGRAMA se citada no post, senão null.\\nconfidence: 0 a 1 (quão certo você está de que os campos refletem o post).', messages: [ { role: 'user', content: 'TÍTULO: ' + $('gmpi-normalize').item.json.title + '\\nLINK: ' + $('gmpi-normalize').item.json.link + '\\nDATA: ' + $('gmpi-normalize').item.json.pub_date + '\\nCONTEÚDO: ' + $('gmpi-normalize').item.json.content } ] }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 1024, system: 'Você extrai promoções de milhas/pontos de posts de blogs brasileiros. Hoje é ' + $now.toFormat('yyyy-MM-dd') + '. Responda APENAS com um objeto JSON válido, sem markdown, sem texto fora do JSON, com estas chaves:\\nis_promo (bool): true só se o post anuncia uma promoção acionável de programa de fidelidade (bônus de transferência, compra de pontos/milhas com desconto ou bônus, pontos por real em loja/portal, oferta de cartão). Passagem aérea promocional de rota específica, notícia, análise ou guia => false.\\ncategory: \"transfer\" | \"shopping\" | \"miles\" | \"cards\".\\nsource_program: origem dos pontos (banco/programa, ex. \"Livelo\", \"Esfera\", \"Itaú\") ou null.\\ntarget_program: destino (ex. \"Smiles\", \"LATAM Pass\", \"Azul Fidelidade\") ou null.\\ntitle: manchete própria, factual, máx 70 caracteres, pt-BR. NUNCA copie frases do post.\\nbonus_value: ex. \"100%\", \"10 pts/R$\", \"-30%\".\\nbonus_numeric: número comparável (100, 10, 30) ou null.\\ntiers: [{\"label\",\"value\",\"isBest\"}] quando o bônus varia por perfil/clube, senão null.\\nvalid_from, valid_until: \"YYYY-MM-DD\" ou null (não invente datas).\\ndetails: regras essenciais em texto próprio, máx 400 caracteres.\\ncta_url: URL da promoção NO SITE DO PROGRAMA se citada no post, senão null.\\nconfidence: 0 a 1 (quão certo você está de que os campos refletem o post).', messages: [ { role: 'user', content: 'TÍTULO: ' + $json.title + '\\nLINK: ' + $json.link + '\\nDATA: ' + $json.pub_date + '\\nCONTEÚDO: ' + $json.content } ] }) }}",
         "options": {},
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth"
@@ -128,7 +128,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Valida o JSON do LLM e calcula a chave canônica (determinística, fora do LLM).\nconst norm = $('gmpi-normalize').item.json\nlet out\ntry {\n  const text = $json.content?.[0]?.text ?? ''\n  out = JSON.parse(text.replace(/^[\\s`]*json/i, '').replace(/`+/g, '').trim())\n} catch (e) {\n  return { json: { is_promo: false, parse_error: true, source: norm.source, link: norm.link } }\n}\nconst CATS = ['transfer', 'shopping', 'miles', 'cards']\nif (!out || out.is_promo !== true || !CATS.includes(out.category) || !out.title) {\n  return { json: { is_promo: false, source: norm.source, link: norm.link } }\n}\nconst slug = (s) => (s || 'x').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-')\nconst canonicalKey = [\n  out.category,\n  slug(out.source_program) + '>' + slug(out.target_program),\n  out.bonus_numeric ?? slug(out.bonus_value),\n  out.valid_until || 'sem-data',\n].join(':')\nreturn {\n  json: {\n    is_promo: true,\n    ...out,\n    canonical_key: canonicalKey,\n    source_name:\n      { melhorescartoes: 'Melhores Cartões', pontospravoar: 'Pontos pra Voar', melhoresdestinos: 'Melhores Destinos' }[norm.source] || norm.source,\n    source_url: norm.link,\n    raw_title: norm.title,\n  },\n}"
+        "jsCode": "// Valida o JSON do LLM e calcula a chave canônica (determinística, fora do LLM).\n// norm vem de gmpi-unseen (que carrega o payload no RETURNING): a referência só\n// atravessa o httpRequest 1:1 — nunca um Postgres que muda a contagem de itens.\nconst norm = $('gmpi-unseen').item.json\nlet out\ntry {\n  const text = $json.content?.[0]?.text ?? ''\n  out = JSON.parse(text.replace(/^[\\s`]*json/i, '').replace(/`+/g, '').trim())\n} catch (e) {\n  return { json: { is_promo: false, parse_error: true, source: norm.source, link: norm.link } }\n}\nconst CATS = ['transfer', 'shopping', 'miles', 'cards']\nif (!out || out.is_promo !== true || !CATS.includes(out.category) || !out.title) {\n  return { json: { is_promo: false, source: norm.source, link: norm.link } }\n}\nconst slug = (s) => (s || 'x').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-')\nconst canonicalKey = [\n  out.category,\n  slug(out.source_program) + '>' + slug(out.target_program),\n  out.bonus_numeric ?? slug(out.bonus_value),\n  out.valid_until || 'sem-data',\n].join(':')\nreturn {\n  json: {\n    is_promo: true,\n    ...out,\n    canonical_key: canonicalKey,\n    source_name:\n      { melhorescartoes: 'Melhores Cartões', pontospravoar: 'Pontos pra Voar', melhoresdestinos: 'Melhores Destinos' }[norm.source] || norm.source,\n    source_url: norm.link,\n    raw_title: norm.title,\n  },\n}"
       },
       "id": "gmpi-parse",
       "name": "gmpi-parse",
@@ -268,8 +268,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "select grupo_interno_jid, instance from public.agent_tenants where id = 3;",
-        "options": {}
+        "query": "-- $1 carrega a mensagem adiante (mesmo motivo do gmpi-unseen: sem $('nó').item através de Postgres)\nselect grupo_interno_jid, instance, $1::text as message from public.agent_tenants where id = 3;",
+        "options": {
+          "queryReplacement": "={{ [$json.message] }}"
+        }
       },
       "id": "gmpi-tenant",
       "name": "gmpi-tenant",
@@ -301,7 +303,7 @@
             },
             {
               "name": "text",
-              "value": "={{ $('gmpi-message').item.json.message }}"
+              "value": "={{ $json.message }}"
             }
           ]
         },
