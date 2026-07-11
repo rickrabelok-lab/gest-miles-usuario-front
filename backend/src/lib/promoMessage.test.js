@@ -15,6 +15,7 @@ const promo = {
   valid_until: "2026-07-20",
   confidence: 0.92,
   details: "Bônus para transferências até 20/07.",
+  cta_url: "https://www.livelo.com.br/promo-smiles",
   source_links: [{ name: "Melhores Cartões", url: "https://exemplo.com/post" }],
 };
 
@@ -25,6 +26,7 @@ test("mensagem traz título, categoria, bônus, validade, fonte e os 2 links de 
   assert.match(msg, /Livelo → Smiles/);
   assert.match(msg, /100%/);
   assert.match(msg, /20\/07\/2026/);
+  assert.match(msg, /Link de participação: https:\/\/www\.livelo\.com\.br\/promo-smiles/);
   assert.match(msg, /Melhores Cartões/);
   const approve = moderationToken(promo.id, "approve", SECRET);
   const reject = moderationToken(promo.id, "reject", SECRET);
@@ -38,6 +40,7 @@ test("campos opcionais ausentes não quebram nem deixam 'undefined' no texto", (
     { apiBaseUrl: BASE, secret: SECRET },
   );
   assert.match(msg, /Compra de milhas com desconto/);
+  assert.match(msg, /SEM link de participação/);
   assert.doesNotMatch(msg, /undefined/);
   assert.doesNotMatch(msg, /null/);
 });

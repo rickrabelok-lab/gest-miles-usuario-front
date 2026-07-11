@@ -33,6 +33,13 @@ export function buildPromoModerationMessage(promo, { apiBaseUrl, secret }) {
   }
   if (promo.details) lines.push(`Regras: ${promo.details}`);
 
+  // O moderador valida o link de participação ANTES de aprovar (é o que o cliente clica).
+  lines.push(
+    promo.cta_url
+      ? `Link de participação: ${promo.cta_url}`
+      : "⚠️ SEM link de participação — o cliente cairá no post da fonte",
+  );
+
   const sources = Array.isArray(promo.source_links) ? promo.source_links : [];
   if (sources.length > 0) {
     lines.push(`Fontes: ${sources.map((s) => s.name).filter(Boolean).join(", ")}`);
