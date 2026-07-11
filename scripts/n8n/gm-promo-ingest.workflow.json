@@ -164,6 +164,15 @@
                 "type": "number",
                 "operation": "gte"
               }
+            },
+            {
+              "leftValue": "={{ !$json.valid_until || $json.valid_until >= $now.toFormat('yyyy-MM-dd') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
             }
           ],
           "combinator": "and"
