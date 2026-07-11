@@ -245,7 +245,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://gest-miles-usuario-front-slzj.vercel.app/api/agent/promo-message/{{ $json.id }}",
+        "url": "=https://gest-miles-usuario-front-slzj.vercel.app/api/agent/promo-message/{{ $json.promo_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -268,9 +268,9 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- $1 carrega a mensagem adiante (mesmo motivo do gmpi-unseen: sem $('nó').item através de Postgres)\nselect grupo_interno_jid, instance, $1::text as message from public.agent_tenants where id = 3;",
+        "query": "-- Roda ANTES do gmpi-message: $1 carrega só o id da promo (uuid é seguro em param;\n-- texto rico como a mensagem NÃO é confiável nos params deste node — quebrou com '*').\nselect grupo_interno_jid, instance, $1::text as promo_id from public.agent_tenants where id = 3;",
         "options": {
-          "queryReplacement": "={{ [$json.message] }}"
+          "queryReplacement": "={{ [$json.id] }}"
         }
       },
       "id": "gmpi-tenant",
@@ -291,7 +291,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $json.instance }}",
+        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $('gmpi-tenant').item.json.instance }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -299,7 +299,7 @@
           "parameters": [
             {
               "name": "number",
-              "value": "={{ $json.grupo_interno_jid }}"
+              "value": "={{ $('gmpi-tenant').item.json.grupo_interno_jid }}"
             },
             {
               "name": "text",
@@ -430,7 +430,7 @@
       "main": [
         [
           {
-            "node": "gmpi-message",
+            "node": "gmpi-tenant",
             "type": "main",
             "index": 0
           }
@@ -438,18 +438,18 @@
         []
       ]
     },
-    "gmpi-message": {
+    "gmpi-tenant": {
       "main": [
         [
           {
-            "node": "gmpi-tenant",
+            "node": "gmpi-message",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "gmpi-tenant": {
+    "gmpi-message": {
       "main": [
         [
           {
