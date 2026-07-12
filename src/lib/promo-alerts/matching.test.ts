@@ -1,51 +1,31 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeProgramToId, crossPromosWithWallet } from './matching'
+import { crossPromosWithWallet } from './matching'
 import type { BonusPromotion } from '@/lib/bonusTypes'
-
-describe('normalizeProgramToId', () => {
-  it('resolve origens comuns de transferência (com e sem acento/variações)', () => {
-    expect(normalizeProgramToId('Livelo')).toBe('livelo')
-    expect(normalizeProgramToId('Esfera')).toBe('esfera')
-    expect(normalizeProgramToId('Itaú')).toBe('itau')
-    expect(normalizeProgramToId('Itau')).toBe('itau')
-    expect(normalizeProgramToId('Inter Loop')).toBe('inter-loop')
-    expect(normalizeProgramToId('Inter')).toBe('inter-loop')
-    expect(normalizeProgramToId('C6')).toBe('atomos-c6')
-    expect(normalizeProgramToId('Átomos C6')).toBe('atomos-c6')
-    expect(normalizeProgramToId('Amex')).toBe('amex')
-  })
-
-  it('resolve destinos comuns (pra uso futuro / robustez)', () => {
-    expect(normalizeProgramToId('Smiles')).toBe('smiles')
-    expect(normalizeProgramToId('LATAM Pass')).toBe('latam-pass')
-    expect(normalizeProgramToId('Tudo Azul')).toBe('tudo-azul')
-  })
-
-  it('não chuta: texto desconhecido, vazio ou nulo → null', () => {
-    expect(normalizeProgramToId('Programa Inexistente')).toBeNull()
-    expect(normalizeProgramToId('')).toBeNull()
-    expect(normalizeProgramToId(null)).toBeNull()
-    expect(normalizeProgramToId(undefined)).toBeNull()
-  })
-})
 
 function promo(p: Partial<BonusPromotion>): BonusPromotion {
   return {
-    id: 'x', category: 'transfer', targetProgram: 'Smiles', title: 't',
-    bonusValue: '100%', bonusLabel: 'de bônus', isActive: true, isHighlight: false, ...p,
+    id: 'x',
+    category: 'transfer',
+    targetProgram: 'Smiles',
+    title: 't',
+    bonusValue: '100%',
+    bonusLabel: 'de bônus',
+    isActive: true,
+    isHighlight: false,
+    ...p,
   }
 }
 
 describe('crossPromosWithWallet', () => {
   const wallet = [
     { programId: 'livelo', saldo: 82000 },
-    { programId: 'esfera', saldo: 0 },       // tem o programa mas sem saldo
+    { programId: 'esfera', saldo: 0 }, // tem o programa mas sem saldo
     { programId: 'itau', saldo: 30000 },
   ]
 
-  it('casa origem com saldo>0 e calcula o resultado', () => {
+  it('casa origem (sourceProgramId) com saldo>0 e calcula o resultado', () => {
     const items = crossPromosWithWallet(
-      [promo({ id: 'a', sourceProgram: 'Livelo', bonusNumeric: 100 })],
+      [promo({ id: 'a', sourceProgramId: 'livelo', bonusNumeric: 100 })],
       wallet,
     )
     expect(items).toHaveLength(1)
@@ -54,13 +34,13 @@ describe('crossPromosWithWallet', () => {
     expect(items[0].resultado).toBe(164000)
   })
 
-  it('ignora origem sem saldo, origem fora da carteira e não-transfer', () => {
+  it('ignora origem sem saldo, origem fora da carteira, não-transfer e sem slug', () => {
     const items = crossPromosWithWallet(
       [
-        promo({ id: 'a', sourceProgram: 'Esfera', bonusNumeric: 90 }),   // saldo 0
-        promo({ id: 'b', sourceProgram: 'Smiles', bonusNumeric: 50 }),   // não está na carteira
-        promo({ id: 'c', category: 'miles', sourceProgram: 'Livelo' }),  // não é transfer
-        promo({ id: 'd', sourceProgram: 'Programa X', bonusNumeric: 80 }), // origem desconhecida
+        promo({ id: 'a', sourceProgramId: 'esfera', bonusNumeric: 90 }), // saldo 0
+        promo({ id: 'b', sourceProgramId: 'smiles', bonusNumeric: 50 }), // não está na carteira
+        promo({ id: 'c', category: 'miles', sourceProgramId: 'livelo' }), // não é transfer
+        promo({ id: 'd', sourceProgramId: undefined, bonusNumeric: 80 }), // origem não reconhecida no banco (slug null)
       ],
       wallet,
     )
@@ -70,8 +50,8 @@ describe('crossPromosWithWallet', () => {
   it('ordena por maior resultado', () => {
     const items = crossPromosWithWallet(
       [
-        promo({ id: 'itau', sourceProgram: 'Itaú', bonusNumeric: 100 }),  // 30000 -> 60000
-        promo({ id: 'livelo', sourceProgram: 'Livelo', bonusNumeric: 50 }), // 82000 -> 123000
+        promo({ id: 'itau', sourceProgramId: 'itau', bonusNumeric: 100 }), // 30000 -> 60000
+        promo({ id: 'livelo', sourceProgramId: 'livelo', bonusNumeric: 50 }), // 82000 -> 123000
       ],
       wallet,
     )
@@ -79,17 +59,14 @@ describe('crossPromosWithWallet', () => {
   })
 
   it('sem bonusNumeric ainda casa, com resultado null', () => {
-    const items = crossPromosWithWallet(
-      [promo({ id: 'a', sourceProgram: 'Livelo' })],
-      wallet,
-    )
+    const items = crossPromosWithWallet([promo({ id: 'a', sourceProgramId: 'livelo' })], wallet)
     expect(items).toHaveLength(1)
     expect(items[0].resultado).toBeNull()
   })
 
   it('bonusNumeric NaN não vira resultado NaN — cai pra null', () => {
     const items = crossPromosWithWallet(
-      [promo({ id: 'a', sourceProgram: 'Livelo', bonusNumeric: NaN })],
+      [promo({ id: 'a', sourceProgramId: 'livelo', bonusNumeric: NaN })],
       wallet,
     )
     expect(items).toHaveLength(1)

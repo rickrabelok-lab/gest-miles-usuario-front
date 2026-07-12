@@ -21,8 +21,10 @@ export interface BonusPromotion {
   /** Como chegar no custo (carrinho, clube, transferência) — nunca presente sem milheiroCost. */
   milheiroNote?: string
   participatingBanks?: string[]
-  /** Programa de origem cru (texto do extrator) — usado no cruzamento com a carteira ("Pra você"). */
+  /** Programa de origem cru (texto do extrator) — exibição/fallback. */
   sourceProgram?: string
+  /** Slug canônico da origem (source_program_id materializado no banco) — usado no cruzamento com a carteira ("Pra você"). */
+  sourceProgramId?: string
   /** Percentual do bônus (ex.: 100) — usado no cálculo do resultado personalizado. */
   bonusNumeric?: number
   tiers?: BonusTier[]
