@@ -44,17 +44,20 @@
 --           drop function public.promo_norm(text);
 begin;
 
-create extension if not exists unaccent with schema extensions;
-
 -- Normaliza nome de programa: sem acento, minúsculo, só [a-z0-9] (espelha o
--- normalizeProgramToId do front, src/lib/promo-alerts/matching.ts).
+-- normalizeProgramToId do front). translate() em vez de unaccent (extensão NÃO
+-- instalada no projeto — verificado; evita instalar extensão no banco compartilhado).
 create or replace function public.promo_norm(p_text text)
 returns text
 language sql
-stable
-set search_path = public, extensions, pg_temp
+immutable
+set search_path = public, pg_temp
 as $$
-  select regexp_replace(lower(extensions.unaccent(coalesce(p_text, ''))), '[^a-z0-9]+', '', 'g');
+  select regexp_replace(
+    translate(lower(coalesce(p_text, '')),
+      'áàâãäéèêëíìîïóòôõöúùûüçñ',
+      'aaaaaeeeeiiiiooooouuuucn'),
+    '[^a-z0-9]+', '', 'g');
 $$;
 
 -- Alias nome-normalizado -> program_id. Seed espelha a tabela ALIASES do front.
@@ -143,7 +146,7 @@ commit;
 
 - [ ] **Step 2: Self-check do SQL** (ler o arquivo inteiro)
 
-Conferir: `promo_norm` é `stable` (unaccent não é immutable); todos os `program_id` do seed existem no catálogo (`src/components/programSelectionUtils.ts` PROGRAM_CATEGORY); os `alias_norm` são a saída de `promo_norm` (ex.: `promo_norm('Inter Loop')='interloop'`, `promo_norm('Átomos C6')='atomosc6'`); trigger tem guarda `category='transfer'` + `old.status distinct from 'approved'` (não redispara em re-aprovação idempotente); revoke em todas as tabelas/funcs novas.
+Conferir: `promo_norm` é `immutable` (translate/lower/regexp são immutable — unaccent foi descartado, não instalado no projeto; normalização provada read-only: atomosc6/itau/iberia/interloop/latampass); todos os `program_id` do seed existem no catálogo (`src/components/programSelectionUtils.ts` PROGRAM_CATEGORY); os `alias_norm` são a saída de `promo_norm` (ex.: `promo_norm('Inter Loop')='interloop'`, `promo_norm('Átomos C6')='atomosc6'`); trigger tem guarda `category='transfer'` + `old.status distinct from 'approved'` (não redispara em re-aprovação idempotente); revoke em todas as tabelas/funcs novas.
 
 - [ ] **Step 3: Commit** (NÃO aplicar)
 
