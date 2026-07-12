@@ -9,6 +9,7 @@ import {
 } from '@/lib/bonusTypes'
 import { bonusBadge, formatMilheiroBRL, isExpiringToday } from '@/lib/bonusUtils'
 import { BonusProgramLogo } from '@/components/bonus/BonusProgramLogo'
+import { RotaHistoricoBlock } from '@/components/bonus/RotaHistoricoBlock'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
 
 type ActiveTab = 'promotion' | 'rules'
@@ -152,6 +153,15 @@ export default function BonusOfferDetailScreen() {
                 </div>
               )}
             </div>
+
+            {/* Histórico da rota — só transferência com origem+destino */}
+            {promo.category === 'transfer' && promo.sourceProgram && promo.targetProgram && (
+              <RotaHistoricoBlock
+                source={promo.sourceProgram}
+                target={promo.targetProgram}
+                bonusAtual={promo.bonusNumeric ?? null}
+              />
+            )}
 
             {/* Bônus por perfil */}
             {promo.tiers && promo.tiers.length > 0 && (
