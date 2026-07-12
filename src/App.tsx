@@ -33,6 +33,7 @@ const PurchaseOptionsScreen = lazy(() => import("./pages/PurchaseOptionsScreen")
 const PriceCalendarScreen = lazy(() => import("./pages/PriceCalendarScreen"));
 const BonusOffersScreen = lazy(() => import("./pages/BonusOffersScreen"));
 const BonusOfferDetailScreen = lazy(() => import("./pages/BonusOfferDetailScreen"));
+const HistoricoRotasScreen = lazy(() => import("./pages/HistoricoRotasScreen"));
 const VencimentosPage = lazy(() => import("./pages/VencimentosPage"));
 const MinhaEconomiaPage = lazy(() => import("./pages/MinhaEconomiaPage"));
 const RegistrarEmissaoPage = lazy(() => import("./pages/RegistrarEmissaoPage"));
@@ -168,6 +169,14 @@ const App = () => {
                   element={
                     <ClienteOnly>
                       <RequirePaid><BonusOffersScreen /></RequirePaid>
+                    </ClienteOnly>
+                  }
+                />
+                <Route
+                  path="/bonus-offers/rotas"
+                  element={
+                    <ClienteOnly>
+                      <HistoricoRotasScreen />
                     </ClienteOnly>
                   }
                 />

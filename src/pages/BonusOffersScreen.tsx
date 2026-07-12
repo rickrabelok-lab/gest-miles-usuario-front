@@ -104,6 +104,14 @@ export default function BonusOffersScreen() {
             {BONUS_PROMOTIONS_SOURCE_NOTICE}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => navigate('/bonus-offers/rotas')}
+          className="mb-4 flex w-full items-center justify-between rounded-[16px] bg-white px-4 py-3 text-left shadow-nubank"
+        >
+          <span className="text-[13px] font-semibold text-nubank-text">Histórico de rotas</span>
+          <span className="text-[12px] font-semibold text-nubank-dark">Ver todas →</span>
+        </button>
         {loading && (
           <p className="py-10 text-center text-sm text-nubank-text-secondary">Carregando promoções…</p>
         )}

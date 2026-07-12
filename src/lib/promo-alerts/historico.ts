@@ -70,3 +70,46 @@ export function resumoHistorico(h: HistoricoRota | null, bonusAtual: number | nu
   if (bonusMax != null) parts.push(`máx ${bonusMax}%`)
   return { novo: false, texto: parts.join(' · '), sinal, vezes, bonusMedio, bonusMax }
 }
+
+export interface HistoricoRotaLista {
+  sourceId: string
+  targetId: string
+  sourceNome: string
+  targetNome: string
+  vezes: number
+  bonusMedio: number | null
+  bonusMax: number | null
+  bonusMin: number | null
+  primeira: string | null
+  ultima: string | null
+}
+
+export async function getPromoHistoricoRotas(): Promise<HistoricoRotaLista[]> {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase.rpc('promo_historico_rotas')
+  if (error) throw error
+  if (!Array.isArray(data)) return []
+  return data.map((row: any) => ({
+    sourceId: String(row.source_id ?? ''),
+    targetId: String(row.target_id ?? ''),
+    sourceNome: typeof row.source_nome === 'string' && row.source_nome ? row.source_nome : String(row.source_id ?? ''),
+    targetNome: typeof row.target_nome === 'string' && row.target_nome ? row.target_nome : String(row.target_id ?? ''),
+    vezes: num(row.vezes) ?? 0,
+    bonusMedio: num(row.bonus_medio),
+    bonusMax: num(row.bonus_max),
+    bonusMin: num(row.bonus_min),
+    primeira: typeof row.primeira === 'string' ? row.primeira : null,
+    ultima: typeof row.ultima === 'string' ? row.ultima : null,
+  }))
+}
+
+const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+export function formatUltima(iso: string | null): string {
+  if (!iso || typeof iso !== 'string') return '—'
+  const m = iso.match(/^(\d{4})-(\d{2})-\d{2}/)
+  if (!m) return '—'
+  const mesIdx = Number(m[2]) - 1
+  if (mesIdx < 0 || mesIdx > 11) return '—'
+  return `${MESES_ABREV[mesIdx]}/${m[1].slice(2)}`
+}
