@@ -18,7 +18,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- Digest interno (PROVADO contra prod): transfers aprovadas nas últimas 24h x carteiras (saldo>0)\n-- da equipe do tenant, respeitando opt-out. Sem exigir grupo (é a rede pros sem-grupo).\nselect pc.cliente_id,\n       coalesce(pf.nome, pf.nome_completo, 'Cliente') as cliente_nome,\n       pc.saldo::bigint as saldo,\n       p.source_program as origem,\n       p.target_program as destino,\n       p.bonus_numeric,\n       round(pc.saldo * (1 + p.bonus_numeric / 100.0))::bigint as resultado,\n       t.grupo_interno_jid, t.instance\nfrom public.agent_tenants t\njoin public.perfis pf on pf.equipe_id = t.equipe_id\njoin public.programas_cliente pc on pc.cliente_id = pf.usuario_id and pc.saldo > 0\njoin public.promo_alerts p on p.category = 'transfer' and p.status = 'approved'\n   and p.bonus_numeric is not null\n   and p.moderated_at >= now() - interval '24 hours'\n   and (p.valid_until is null or p.valid_until >= current_date)\njoin public.program_aliases al on al.alias_norm = public.promo_norm(p.source_program) and al.program_id = pc.program_id\nwhere t.ativo and t.grupo_interno_jid is not null\n  and not exists (select 1 from public.agent_preferencias ap\n                  where ap.cliente_id = pc.cliente_id and ap.chave = 'promo_optout' and ap.valor = 'true')\norder by t.grupo_interno_jid, resultado desc;",
+        "query": "-- Digest interno (PROVADO contra prod): transfers aprovadas nas últimas 24h x carteiras (saldo>0)\n-- da equipe do tenant, respeitando opt-out. Sem exigir grupo (é a rede pros sem-grupo).\nselect pc.cliente_id,\n       coalesce(pf.nome, pf.nome_completo, 'Cliente') as cliente_nome,\n       pc.saldo::bigint as saldo,\n       p.source_program as origem,\n       p.target_program as destino,\n       p.bonus_numeric,\n       round(pc.saldo * (1 + p.bonus_numeric / 100.0))::bigint as resultado,\n       t.grupo_interno_jid, t.instance\nfrom public.agent_tenants t\njoin public.perfis pf on pf.equipe_id = t.equipe_id\njoin public.programas_cliente pc on pc.cliente_id = pf.usuario_id and pc.saldo > 0\njoin public.promo_alerts p on p.category = 'transfer' and p.status = 'approved'\n   and p.bonus_numeric is not null\n   and p.moderated_at >= now() - interval '24 hours'\n   and (p.valid_until is null or p.valid_until >= current_date)\n   and p.source_program_id = pc.program_id\nwhere t.ativo and t.grupo_interno_jid is not null\n  and not exists (select 1 from public.agent_preferencias ap\n                  where ap.cliente_id = pc.cliente_id and ap.chave = 'promo_optout' and ap.valor = 'true')\norder by t.grupo_interno_jid, resultado desc;",
         "options": {}
       },
       "id": "gmpd-cross",
@@ -79,6 +79,7 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "timezone": "America/Sao_Paulo"
+    "timezone": "America/Sao_Paulo",
+    "errorWorkflow": "pHo9Ic6AMY0YpXEn"
   }
 }
