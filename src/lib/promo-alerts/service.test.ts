@@ -113,6 +113,16 @@ describe('mapPromoAlertRow', () => {
     })
     expect(promo?.bonusNumeric).toBeUndefined()
   })
+
+  it('source_program vazio vira undefined (não string vazia)', () => {
+    const promo = mapPromoAlertRow({
+      id: 'p4',
+      category: 'transfer',
+      source_program: '',
+      title: 'Sem origem',
+    })
+    expect(promo?.sourceProgram).toBeUndefined()
+  })
 })
 
 describe('isCurrentPromo', () => {

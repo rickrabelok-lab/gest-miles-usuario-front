@@ -26,6 +26,8 @@ export default function BonusOffersScreen() {
   const { activeCount, expiringToday, loading, error } = useBonusPromotions()
   const { items: personalizedItems, loading: personalizedLoading } = usePersonalizedPromos()
   const hasPersonalized = !personalizedLoading && personalizedItems.length > 0
+  // Se "Pra você" some (refetch zerou os matches), não deixa o pill oculto seguir destacado.
+  const effectivePill = activePill === 'pravoce' && !hasPersonalized ? 'all' : activePill
 
   const praVoceRef = useRef<HTMLDivElement>(null)
   const transferRef = useRef<HTMLDivElement>(null)
@@ -85,7 +87,7 @@ export default function BonusOffersScreen() {
             key={pill.id}
             onClick={() => handlePillClick(pill.id)}
             className={`flex-shrink-0 rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors ${
-              activePill === pill.id
+              effectivePill === pill.id
                 ? 'bg-primary text-white'
                 : 'bg-[#F1F0F3] text-[#54535A] hover:bg-white'
             }`}

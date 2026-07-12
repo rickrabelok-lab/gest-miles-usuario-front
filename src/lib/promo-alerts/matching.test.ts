@@ -86,4 +86,13 @@ describe('crossPromosWithWallet', () => {
     expect(items).toHaveLength(1)
     expect(items[0].resultado).toBeNull()
   })
+
+  it('bonusNumeric NaN não vira resultado NaN — cai pra null', () => {
+    const items = crossPromosWithWallet(
+      [promo({ id: 'a', sourceProgram: 'Livelo', bonusNumeric: NaN })],
+      wallet,
+    )
+    expect(items).toHaveLength(1)
+    expect(items[0].resultado).toBeNull()
+  })
 })
