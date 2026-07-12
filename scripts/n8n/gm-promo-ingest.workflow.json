@@ -187,197 +187,26 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $json.is_promo }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            },
-            {
-              "leftValue": "={{ $json.confidence ?? 0 }}",
-              "rightValue": 0.5,
-              "operator": {
-                "type": "number",
-                "operation": "gte"
-              }
-            },
-            {
-              "leftValue": "={{ !$json.valid_until || $json.valid_until >= $now.toFormat('yyyy-MM-dd') }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "PR1iXHITz9GcjsYN",
+          "mode": "list",
+          "cachedResultName": "gm-promo-sink"
         },
-        "options": {}
+        "options": {
+          "waitForSubWorkflow": true
+        }
       },
-      "id": "gmpi-is-promo",
-      "name": "gmpi-is-promo",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
+      "id": "gmpi-sink",
+      "name": "gmpi-sink",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
       "position": [
         1540,
         300
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "insert into public.promo_alerts\n  (category, source_program, target_program, title, bonus_value, bonus_numeric,\n   tiers, valid_from, valid_until, details, cta_url, milheiro_cost, milheiro_note,\n   source_links, canonical_key, confidence, raw)\nvalues\n  ($1, $2, $3, $4, $5, $6, $7::jsonb, nullif($8,'')::date, nullif($9,'')::date, $10, $11,\n   $12::numeric, $13,\n   jsonb_build_array(jsonb_build_object('name', $14::text, 'url', $15::text)), $16, $17, $18::jsonb)\non conflict (canonical_key) do update set\n  source_links = (\n    select jsonb_agg(distinct e) from jsonb_array_elements(\n      promo_alerts.source_links || excluded.source_links\n    ) as e\n  ),\n  updated_at = now()\nreturning id, status, (xmax = 0) as is_new;",
-        "options": {
-          "queryReplacement": "={{ [$json.category, $json.source_program, $json.target_program, $json.title, $json.bonus_value, $json.bonus_numeric, JSON.stringify($json.tiers ?? null), $json.valid_from || '', $json.valid_until || '', $json.details, $json.cta_url, $json.milheiro_cost, $json.milheiro_note, $json.source_name, $json.source_url, $json.canonical_key, $json.confidence, JSON.stringify($json)] }}"
-        }
-      },
-      "id": "gmpi-upsert",
-      "name": "gmpi-upsert",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.4,
-      "position": [
-        1760,
-        220
       ],
-      "credentials": {
-        "postgres": {
-          "id": "Ucn1qbvcmYC4XHpa",
-          "name": "CRED_POSTGRES_AGENTE"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $json.is_new }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            },
-            {
-              "leftValue": "={{ $json.status }}",
-              "rightValue": "pending",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "gmpi-only-new",
-      "name": "gmpi-only-new",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1980,
-        220
-      ]
-    },
-    {
-      "parameters": {
-        "method": "GET",
-        "url": "=https://gest-miles-usuario-front-slzj.vercel.app/api/agent/promo-message/{{ $json.promo_id }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {}
-      },
-      "id": "gmpi-message",
-      "name": "gmpi-message",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2200,
-        140
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "8JJba9f768EANZ33",
-          "name": "CRED_RESUMO_APIKEY"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "-- Roda ANTES do gmpi-message: $1 carrega só o id da promo (uuid é seguro em param;\n-- texto rico como a mensagem NÃO é confiável nos params deste node — quebrou com '*').\nselect grupo_interno_jid, instance, $1::text as promo_id from public.agent_tenants where id = 3;",
-        "options": {
-          "queryReplacement": "={{ [$json.id] }}"
-        }
-      },
-      "id": "gmpi-tenant",
-      "name": "gmpi-tenant",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.4,
-      "position": [
-        2420,
-        140
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "Ucn1qbvcmYC4XHpa",
-          "name": "CRED_POSTGRES_AGENTE"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $('gmpi-tenant').item.json.instance }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "number",
-              "value": "={{ $('gmpi-tenant').item.json.grupo_interno_jid }}"
-            },
-            {
-              "name": "text",
-              "value": "={{ $json.message }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "gmpi-notify",
-      "name": "gmpi-notify",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2640,
-        140
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "qzR4JN04NUY3GPeQ",
-          "name": "CRED_EVOLUTION_HEADER"
-        }
-      }
+      "notes": "Downstream (is-promo->notify) vive em gm-promo-sink (passthrough). Passa o item parseado inteiro."
     }
   ],
   "connections": {
@@ -473,64 +302,7 @@
       "main": [
         [
           {
-            "node": "gmpi-is-promo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "gmpi-is-promo": {
-      "main": [
-        [
-          {
-            "node": "gmpi-upsert",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "gmpi-upsert": {
-      "main": [
-        [
-          {
-            "node": "gmpi-only-new",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "gmpi-only-new": {
-      "main": [
-        [
-          {
-            "node": "gmpi-tenant",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "gmpi-tenant": {
-      "main": [
-        [
-          {
-            "node": "gmpi-message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "gmpi-message": {
-      "main": [
-        [
-          {
-            "node": "gmpi-notify",
+            "node": "gmpi-sink",
             "type": "main",
             "index": 0
           }
