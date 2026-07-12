@@ -4,12 +4,15 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { BONUS_PROMOTIONS_SOURCE_NOTICE, BonusCategory } from '@/lib/bonusTypes'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
+import { usePersonalizedPromos } from '@/hooks/usePersonalizedPromos'
 import { TransferBonusSection } from '@/components/bonus/TransferBonusSection'
 import { ShoppingBonusSection } from '@/components/bonus/ShoppingBonusSection'
 import { MilesBonusSection } from '@/components/bonus/MilesBonusSection'
 import { CardBonusSection } from '@/components/bonus/CardBonusSection'
+import { PraVoceSection } from '@/components/bonus/PraVoceSection'
 
-const PILLS: { id: BonusCategory | 'all'; label: string }[] = [
+const PILLS: { id: BonusCategory | 'all' | 'pravoce'; label: string }[] = [
+  { id: 'pravoce', label: 'Pra você' },
   { id: 'all', label: 'Tudo' },
   { id: 'transfer', label: 'Transferências' },
   { id: 'shopping', label: 'Compras' },
@@ -19,9 +22,12 @@ const PILLS: { id: BonusCategory | 'all'; label: string }[] = [
 
 export default function BonusOffersScreen() {
   const navigate = useNavigate()
-  const [activePill, setActivePill] = useState<BonusCategory | 'all'>('all')
+  const [activePill, setActivePill] = useState<BonusCategory | 'all' | 'pravoce'>('all')
   const { activeCount, expiringToday, loading, error } = useBonusPromotions()
+  const { items: personalizedItems, loading: personalizedLoading } = usePersonalizedPromos()
+  const hasPersonalized = !personalizedLoading && personalizedItems.length > 0
 
+  const praVoceRef = useRef<HTMLDivElement>(null)
   const transferRef = useRef<HTMLDivElement>(null)
   const shoppingRef = useRef<HTMLDivElement>(null)
   const milesRef = useRef<HTMLDivElement>(null)
@@ -32,10 +38,14 @@ export default function BonusOffersScreen() {
     []
   )
 
-  function handlePillClick(id: BonusCategory | 'all') {
+  function handlePillClick(id: BonusCategory | 'all' | 'pravoce') {
     setActivePill(id)
     if (id === 'all') {
       window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    if (id === 'pravoce') {
+      praVoceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       return
     }
     sectionRefs[id].current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -70,7 +80,7 @@ export default function BonusOffersScreen() {
       <div
         className="sticky top-0 z-10 flex gap-2 overflow-x-auto bg-nubank-bg/95 px-5 py-2.5 backdrop-blur-sm scrollbar-hide"
       >
-        {PILLS.map(pill => (
+        {PILLS.filter((pill) => pill.id !== 'pravoce' || hasPersonalized).map(pill => (
           <button
             key={pill.id}
             onClick={() => handlePillClick(pill.id)}
@@ -103,6 +113,7 @@ export default function BonusOffersScreen() {
             Nenhuma promoção ativa no momento. Volte em breve!
           </p>
         )}
+        <PraVoceSection sectionRef={praVoceRef} />
         <TransferBonusSection sectionRef={transferRef} />
         <ShoppingBonusSection sectionRef={shoppingRef} />
         <MilesBonusSection sectionRef={milesRef} />
