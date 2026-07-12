@@ -16,6 +16,10 @@ export interface BonusPromotion {
   title: string
   bonusValue: string
   bonusLabel: string
+  /** Custo em R$ por 1.000 pontos/milhas no destino, publicado pelo artigo (fase 1.1). */
+  milheiroCost?: number
+  /** Como chegar no custo (carrinho, clube, transferência) — nunca presente sem milheiroCost. */
+  milheiroNote?: string
   participatingBanks?: string[]
   tiers?: BonusTier[]
   partnerStores?: number
