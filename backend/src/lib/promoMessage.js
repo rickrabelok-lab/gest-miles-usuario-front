@@ -26,6 +26,16 @@ export function buildPromoModerationMessage(promo, { apiBaseUrl, secret }) {
   lines.push(route ? `${cat} · ${route}` : cat);
 
   if (promo.bonus_value) lines.push(`Bônus: ${promo.bonus_value}`);
+
+  // Postgres numeric pode chegar como string pelo PostgREST — coagir antes de formatar.
+  const milheiroCost = Number(promo.milheiro_cost);
+  if (Number.isFinite(milheiroCost) && milheiroCost > 0) {
+    const cost = `R$ ${milheiroCost.toFixed(2).replace(".", ",")}`;
+    lines.push(
+      promo.milheiro_note ? `💰 Milheiro: ${cost} — ${promo.milheiro_note}` : `💰 Milheiro: ${cost}`,
+    );
+  }
+
   const until = formatDateBr(promo.valid_until);
   if (until) lines.push(`Válida até: ${until}`);
   if (typeof promo.confidence === "number") {

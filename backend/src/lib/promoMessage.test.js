@@ -44,3 +44,21 @@ test("campos opcionais ausentes não quebram nem deixam 'undefined' no texto", (
   assert.doesNotMatch(msg, /undefined/);
   assert.doesNotMatch(msg, /null/);
 });
+
+test("milheiro efetivo entra no card com valor pt-BR e nota (moderador valida o número)", () => {
+  const msg = buildPromoModerationMessage(
+    { ...promo, milheiro_cost: 15.58, milheiro_note: "Carrinho Esfera + transferência com 70%" },
+    { apiBaseUrl: BASE, secret: SECRET },
+  );
+  assert.match(msg, /💰 Milheiro: R\$ 15,58 — Carrinho Esfera \+ transferência com 70%/);
+});
+
+test("milheiro sem nota mostra só o valor; sem milheiro não há linha", () => {
+  const comCusto = buildPromoModerationMessage(
+    { ...promo, milheiro_cost: "13.44" },
+    { apiBaseUrl: BASE, secret: SECRET },
+  );
+  assert.match(comCusto, /💰 Milheiro: R\$ 13,44/);
+  const sem = buildPromoModerationMessage(promo, { apiBaseUrl: BASE, secret: SECRET });
+  assert.doesNotMatch(sem, /Milheiro/);
+});
