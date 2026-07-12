@@ -79,7 +79,7 @@ export function crossPromosWithWallet(
     if (!programId) continue
     const saldo = saldoById.get(programId)
     if (!saldo) continue
-    const bonus = typeof promo.bonusNumeric === 'number' ? promo.bonusNumeric : null
+    const bonus = Number.isFinite(promo.bonusNumeric) ? promo.bonusNumeric : null
     const resultado = bonus != null ? Math.round(saldo * (1 + bonus / 100)) : null
     items.push({ promo, programId, saldo, resultado })
   }
