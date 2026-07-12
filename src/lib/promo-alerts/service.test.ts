@@ -78,6 +78,41 @@ describe('mapPromoAlertRow', () => {
     const orfa = mapPromoAlertRow({ ...row, milheiro_cost: null, milheiro_note: 'nota órfã' })!
     expect(orfa.milheiroNote).toBeUndefined()
   })
+
+  it('carrega sourceProgram e bonusNumeric quando presentes', () => {
+    const promo = mapPromoAlertRow({
+      id: 'p1',
+      category: 'transfer',
+      source_program: 'Livelo',
+      target_program: 'Smiles',
+      title: 'Livelo -> Smiles 100%',
+      bonus_value: '100%',
+      bonus_numeric: 100,
+    })
+    expect(promo?.sourceProgram).toBe('Livelo')
+    expect(promo?.bonusNumeric).toBe(100)
+  })
+
+  it('deixa undefined quando ausentes (não quebra)', () => {
+    const promo = mapPromoAlertRow({
+      id: 'p2',
+      category: 'shopping',
+      title: 'Oferta',
+    })
+    expect(promo?.sourceProgram).toBeUndefined()
+    expect(promo?.bonusNumeric).toBeUndefined()
+  })
+
+  it('bonus_numeric null vira undefined (não 0)', () => {
+    const promo = mapPromoAlertRow({
+      id: 'p3',
+      category: 'transfer',
+      source_program: 'Livelo',
+      title: 'Livelo -> Smiles',
+      bonus_numeric: null,
+    })
+    expect(promo?.bonusNumeric).toBeUndefined()
+  })
 })
 
 describe('isCurrentPromo', () => {

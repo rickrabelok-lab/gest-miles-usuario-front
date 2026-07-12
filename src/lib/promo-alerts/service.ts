@@ -49,6 +49,11 @@ export function mapPromoAlertRow(row: Record<string, unknown>): BonusPromotion |
         ? row.milheiro_note
         : undefined,
     participatingBanks: category === 'transfer' && sourceProgram ? [sourceProgram] : undefined,
+    sourceProgram: sourceProgram || undefined,
+    bonusNumeric:
+      row.bonus_numeric != null && Number.isFinite(Number(row.bonus_numeric))
+        ? Number(row.bonus_numeric)
+        : undefined,
     tiers: tiers && tiers.length > 0 ? tiers : undefined,
     expiresAt: validUntil ? `${validUntil}T23:59:00` : undefined,
     isActive: true,
