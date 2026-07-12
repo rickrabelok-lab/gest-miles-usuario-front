@@ -95,5 +95,5 @@
     "gps-tenant": { "main": [[{ "node": "gps-message", "type": "main", "index": 0 }]] },
     "gps-message": { "main": [[{ "node": "gps-notify", "type": "main", "index": 0 }]] }
   },
-  "settings": { "executionOrder": "v1", "timezone": "America/Sao_Paulo" }
+  "settings": { "executionOrder": "v1", "timezone": "America/Sao_Paulo", "errorWorkflow": "pHo9Ic6AMY0YpXEn" }
 }

@@ -312,6 +312,7 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "timezone": "America/Sao_Paulo"
+    "timezone": "America/Sao_Paulo",
+    "errorWorkflow": "pHo9Ic6AMY0YpXEn"
   }
 }
