@@ -31,8 +31,8 @@ Fechar o loop da personalização: quando o owner aprova uma **transferência bo
 ## Arquitetura
 
 ```
-APROVAÇÃO  (backend POST /api/promo-alerts/moderate/:id, após setar approved, se category='transfer')
-   └─→ POST webhook n8n  gm-promo-personalizado (promo_id)                    [TEMPO REAL]
+APROVAÇÃO  (UPDATE promo_alerts.status→approved via rota de moderação — SEM tocar no backend)
+   └─ pg trigger (WHEN status→approved E category='transfer') → net.http_post → webhook n8n gm-promo-personalizado (promo_id)   [TEMPO REAL]
           └─ SQL cross: promo × programas_cliente (saldo>0, origem casada) × sem opt-out
                  ├─ cliente COM grupo (agent_vinculos) → msg direta (Evolution) + INSERT no ledger
                  └─ cliente SEM grupo → nada agora (o digest diário cobre)
@@ -72,12 +72,13 @@ RLS on, sem policies (só pipeline).
 
 **Opt-out** — **sem mudança de schema.** `agent_preferencias` já é key-value (`cliente_id, chave, valor, confirmada, ...`). Opt-out = existência de linha `(cliente_id, chave='promo_optout', valor='true')`. Cross exclui: `where not exists (select 1 from agent_preferencias p where p.cliente_id = pc.cliente_id and p.chave='promo_optout' and p.valor='true')`, nos DOIS canais. A equipe cria/remove a linha a pedido do cliente (UI no app é follow-up).
 
-### Backend (uma mudança)
+### Gatilho: pg trigger (padrão Fase C — **zero backend**)
 
-`backend/src/routes/promoAlerts.js`, no `POST /moderate/:id`: após o `update` que seta `status='approved'` com sucesso, **se a promo for `category='transfer'`**, dispara `POST` pro webhook n8n `gm-promo-personalizado` com `{ promo_id }`. Autenticação: header `x-api-key` = `AGENT_API_KEY` (mesmo padrão do resumo de demandas da Fase C). Reject e categorias não-transfer **não** disparam. Falha do webhook **não** quebra a moderação (best-effort, logado) — a aprovação já foi persistida e o digest diário é a rede.
+Em vez do backend disparar, um **trigger no banco** (mesmo padrão da notificação de demanda, migration `20260709120000`) faz o `net.http_post` pro webhook n8n. Vantagens: zero mudança/deploy de backend, dispara em qualquer aprovação (robusto), best-effort no-op quando não configurado.
 
-- Estender o `.select(...)` do update pra incluir `category` (hoje traz só `id, title`).
-- URL/secret do webhook em env do backend (`PROMO_PERSONALIZADO_WEBHOOK_URL` + reuso de `AGENT_API_KEY`).
+- `AFTER UPDATE OF status ON public.promo_alerts` `WHEN (new.status='approved' AND old.status IS DISTINCT FROM 'approved' AND new.category='transfer')` → função `SECURITY DEFINER` que lê URL/secret do **Vault** (`n8n_promo_personalizado_webhook_url` / `_secret`), no-op silencioso se ausentes, e faz `net.http_post(url, {promo_id}, headers x-webhook-secret)`. Exception-safe: **nunca** derruba o UPDATE de moderação.
+- A rota de moderação (`POST /moderate/:id`) **não muda** — ela já faz o UPDATE via service role, que dispara o trigger. Reject/outras categorias não disparam (guarda no `WHEN`).
+- Rollout: inserir os 2 secrets no Vault (à mão, nunca commitados), como na Fase C.
 
 ### n8n (2 workflows novos)
 
@@ -112,8 +113,8 @@ RLS on, sem policies (só pipeline).
 
 ## Testes
 
-- **Vitest (backend):** o gatilho no `POST /moderate/:id` — dispara webhook só em `approve` + `category='transfer'`; não dispara em reject/outras categorias; falha do webhook não quebra a resposta de moderação. Mock do fetch.
-- **SQL do cross:** validar em staging-de-mentira (linha sintética) que o cross casa origem×saldo>0, respeita opt-out, e o anti-join do ledger evita reenvio. (Sem ambiente de staging → smoke controlado em prod com linha sintética + cleanup, padrão do smoke da 3-A.)
+- **Gatilho (pg trigger, sem código de backend):** verificado por E2E controlado — aprovar uma transfer sintética dispara o webhook; aprovar não-transfer (ou reject) **não** dispara (guarda no `WHEN`); sem secrets no Vault = no-op silencioso (não quebra a moderação). Sem ambiente de staging → smoke em prod com linha sintética + cleanup (padrão do smoke da 3-A).
+- **SQL do cross:** validar com linha sintética que o cross casa origem×saldo>0, respeita opt-out (`promo_optout`), e o anti-join do ledger (`promo_alert_envios`) evita reenvio.
 - **n8n:** E2E via clone temporário (webhook→…→respond) provando o caminho com/sem grupo e o digest; e execução real controlada (aprovar 1 transfer sintética, conferir msg no Grupo Teste, limpar).
 - Gates da casa: `npx tsc -b` + `npm test` + `npm run build` (o backend tem sua suíte própria).
 
