@@ -1,0 +1,122 @@
+{
+  "name": "gm-grupo-onboarding",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gm-grupo-onboarding",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "gmgo-webhook",
+      "name": "gmgo-webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "gm-grupo-onboarding"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://evolution.gestmiles.com.br/group/fetchAllGroups/gestmiles_qr",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "getParticipants", "value": "false" }
+          ]
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "gmgo-groups",
+      "name": "gmgo-groups",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "qzR4JN04NUY3GPeQ", "name": "CRED_EVOLUTION_HEADER" }
+      },
+      "notes": "Evolution fetchAllGroups do bot. CONFIRMAR no piloto o formato da resposta (array de {id, subject, size})."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Mapeia a resposta Evolution -> { tenant_id, groups:[{jid,nome,size}] }.\n// A resposta pode vir como array direto OU dentro de $json (confirmar no piloto).\nconst raw = $input.all().map((i) => i.json)\nconst arr = Array.isArray(raw) && raw.length && raw[0].id ? raw : (raw[0]?.data ?? raw)\nconst groups = (Array.isArray(arr) ? arr : [])\n  .filter((g) => g && g.id && String(g.id).endsWith('@g.us'))\n  .map((g) => ({ jid: g.id, nome: g.subject || '', size: g.size ?? null }))\nreturn [{ json: { tenant_id: 3, groups } }]"
+      },
+      "id": "gmgo-prep",
+      "name": "gmgo-prep",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gest-miles-usuario-front-slzj.vercel.app/api/agent/group-onboarding",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tenant_id: $json.tenant_id, groups: $json.groups }) }}",
+        "options": {}
+      },
+      "id": "gmgo-bff",
+      "name": "gmgo-bff",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "8JJba9f768EANZ33", "name": "CRED_RESUMO_APIKEY" }
+      },
+      "notes": "Rota deploya no merge do PR (backend Vercel). Até lá, apontar pra URL de preview no piloto."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Relatório do onboarding pro grupo interno.\nconst r = $json\nconst rev = Array.isArray(r.revisar) ? r.revisar : []\nlet msg = `*\\ud83d\\udc65 Onboarding de grupos*\\n\\n` +\n  `Descobertos: ${r.descobertos ?? 0}\\n` +\n  `\\u2705 Auto-mapeados: ${r.auto_mapeados ?? 0}\\n` +\n  `\\u2139\\ufe0f Já mapeados: ${r.ja_mapeados ?? 0}\\n` +\n  `\\u26a0\\ufe0f Revisar: ${rev.length}`\nif (rev.length) {\n  msg += `\\n\\n*Revisar (sem match único):*\\n` +\n    rev.slice(0, 30).map((x) => `\\u2022 ${x.grupo} \\u2014 ${x.candidatos.length ? x.candidatos.join(', ') : 'nenhum candidato'}`).join('\\n')\n  if (rev.length > 30) msg += `\\n… +${rev.length - 30}`\n}\nreturn [{ json: { mensagem: msg } }]"
+      },
+      "id": "gmgo-msg",
+      "name": "gmgo-msg",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolution.gestmiles.com.br/message/sendText/gestmiles_qr",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "120363426222936731@g.us" },
+            { "name": "text", "value": "={{ $json.mensagem }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "gmgo-send",
+      "name": "gmgo-send",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "qzR4JN04NUY3GPeQ", "name": "CRED_EVOLUTION_HEADER" }
+      },
+      "notes": "grupo_interno_jid do tenant 3 (Grupo Teste, provisório)."
+    }
+  ],
+  "connections": {
+    "gmgo-webhook": { "main": [[{ "node": "gmgo-groups", "type": "main", "index": 0 }]] },
+    "gmgo-groups": { "main": [[{ "node": "gmgo-prep", "type": "main", "index": 0 }]] },
+    "gmgo-prep": { "main": [[{ "node": "gmgo-bff", "type": "main", "index": 0 }]] },
+    "gmgo-bff": { "main": [[{ "node": "gmgo-msg", "type": "main", "index": 0 }]] },
+    "gmgo-msg": { "main": [[{ "node": "gmgo-send", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo"
+  }
+}
