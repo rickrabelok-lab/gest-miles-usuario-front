@@ -25,7 +25,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- Cross direto (PROVADO contra prod 2026-07-12): promo x carteiras com grupo, saldo>0,\n-- respeita opt-out e anti-join do ledger. $1 = promo_id do webhook.\nwith promo as (\n  select id, source_program, target_program, bonus_numeric\n  from public.promo_alerts\n  where id = $1 and category = 'transfer' and status = 'approved'\n    and (valid_until is null or valid_until >= current_date)\n    and bonus_numeric is not null\n)\nselect pc.cliente_id,\n       g.grupo_jid,\n       t.instance,\n       coalesce(v.nome_exibicao, pf.nome, pf.nome_completo, 'você') as cliente_nome,\n       pc.saldo::bigint as saldo,\n       p.source_program as origem,\n       p.target_program as destino,\n       p.bonus_numeric,\n       round(pc.saldo * (1 + p.bonus_numeric / 100.0))::bigint as resultado,\n       p.id as promo_id\nfrom promo p\njoin public.program_aliases al on al.alias_norm = public.promo_norm(p.source_program)\njoin public.programas_cliente pc on pc.program_id = al.program_id and pc.saldo > 0\njoin public.agent_vinculos v on v.cliente_id = pc.cliente_id and v.ativo\njoin public.agent_grupos g on g.id = v.grupo_id and g.ativo\njoin public.agent_tenants t on t.id = g.tenant_id and t.ativo\nleft join public.perfis pf on pf.usuario_id = pc.cliente_id\nwhere not exists (select 1 from public.agent_preferencias ap\n                  where ap.cliente_id = pc.cliente_id and ap.chave = 'promo_optout' and ap.valor = 'true')\n  and not exists (select 1 from public.promo_alert_envios e\n                  where e.promo_id = p.id and e.cliente_id = pc.cliente_id and e.canal = 'whatsapp_direto');",
+        "query": "-- Cross direto (PROVADO contra prod 2026-07-12): promo x carteiras com grupo, saldo>0,\n-- respeita opt-out e anti-join do ledger. $1 = promo_id do webhook.\nwith promo as (\n  select id, source_program, source_program_id, target_program, bonus_numeric\n  from public.promo_alerts\n  where id = $1 and category = 'transfer' and status = 'approved'\n    and (valid_until is null or valid_until >= current_date)\n    and bonus_numeric is not null\n    and source_program_id is not null\n)\nselect pc.cliente_id,\n       g.grupo_jid,\n       t.instance,\n       coalesce(v.nome_exibicao, pf.nome, pf.nome_completo, 'você') as cliente_nome,\n       pc.saldo::bigint as saldo,\n       p.source_program as origem,\n       p.target_program as destino,\n       p.bonus_numeric,\n       round(pc.saldo * (1 + p.bonus_numeric / 100.0))::bigint as resultado,\n       p.id as promo_id\nfrom promo p\njoin public.programas_cliente pc on pc.program_id = p.source_program_id and pc.saldo > 0\njoin public.agent_vinculos v on v.cliente_id = pc.cliente_id and v.ativo\njoin public.agent_grupos g on g.id = v.grupo_id and g.ativo\njoin public.agent_tenants t on t.id = g.tenant_id and t.ativo\nleft join public.perfis pf on pf.usuario_id = pc.cliente_id\nwhere not exists (select 1 from public.agent_preferencias ap\n                  where ap.cliente_id = pc.cliente_id and ap.chave = 'promo_optout' and ap.valor = 'true')\n  and not exists (select 1 from public.promo_alert_envios e\n                  where e.promo_id = p.id and e.cliente_id = pc.cliente_id and e.canal = 'whatsapp_direto');",
         "options": {
           "queryReplacement": "={{ [$json.body.promo_id] }}"
         }
@@ -109,6 +109,7 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "timezone": "America/Sao_Paulo"
+    "timezone": "America/Sao_Paulo",
+    "errorWorkflow": "pHo9Ic6AMY0YpXEn"
   }
 }
