@@ -33,6 +33,9 @@ export function mapPromoAlertRow(row: Record<string, unknown>): BonusPromotion |
   // Toda promoção precisa de link clicável: sem cta oficial, cai no post da fonte.
   const fallbackCta = links?.[0]?.url
 
+  const milheiroCost = Number(row.milheiro_cost)
+  const hasMilheiro = Number.isFinite(milheiroCost) && milheiroCost > 0
+
   return {
     id: String(row.id),
     category,
@@ -40,6 +43,11 @@ export function mapPromoAlertRow(row: Record<string, unknown>): BonusPromotion |
     title: typeof row.title === 'string' && row.title ? row.title : program,
     bonusValue: typeof row.bonus_value === 'string' ? row.bonus_value : '',
     bonusLabel: BONUS_LABEL[category],
+    milheiroCost: hasMilheiro ? milheiroCost : undefined,
+    milheiroNote:
+      hasMilheiro && typeof row.milheiro_note === 'string' && row.milheiro_note
+        ? row.milheiro_note
+        : undefined,
     participatingBanks: category === 'transfer' && sourceProgram ? [sourceProgram] : undefined,
     tiers: tiers && tiers.length > 0 ? tiers : undefined,
     expiresAt: validUntil ? `${validUntil}T23:59:00` : undefined,
@@ -78,7 +86,7 @@ export async function getActivePromoAlerts(
     const { data, error } = await supabase
       .from('promo_alerts')
       .select(
-        'id, category, source_program, target_program, title, bonus_value, bonus_numeric, tiers, valid_from, valid_until, details, cta_url, source_links',
+        'id, category, source_program, target_program, title, bonus_value, bonus_numeric, tiers, valid_from, valid_until, details, cta_url, source_links, milheiro_cost, milheiro_note',
       )
       .order('bonus_numeric', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })

@@ -59,6 +59,25 @@ describe('mapPromoAlertRow', () => {
     const promo = mapPromoAlertRow({ ...row, cta_url: null, source_links: [] })!
     expect(promo.ctaUrl).toBeUndefined()
   })
+
+  it('mapeia milheiro efetivo quando presente (number ou string numérica)', () => {
+    const promo = mapPromoAlertRow({
+      ...row,
+      milheiro_cost: 15.58,
+      milheiro_note: 'Comprando pontos no carrinho da Esfera e transferindo com 70% de bônus',
+    })!
+    expect(promo.milheiroCost).toBe(15.58)
+    expect(promo.milheiroNote).toBe('Comprando pontos no carrinho da Esfera e transferindo com 70% de bônus')
+    expect(mapPromoAlertRow({ ...row, milheiro_cost: '13.44' })!.milheiroCost).toBe(13.44)
+  })
+
+  it('sem milheiro válido, cost e note ficam undefined (nota nunca anda sozinha)', () => {
+    expect(mapPromoAlertRow(row)!.milheiroCost).toBeUndefined()
+    expect(mapPromoAlertRow({ ...row, milheiro_cost: 0 })!.milheiroCost).toBeUndefined()
+    expect(mapPromoAlertRow({ ...row, milheiro_cost: 'lixo' })!.milheiroCost).toBeUndefined()
+    const orfa = mapPromoAlertRow({ ...row, milheiro_cost: null, milheiro_note: 'nota órfã' })!
+    expect(orfa.milheiroNote).toBeUndefined()
+  })
 })
 
 describe('isCurrentPromo', () => {

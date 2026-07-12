@@ -33,12 +33,24 @@ export function formatExpiryShort(expiresAt?: string): string | null {
   return `até ${date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}`
 }
 
+/** Formato pt-BR determinístico (toFixed + vírgula) — Intl currency injeta NBSP e quebra asserts. */
+export function formatMilheiroBRL(cost: number): string {
+  return `R$ ${cost.toFixed(2).replace('.', ',')}`
+}
+
 /**
  * O tratamento tipográfico grande (valor em destaque) só funciona com token CURTO.
  * bonus_value vem livre do LLM: curto => badge; longo => o título carrega a promoção.
  * Percentual ganha rótulo; valor com unidade embutida ("21 pts/R$") não repete rótulo.
+ * Milheiro efetivo (fase 1.1) vence tudo: é o número decisório e o % já vive na manchete.
  */
-export function bonusBadge(bonusValue?: string): { value: string; label?: string } | null {
+export function bonusBadge(
+  bonusValue?: string,
+  milheiroCost?: number,
+): { value: string; label?: string } | null {
+  if (typeof milheiroCost === 'number' && Number.isFinite(milheiroCost) && milheiroCost > 0) {
+    return { value: formatMilheiroBRL(milheiroCost), label: 'milheiro' }
+  }
   const value = (bonusValue ?? '').trim()
   if (!value || value.length > 12) return null
   if (/^(até\s+)?-\d+([.,]\d+)?\s*%$/i.test(value)) return { value, label: 'de desconto' }

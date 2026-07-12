@@ -7,7 +7,7 @@ import {
   BonusCategory,
   BonusPromotion,
 } from '@/lib/bonusTypes'
-import { bonusBadge, isExpiringToday } from '@/lib/bonusUtils'
+import { bonusBadge, formatMilheiroBRL, isExpiringToday } from '@/lib/bonusUtils'
 import { BonusProgramLogo } from '@/components/bonus/BonusProgramLogo'
 import { useBonusPromotions } from '@/hooks/useBonusPromotions'
 
@@ -47,7 +47,7 @@ export default function BonusOfferDetailScreen() {
 
   const { promotions, loading } = useBonusPromotions()
   const promo = promotions.find((p) => p.id === id)
-  const badge = promo ? bonusBadge(promo.bonusValue) : null
+  const badge = promo ? bonusBadge(promo.bonusValue, promo.milheiroCost) : null
 
   if (loading) {
     return (
@@ -204,6 +204,24 @@ export default function BonusOfferDetailScreen() {
                   Bônus máximo da promoção:{' '}
                   <strong>{promo.maxBonus.toLocaleString('pt-BR')} pts</strong>.
                 </p>
+              </div>
+            )}
+
+            {/* Custo do milheiro — o número decisório do combo carrinho + transferência */}
+            {promo.milheiroCost && (
+              <div className="rounded-[20px] bg-white p-4 shadow-nubank">
+                <p className="section-label mb-1.5">Custo do milheiro</p>
+                <p className="font-display text-[26px] font-bold leading-none tracking-tight tabular-nums text-primary">
+                  {formatMilheiroBRL(promo.milheiroCost)}
+                  <span className="ml-1.5 text-sm font-medium text-nubank-text-secondary">
+                    por 1.000 pontos
+                  </span>
+                </p>
+                {promo.milheiroNote && (
+                  <p className="mt-2 text-[12.5px] leading-snug text-nubank-text-secondary">
+                    {promo.milheiroNote}
+                  </p>
+                )}
               </div>
             )}
 
