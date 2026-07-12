@@ -3,6 +3,8 @@
 // um program_id canônico do catálogo (mesmos slugs de programSelectionUtils).
 // Nunca "chuta": desconhecido → null. Alias extensível (1 linha por variação).
 
+import type { BonusPromotion } from '@/lib/bonusTypes'
+
 /** Normaliza: remove acentos, minúsculo, mantém só [a-z0-9]. */
 function norm(text: string): string {
   return text
@@ -45,4 +47,47 @@ export function normalizeProgramToId(text: string | null | undefined): string | 
   const key = norm(text)
   if (!key) return null
   return BY_NORM[key] ?? null
+}
+
+export interface WalletProgram {
+  programId: string
+  saldo: number
+}
+
+export interface PersonalizedPromo {
+  promo: BonusPromotion
+  programId: string
+  saldo: number
+  resultado: number | null
+}
+
+/** Cruza promoções de transferência com a carteira: só origem com saldo>0. */
+export function crossPromosWithWallet(
+  promos: BonusPromotion[],
+  wallet: WalletProgram[],
+): PersonalizedPromo[] {
+  const saldoById = new Map<string, number>()
+  for (const w of wallet) {
+    const saldo = Number(w.saldo)
+    if (Number.isFinite(saldo) && saldo > 0) saldoById.set(w.programId, saldo)
+  }
+
+  const items: PersonalizedPromo[] = []
+  for (const promo of promos) {
+    if (promo.category !== 'transfer') continue
+    const programId = normalizeProgramToId(promo.sourceProgram)
+    if (!programId) continue
+    const saldo = saldoById.get(programId)
+    if (!saldo) continue
+    const bonus = typeof promo.bonusNumeric === 'number' ? promo.bonusNumeric : null
+    const resultado = bonus != null ? Math.round(saldo * (1 + bonus / 100)) : null
+    items.push({ promo, programId, saldo, resultado })
+  }
+
+  return items.sort((a, b) => {
+    const ra = a.resultado ?? -1
+    const rb = b.resultado ?? -1
+    if (rb !== ra) return rb - ra
+    return (b.promo.bonusNumeric ?? 0) - (a.promo.bonusNumeric ?? 0)
+  })
 }
