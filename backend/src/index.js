@@ -24,6 +24,7 @@ import agentResumoRoutes from "./routes/agentResumo.js";
 import revenuecatWebhookRoutes from "./routes/revenuecatWebhook.js";
 import promoAlertsRoutes from "./routes/promoAlerts.js";
 import agentPromoRoutes from "./routes/agentPromo.js";
+import groupOnboardingRoutes from "./routes/groupOnboarding.js";
 
 initSentry();
 
@@ -109,6 +110,7 @@ routes.use("/api/account", accountDeletionRoutes);
 routes.use("/api/agent", agentResumoRoutes);
 routes.use("/api/promo-alerts", promoAlertsRoutes);
 routes.use("/api/agent", agentPromoRoutes);
+routes.use("/api/agent", groupOnboardingRoutes);
 
 routes.get("/api/health", (_, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
