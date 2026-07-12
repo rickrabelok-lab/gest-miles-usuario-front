@@ -1,0 +1,153 @@
+{
+  "name": "gm-promo-esfera",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [ { "field": "minutes", "minutesInterval": 30 } ] } },
+      "id": "gme-cron", "name": "gme-cron", "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2, "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://t.me/s/esferacomvoce",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "User-Agent", "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36" } ] },
+        "options": { "response": { "response": { "responseFormat": "text" } }, "timeout": 15000 }
+      },
+      "id": "gme-fetch", "name": "gme-fetch", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [220, 300],
+      "onError": "continueRegularOutput",
+      "notes": "Scrape do preview público do canal Esfera. HTML mudou / fora do ar => run sem itens."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Parse do preview t.me/s/: 1 item por mensagem { external_id, text, link }.\nconst html = typeof $json.data === 'string' ? $json.data : ''\nconst out = []\nconst blocks = html.split(/data-post=\"esferacomvoce\\//).slice(1)\nfor (const b of blocks) {\n  const idm = b.match(/^(\\d+)/)\n  if (!idm) continue\n  const id = idm[1]\n  const tm = b.match(/tgme_widget_message_text[^>]*>([\\s\\S]*?)<\\/div>\\s*<div class=\"tgme_widget_message_footer/) || b.match(/tgme_widget_message_text[^>]*>([\\s\\S]*?)<\\/div>/)\n  if (!tm) continue\n  const text = tm[1]\n    .replace(/<br\\/?>/gi, ' ')\n    .replace(/<[^>]+>/g, '')\n    .replace(/&#0?36;/g, '$')\n    .replace(/&amp;/g, '&')\n    .replace(/&[a-z]+;/gi, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim()\n    .slice(0, 800)\n  if (!text) continue\n  out.push({ json: { source: 'telegram-esfera', external_id: id, text, link: 'https://t.me/esferacomvoce/' + id } })\n}\nreturn out"
+      },
+      "id": "gme-parse", "name": "gme-parse", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- dedup; RETURNING carrega text/link adiante (ref $('nó').item não atravessa Postgres com contagem diferente).\ninsert into public.promo_ingest_seen (source, external_id)\nvalues ($1, $2)\non conflict do nothing\nreturning source, external_id, $3::text as text, $4::text as link;",
+        "options": { "queryReplacement": "={{ [$json.source, $json.external_id, $json.text, $json.link] }}" }
+      },
+      "id": "gme-unseen", "name": "gme-unseen", "type": "n8n-nodes-base.postgres", "typeVersion": 2.4, "position": [660, 300],
+      "credentials": { "postgres": { "id": "Ucn1qbvcmYC4XHpa", "name": "CRED_POSTGRES_AGENTE" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "anthropic-version", "value": "2023-06-01" } ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 400, system: 'Você extrai promoção de pontos de uma mensagem CURTA do canal Telegram da Esfera (programa de pontos brasileiro). Hoje é ' + $now.toFormat('yyyy-MM-dd') + '. Responda APENAS um objeto JSON válido, sem markdown, com: is_promo (bool: true só se anuncia benefício ACIONÁVEL de pontos — pontos por real numa loja/parceiro, bônus de transferência de pontos, ou compra de pontos com bônus. Cupom de desconto em R$, teaser institucional ou mensagem vaga sem benefício de pontos claro => false), category (transfer|shopping|miles|cards; pontos por real em loja => shopping), source_program (quase sempre Esfera), target_program (destino só se for transferência de pontos, senão null), title (manchete própria curta em pt-BR, máx 70 caracteres, factual, NUNCA copie a frase do post), bonus_value (token curto de até 12 caracteres, ex. 6 pts/R$, 80%), bonus_numeric (número comparável: 6, 80), valid_until (YYYY-MM-DD quando a mensagem disser até DD/MM — assuma o ano corrente; senão null), confidence (0 a 1).', messages: [ { role: 'user', content: 'MENSAGEM: ' + $json.text } ] }) }}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "gme-extract", "name": "gme-extract", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [880, 300],
+      "retryOnFail": true, "maxTries": 2,
+      "credentials": { "httpHeaderAuth": { "id": "kOWHaIShekMAauG4", "name": "CRED_RRV_ANTHROPIC" } },
+      "notes": "Prompt de teaser (curto). Reusa CRED_RRV_ANTHROPIC (follow-up: credencial dedicada)."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Valida o JSON do LLM + canonical_key. norm vem de gme-unseen (RETURNING); $('gme-unseen').item\n// atravessa só o httpRequest 1:1 (gme-extract) — seguro.\nconst norm = $('gme-unseen').item.json\nlet out\ntry {\n  const text = $json.content?.[0]?.text ?? ''\n  out = JSON.parse(text.replace(/^[\\s`]*json/i, '').replace(/`+/g, '').trim())\n} catch (e) {\n  return { json: { is_promo: false, source: norm.source, link: norm.link } }\n}\nconst CATS = ['transfer', 'shopping', 'miles', 'cards']\nif (!out || out.is_promo !== true || !CATS.includes(out.category) || !out.title) {\n  return { json: { is_promo: false, source: norm.source, link: norm.link } }\n}\nconst slug = (s) => (s || 'x').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-')\nconst canonicalKey = [\n  out.category,\n  slug(out.source_program) + '>' + slug(out.target_program),\n  out.bonus_numeric ?? slug(out.bonus_value),\n  out.valid_until || 'sem-data',\n].join(':')\nreturn { json: { is_promo: true, ...out, canonical_key: canonicalKey, source_name: 'Esfera (Telegram)', source_url: norm.link } }"
+      },
+      "id": "gme-parse-json", "name": "gme-parse-json", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "leftValue": "={{ $json.is_promo }}", "rightValue": "", "operator": { "type": "boolean", "operation": "true", "singleValue": true } },
+            { "leftValue": "={{ $json.confidence ?? 0 }}", "rightValue": 0.5, "operator": { "type": "number", "operation": "gte" } },
+            { "leftValue": "={{ !$json.valid_until || $json.valid_until >= $now.toFormat('yyyy-MM-dd') }}", "rightValue": "", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "gme-is-promo", "name": "gme-is-promo", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [1320, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "insert into public.promo_alerts\n  (category, source_program, target_program, title, bonus_value, bonus_numeric,\n   tiers, valid_from, valid_until, details, cta_url, milheiro_cost, milheiro_note,\n   source_links, canonical_key, confidence, raw)\nvalues\n  ($1, $2, $3, $4, $5, $6, $7::jsonb, nullif($8,'')::date, nullif($9,'')::date, $10, $11,\n   $12::numeric, $13,\n   jsonb_build_array(jsonb_build_object('name', $14::text, 'url', $15::text)), $16, $17, $18::jsonb)\non conflict (canonical_key) do update set\n  source_links = (\n    select jsonb_agg(distinct e) from jsonb_array_elements(\n      promo_alerts.source_links || excluded.source_links\n    ) as e\n  ),\n  updated_at = now()\nreturning id, status, (xmax = 0) as is_new;",
+        "options": {
+          "queryReplacement": "={{ [$json.category, $json.source_program, $json.target_program, $json.title, $json.bonus_value, $json.bonus_numeric, JSON.stringify(null), '', $json.valid_until || '', null, null, null, null, $json.source_name, $json.source_url, $json.canonical_key, $json.confidence, JSON.stringify($json)] }}"
+        }
+      },
+      "id": "gme-upsert", "name": "gme-upsert", "type": "n8n-nodes-base.postgres", "typeVersion": 2.4, "position": [1540, 220],
+      "credentials": { "postgres": { "id": "Ucn1qbvcmYC4XHpa", "name": "CRED_POSTGRES_AGENTE" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "leftValue": "={{ $json.is_new }}", "rightValue": "", "operator": { "type": "boolean", "operation": "true", "singleValue": true } },
+            { "leftValue": "={{ $json.status }}", "rightValue": "pending", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "gme-only-new", "name": "gme-only-new", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [1760, 220]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select grupo_interno_jid, instance, $1::text as promo_id from public.agent_tenants where id = 3;",
+        "options": { "queryReplacement": "={{ [$json.id] }}" }
+      },
+      "id": "gme-tenant", "name": "gme-tenant", "type": "n8n-nodes-base.postgres", "typeVersion": 2.4, "position": [1980, 140],
+      "credentials": { "postgres": { "id": "Ucn1qbvcmYC4XHpa", "name": "CRED_POSTGRES_AGENTE" } }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://gest-miles-usuario-front-slzj.vercel.app/api/agent/promo-message/{{ $json.promo_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "gme-message", "name": "gme-message", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [2200, 140],
+      "credentials": { "httpHeaderAuth": { "id": "8JJba9f768EANZ33", "name": "CRED_RESUMO_APIKEY" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $('gme-tenant').item.json.instance }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $('gme-tenant').item.json.grupo_interno_jid }}" },
+            { "name": "text", "value": "={{ $json.message }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "gme-notify", "name": "gme-notify", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [2420, 140],
+      "credentials": { "httpHeaderAuth": { "id": "qzR4JN04NUY3GPeQ", "name": "CRED_EVOLUTION_HEADER" } }
+    }
+  ],
+  "connections": {
+    "gme-cron": { "main": [[{ "node": "gme-fetch", "type": "main", "index": 0 }]] },
+    "gme-fetch": { "main": [[{ "node": "gme-parse", "type": "main", "index": 0 }]] },
+    "gme-parse": { "main": [[{ "node": "gme-unseen", "type": "main", "index": 0 }]] },
+    "gme-unseen": { "main": [[{ "node": "gme-extract", "type": "main", "index": 0 }]] },
+    "gme-extract": { "main": [[{ "node": "gme-parse-json", "type": "main", "index": 0 }]] },
+    "gme-parse-json": { "main": [[{ "node": "gme-is-promo", "type": "main", "index": 0 }]] },
+    "gme-is-promo": { "main": [[{ "node": "gme-upsert", "type": "main", "index": 0 }], []] },
+    "gme-upsert": { "main": [[{ "node": "gme-only-new", "type": "main", "index": 0 }]] },
+    "gme-only-new": { "main": [[{ "node": "gme-tenant", "type": "main", "index": 0 }], []] },
+    "gme-tenant": { "main": [[{ "node": "gme-message", "type": "main", "index": 0 }]] },
+    "gme-message": { "main": [[{ "node": "gme-notify", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Sao_Paulo" }
+}
