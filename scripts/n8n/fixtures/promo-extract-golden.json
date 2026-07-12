@@ -57,6 +57,8 @@
       "valid_until": "2026-07-13",
       "details": "Promoção de pontuação bonificada em múltiplos parceiros. Pontuação varia por loja: até 17:1 na Mondaine, 15:1 Seculus, 10:1 Coffee++/O Boticário, 8:1 Insider, 5:1 Riachuelo, 2:1 Telhanorte. Válida por loja até datas específicas. Alguns parceiros exigem cupom ou confirmação ao final da compra.",
       "cta_url": null,
+      "milheiro_cost": null,
+      "milheiro_note": null,
       "confidence": 0.92,
       "canonical_key": "shopping:livelo>x:17:2026-07-13",
       "source_name": "Melhores Cartões",
@@ -107,6 +109,8 @@
       "valid_until": "2026-07-08",
       "details": "Desconto na compra de pontos Livelo: 55% para assinantes Clube, 50% para demais clientes. Pix adiciona 5% OFF. Máx 300k pontos/CPF em 30 dias. Crédito em até 48h úteis. Parcelamento em até 12x sem juros via cartão.",
       "cta_url": "https://www.livelo.com.br",
+      "milheiro_cost": null,
+      "milheiro_note": null,
       "confidence": 0.92,
       "canonical_key": "shopping:livelo>x:55:2026-07-08",
       "source_name": "Melhores Cartões",
@@ -147,6 +151,8 @@
       "valid_until": "2026-09-10",
       "details": "Abra conta Nomad com código MD50MIL. Faça câmbio mínimo de 100 USD em até 15 dias. Receba milhas Smiles conforme tier. Ganha bônus eSIM Nomad 3GB válido 30 dias, resgate até 10 set.",
       "cta_url": null,
+      "milheiro_cost": null,
+      "milheiro_note": null,
       "confidence": 0.92,
       "canonical_key": "cards:nomad>smiles:50:2026-09-10",
       "source_name": "Melhores Cartões",
@@ -176,6 +182,8 @@
       "valid_until": "2026-04-29",
       "details": "Bônus de 100 mil pontos Azul Fidelidade ao solicitar cartão Mastercard Skyline ou Visa Infinite até 29 de abril de 2026, com cumprimento de meta de gastos obrigatória.",
       "cta_url": null,
+      "milheiro_cost": null,
+      "milheiro_note": null,
       "confidence": 0.95,
       "canonical_key": "cards:azul-fidelidade>x:100000:2026-04-29",
       "source_name": "Melhores Destinos",
@@ -216,6 +224,8 @@
       "valid_until": "2026-07-10",
       "details": "Bônus na transferência de pontos de cartão para Smiles. Limite de 300.000 milhas por CPF. Milhas creditadas até 23/07/2026 com validade de 12 meses. Cupom de 79% desconto na compra de milhas (limite 100.000). Cadastro prévio obrigatório.",
       "cta_url": null,
+      "milheiro_cost": null,
+      "milheiro_note": null,
       "confidence": 0.92,
       "canonical_key": "transfer:x>smiles:70:2026-07-10",
       "source_name": "Melhores Cartões",
@@ -245,6 +255,8 @@
       "valid_until": null,
       "details": "Promoção de transferência de pontos do programa Inter Loop para Azul Fidelidade com bônus de até 115%. Permite fabricar pontos a partir de R$ 13,44 por milha.",
       "cta_url": null,
+      "milheiro_cost": null,
+      "milheiro_note": null,
       "confidence": 0.82,
       "canonical_key": "transfer:inter>azul-fidelidade:115:sem-data",
       "source_name": "Melhores Cartões",
@@ -285,6 +297,8 @@
       "valid_until": "2026-07-12",
       "details": "Compre no site ou app Natura e insira cupom PONTOSAZUL. Clube Azul recebe 21 pts/R$, demais clientes 15 pts/R$. Adesão ao clube deve ser anterior em 24h. Pontos creditados em até 30 dias úteis após entrega.",
       "cta_url": null,
+      "milheiro_cost": null,
+      "milheiro_note": null,
       "confidence": 0.92,
       "canonical_key": "miles:azul-fidelidade>x:21:2026-07-12",
       "source_name": "Melhores Cartões",
@@ -304,7 +318,36 @@
     "json_extraido": {
       "is_promo": false,
       "source": "melhorescartoes",
-      "link": "https://www.melhoresdestinos.com.br/milhas/mudanca-paridade-esfera-etihad-guest"
+      "link": "https://www.melhoresdestinos.com.br/milhas/mudanca-paridade-esfera-etihad-guest",
+      "milheiro_cost": null,
+      "milheiro_note": null
+    }
+  },
+  {
+    "entrada_normalizada": {
+      "source": "melhoresdestinos",
+      "external_id": "https://www.melhoresdestinos.com.br/?p=999001",
+      "title": "Transfira pontos Esfera para a Smiles com até 70% de bônus (milheiro por R$ 15,58!)",
+      "link": "https://www.melhoresdestinos.com.br/bonus-esfera-smiles-jul26.html",
+      "content": "A Smiles está com uma nova promoção de transferência de pontos Esfera com bônus de até 70%. Usando a opção de pontos + dinheiro no carrinho da Esfera, é possível comprar 1.000 milhas a partir de R$ 15,58, um dos melhores custos do ano. Para participar, acesse a página da promoção (https://www.smiles.com.br/promocao-esfera) e transfira até 31/07.",
+      "pub_date": "Sat, 11 Jul 2026 12:00:00 +0000"
+    },
+    "json_extraido": {
+      "is_promo": true,
+      "category": "transfer",
+      "source_program": "Esfera",
+      "target_program": "Smiles",
+      "title": "Transfira Esfera para Smiles com até 70% de bônus",
+      "bonus_value": "até 70%",
+      "bonus_numeric": 70,
+      "tiers": null,
+      "valid_from": null,
+      "valid_until": "2026-07-31",
+      "details": "Transferência de pontos Esfera para Smiles com bônus de até 70%. Com a opção pontos + dinheiro no carrinho da Esfera, 1.000 milhas saem a partir de R$ 15,58.",
+      "cta_url": "https://www.smiles.com.br/promocao-esfera",
+      "milheiro_cost": 15.58,
+      "milheiro_note": "Comprando pontos com a opção pontos + dinheiro no carrinho da Esfera e transferindo com até 70% de bônus",
+      "confidence": 0.9
     }
   }
 ]
