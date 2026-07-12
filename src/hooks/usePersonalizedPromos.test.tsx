@@ -23,7 +23,7 @@ describe('usePersonalizedPromos', () => {
 
   it('cruza promos com a carteira e calcula o resultado', () => {
     mocks.useBonusPromotions.mockReturnValue({
-      promotions: [promo({ id: 'a', sourceProgram: 'Livelo', bonusNumeric: 100 })],
+      promotions: [promo({ id: 'a', sourceProgramId: 'livelo', bonusNumeric: 100 })],
       loading: false, error: null,
     })
     mocks.useProgramasCliente.mockReturnValue({

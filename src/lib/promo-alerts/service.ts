@@ -50,6 +50,7 @@ export function mapPromoAlertRow(row: Record<string, unknown>): BonusPromotion |
         : undefined,
     participatingBanks: category === 'transfer' && sourceProgram ? [sourceProgram] : undefined,
     sourceProgram: sourceProgram || undefined,
+    sourceProgramId: typeof row.source_program_id === 'string' ? row.source_program_id : undefined,
     bonusNumeric:
       row.bonus_numeric != null && Number.isFinite(Number(row.bonus_numeric))
         ? Number(row.bonus_numeric)
@@ -91,7 +92,7 @@ export async function getActivePromoAlerts(
     const { data, error } = await supabase
       .from('promo_alerts')
       .select(
-        'id, category, source_program, target_program, title, bonus_value, bonus_numeric, tiers, valid_from, valid_until, details, cta_url, source_links, milheiro_cost, milheiro_note',
+        'id, category, source_program, source_program_id, target_program, title, bonus_value, bonus_numeric, tiers, valid_from, valid_until, details, cta_url, source_links, milheiro_cost, milheiro_note',
       )
       .order('bonus_numeric', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
