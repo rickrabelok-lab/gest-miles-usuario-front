@@ -1,0 +1,50 @@
+{
+  "name": "gm-promo-error-alert",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "gpe-trigger", "name": "gpe-trigger", "type": "n8n-nodes-base.errorTrigger", "typeVersion": 1, "position": [0, 300],
+      "notes": "Dispara quando um workflow que aponta pra este via settings.errorWorkflow falha. Campos: $json.workflow.name, $json.execution.lastNodeExecuted / .error.message / .id."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Monta o alerta a partir dos campos do errorTrigger (1 item por falha).\nconst wf = $json.workflow?.name || 'desconhecido'\nconst nd = $json.execution?.lastNodeExecuted || 'desconhecido'\nconst em = ($json.execution?.error?.message || 'sem mensagem').toString().slice(0, 400)\nconst ex = ($json.execution?.id || '').toString()\nconst lines = [\n  '🚨 *Falha no radar de promoções*',\n  'Workflow: ' + wf,\n  'Nó: ' + nd,\n  'Erro: ' + em,\n  'Execução: ' + ex,\n]\nreturn { json: { text: lines.join('\\n') } }"
+      },
+      "id": "gpe-msg", "name": "gpe-msg", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select grupo_interno_jid, instance from public.agent_tenants where id = 3;",
+        "options": {}
+      },
+      "id": "gpe-tenant", "name": "gpe-tenant", "type": "n8n-nodes-base.postgres", "typeVersion": 2.4, "position": [440, 300],
+      "credentials": { "postgres": { "id": "Ucn1qbvcmYC4XHpa", "name": "CRED_POSTGRES_AGENTE" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $json.instance }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.grupo_interno_jid }}" },
+            { "name": "text", "value": "={{ $('gpe-msg').first().json.text }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "gpe-notify", "name": "gpe-notify", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [660, 300],
+      "credentials": { "httpHeaderAuth": { "id": "qzR4JN04NUY3GPeQ", "name": "CRED_EVOLUTION_HEADER" } }
+    }
+  ],
+  "connections": {
+    "gpe-trigger": { "main": [[{ "node": "gpe-msg", "type": "main", "index": 0 }]] },
+    "gpe-msg": { "main": [[{ "node": "gpe-tenant", "type": "main", "index": 0 }]] },
+    "gpe-tenant": { "main": [[{ "node": "gpe-notify", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Sao_Paulo" }
+}

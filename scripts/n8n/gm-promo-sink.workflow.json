@@ -1,0 +1,99 @@
+{
+  "name": "gm-promo-sink",
+  "nodes": [
+    {
+      "parameters": { "inputSource": "passthrough" },
+      "id": "gps-in", "name": "gps-in", "type": "n8n-nodes-base.executeWorkflowTrigger", "typeVersion": 1.1, "position": [0, 300],
+      "notes": "Entrada passthrough: recebe o item parseado do produtor como $json inteiro (sem mapper). Os 6 nós seguintes leem $json.category, $json.tiers, etc. direto."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "leftValue": "={{ $json.is_promo }}", "rightValue": "", "operator": { "type": "boolean", "operation": "true", "singleValue": true } },
+            { "leftValue": "={{ $json.confidence ?? 0 }}", "rightValue": 0.5, "operator": { "type": "number", "operation": "gte" } },
+            { "leftValue": "={{ !$json.valid_until || $json.valid_until >= $now.toFormat('yyyy-MM-dd') }}", "rightValue": "", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "gps-is-promo", "name": "gps-is-promo", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "insert into public.promo_alerts\n  (category, source_program, target_program, title, bonus_value, bonus_numeric,\n   tiers, valid_from, valid_until, details, cta_url, milheiro_cost, milheiro_note,\n   source_links, canonical_key, confidence, raw)\nvalues\n  ($1, $2, $3, $4, $5, $6, $7::jsonb, nullif($8,'')::date, nullif($9,'')::date, $10, $11,\n   $12::numeric, $13,\n   jsonb_build_array(jsonb_build_object('name', $14::text, 'url', $15::text)), $16, $17, $18::jsonb)\non conflict (canonical_key) do update set\n  source_links = (\n    select jsonb_agg(distinct e) from jsonb_array_elements(\n      promo_alerts.source_links || excluded.source_links\n    ) as e\n  ),\n  updated_at = now()\nreturning id, status, (xmax = 0) as is_new;",
+        "options": {
+          "queryReplacement": "={{ [$json.category, $json.source_program, $json.target_program, $json.title, $json.bonus_value, $json.bonus_numeric, JSON.stringify($json.tiers ?? null), $json.valid_from || '', $json.valid_until || '', $json.details ?? null, $json.cta_url ?? null, $json.milheiro_cost ?? null, $json.milheiro_note ?? null, $json.source_name, $json.source_url, $json.canonical_key, $json.confidence, JSON.stringify($json)] }}"
+        }
+      },
+      "id": "gps-upsert", "name": "gps-upsert", "type": "n8n-nodes-base.postgres", "typeVersion": 2.4, "position": [660, 220],
+      "credentials": { "postgres": { "id": "Ucn1qbvcmYC4XHpa", "name": "CRED_POSTGRES_AGENTE" } },
+      "notes": "queryReplacement defensivo: RSS preenche tiers/valid_from/details/cta_url/milheiro_*; Esfera omite -> null/''. SQL idêntico ao dos 2 produtores. ⚠️ Esfera confia na AUSÊNCIA dessas chaves (o prompt teaser não as emite); se o prompt da Esfera passar a emiti-las, serão persistidas (o path antigo forçava null explicitamente)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "leftValue": "={{ $json.is_new }}", "rightValue": "", "operator": { "type": "boolean", "operation": "true", "singleValue": true } },
+            { "leftValue": "={{ $json.status }}", "rightValue": "pending", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "gps-only-new", "name": "gps-only-new", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [880, 220]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select grupo_interno_jid, instance, $1::text as promo_id from public.agent_tenants where id = 3;",
+        "options": { "queryReplacement": "={{ [$json.id] }}" }
+      },
+      "id": "gps-tenant", "name": "gps-tenant", "type": "n8n-nodes-base.postgres", "typeVersion": 2.4, "position": [1100, 140],
+      "credentials": { "postgres": { "id": "Ucn1qbvcmYC4XHpa", "name": "CRED_POSTGRES_AGENTE" } },
+      "notes": "$1 carrega só o id (uuid) da promo — texto rico (a mensagem) NÃO é confiável nos params deste node Postgres (quebrou com '*'). A mensagem é montada depois no gps-message (BFF)."
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://gest-miles-usuario-front-slzj.vercel.app/api/agent/promo-message/{{ $json.promo_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "gps-message", "name": "gps-message", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1320, 140],
+      "credentials": { "httpHeaderAuth": { "id": "8JJba9f768EANZ33", "name": "CRED_RESUMO_APIKEY" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $('gps-tenant').item.json.instance }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $('gps-tenant').item.json.grupo_interno_jid }}" },
+            { "name": "text", "value": "={{ $json.message }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "gps-notify", "name": "gps-notify", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1540, 140],
+      "credentials": { "httpHeaderAuth": { "id": "qzR4JN04NUY3GPeQ", "name": "CRED_EVOLUTION_HEADER" } }
+    }
+  ],
+  "connections": {
+    "gps-in": { "main": [[{ "node": "gps-is-promo", "type": "main", "index": 0 }]] },
+    "gps-is-promo": { "main": [[{ "node": "gps-upsert", "type": "main", "index": 0 }], []] },
+    "gps-upsert": { "main": [[{ "node": "gps-only-new", "type": "main", "index": 0 }]] },
+    "gps-only-new": { "main": [[{ "node": "gps-tenant", "type": "main", "index": 0 }], []] },
+    "gps-tenant": { "main": [[{ "node": "gps-message", "type": "main", "index": 0 }]] },
+    "gps-message": { "main": [[{ "node": "gps-notify", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Sao_Paulo", "errorWorkflow": "pHo9Ic6AMY0YpXEn" }
+}
