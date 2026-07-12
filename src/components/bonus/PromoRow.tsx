@@ -7,7 +7,7 @@ import { BonusProgramLogo } from '@/components/bonus/BonusProgramLogo'
 
 export function PromoRow({ promo }: { promo: BonusPromotion }) {
   const navigate = useNavigate()
-  const badge = bonusBadge(promo.bonusValue)
+  const badge = bonusBadge(promo.bonusValue, promo.milheiroCost)
   const expiry = formatExpiryShort(promo.expiresAt)
   const expiringToday = isExpiringToday(promo.expiresAt)
   const cat = CATEGORY_CONFIG[promo.category]

@@ -13,7 +13,7 @@ export default function BonusPromotionsSection() {
   if (loading || promotions.length === 0) return null
 
   const quickList = promotions.filter(p => !p.isHighlight).slice(0, 3)
-  const highlightBadge = highlight ? bonusBadge(highlight.bonusValue) : null
+  const highlightBadge = highlight ? bonusBadge(highlight.bonusValue, highlight.milheiroCost) : null
   const highlightExpiry = highlight ? formatExpiryShort(highlight.expiresAt) : null
 
   return (
