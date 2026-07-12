@@ -102,6 +102,17 @@ describe('mapPromoAlertRow', () => {
     expect(promo?.sourceProgram).toBeUndefined()
     expect(promo?.bonusNumeric).toBeUndefined()
   })
+
+  it('bonus_numeric null vira undefined (não 0)', () => {
+    const promo = mapPromoAlertRow({
+      id: 'p3',
+      category: 'transfer',
+      source_program: 'Livelo',
+      title: 'Livelo -> Smiles',
+      bonus_numeric: null,
+    })
+    expect(promo?.bonusNumeric).toBeUndefined()
+  })
 })
 
 describe('isCurrentPromo', () => {
