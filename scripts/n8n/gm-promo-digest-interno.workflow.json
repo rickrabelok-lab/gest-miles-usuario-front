@@ -1,0 +1,84 @@
+{
+  "name": "gm-promo-digest-interno",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 9 * * *" }
+          ]
+        }
+      },
+      "id": "gmpd-cron",
+      "name": "gmpd-cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Digest interno (PROVADO contra prod): transfers aprovadas nas últimas 24h x carteiras (saldo>0)\n-- da equipe do tenant, respeitando opt-out. Sem exigir grupo (é a rede pros sem-grupo).\nselect pc.cliente_id,\n       coalesce(pf.nome, pf.nome_completo, 'Cliente') as cliente_nome,\n       pc.saldo::bigint as saldo,\n       p.source_program as origem,\n       p.target_program as destino,\n       p.bonus_numeric,\n       round(pc.saldo * (1 + p.bonus_numeric / 100.0))::bigint as resultado,\n       t.grupo_interno_jid, t.instance\nfrom public.agent_tenants t\njoin public.perfis pf on pf.equipe_id = t.equipe_id\njoin public.programas_cliente pc on pc.cliente_id = pf.usuario_id and pc.saldo > 0\njoin public.promo_alerts p on p.category = 'transfer' and p.status = 'approved'\n   and p.bonus_numeric is not null\n   and p.moderated_at >= now() - interval '24 hours'\n   and (p.valid_until is null or p.valid_until >= current_date)\njoin public.program_aliases al on al.alias_norm = public.promo_norm(p.source_program) and al.program_id = pc.program_id\nwhere t.ativo and t.grupo_interno_jid is not null\n  and not exists (select 1 from public.agent_preferencias ap\n                  where ap.cliente_id = pc.cliente_id and ap.chave = 'promo_optout' and ap.valor = 'true')\norder by t.grupo_interno_jid, resultado desc;",
+        "options": {}
+      },
+      "id": "gmpd-cross",
+      "name": "gmpd-cross",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [220, 300],
+      "credentials": {
+        "postgres": {
+          "id": "Ucn1qbvcmYC4XHpa",
+          "name": "CRED_POSTGRES_AGENTE"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Agrupa por grupo interno -> 1 mensagem/grupo. Sem matches => sem output (noop).\nconst items = $input.all().map((i) => i.json)\nif (items.length === 0) return []\nconst fmt = (n) => Number(n).toLocaleString('pt-BR')\nconst byGroup = {}\nfor (const j of items) {\n  const key = j.grupo_interno_jid\n  if (!byGroup[key]) byGroup[key] = { grupo_interno_jid: key, instance: j.instance, linhas: [] }\n  byGroup[key].linhas.push(\n    `\\u2022 ${j.cliente_nome} \\u2014 ${fmt(j.saldo)} ${j.origem} \\u2192 ~${fmt(j.resultado)} ${j.destino} (${fmt(j.bonus_numeric)}%)`\n  )\n}\nreturn Object.values(byGroup).map((g) => ({\n  json: {\n    grupo_interno_jid: g.grupo_interno_jid,\n    instance: g.instance,\n    mensagem: `*\\ud83d\\udcca Promoções que batem com carteiras (24h)*\\n\\n` + g.linhas.join('\\n'),\n  },\n}))"
+      },
+      "id": "gmpd-msg",
+      "name": "gmpd-msg",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $json.instance }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.grupo_interno_jid }}" },
+            { "name": "text", "value": "={{ $json.mensagem }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "gmpd-send",
+      "name": "gmpd-send",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "qzR4JN04NUY3GPeQ",
+          "name": "CRED_EVOLUTION_HEADER"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "gmpd-cron": { "main": [[{ "node": "gmpd-cross", "type": "main", "index": 0 }]] },
+    "gmpd-cross": { "main": [[{ "node": "gmpd-msg", "type": "main", "index": 0 }]] },
+    "gmpd-msg": { "main": [[{ "node": "gmpd-send", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo"
+  }
+}

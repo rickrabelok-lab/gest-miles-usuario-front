@@ -1,0 +1,114 @@
+{
+  "name": "gm-promo-personalizado",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gm-promo-personalizado",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "gmpp-webhook",
+      "name": "gmpp-webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "UVpToOY4nD0w32BK",
+          "name": "CRED_PROMO_WEBHOOK"
+        }
+      },
+      "webhookId": "gm-promo-personalizado"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Cross direto (PROVADO contra prod 2026-07-12): promo x carteiras com grupo, saldo>0,\n-- respeita opt-out e anti-join do ledger. $1 = promo_id do webhook.\nwith promo as (\n  select id, source_program, target_program, bonus_numeric\n  from public.promo_alerts\n  where id = $1 and category = 'transfer' and status = 'approved'\n    and (valid_until is null or valid_until >= current_date)\n    and bonus_numeric is not null\n)\nselect pc.cliente_id,\n       g.grupo_jid,\n       t.instance,\n       coalesce(v.nome_exibicao, pf.nome, pf.nome_completo, 'você') as cliente_nome,\n       pc.saldo::bigint as saldo,\n       p.source_program as origem,\n       p.target_program as destino,\n       p.bonus_numeric,\n       round(pc.saldo * (1 + p.bonus_numeric / 100.0))::bigint as resultado,\n       p.id as promo_id\nfrom promo p\njoin public.program_aliases al on al.alias_norm = public.promo_norm(p.source_program)\njoin public.programas_cliente pc on pc.program_id = al.program_id and pc.saldo > 0\njoin public.agent_vinculos v on v.cliente_id = pc.cliente_id and v.ativo\njoin public.agent_grupos g on g.id = v.grupo_id and g.ativo\njoin public.agent_tenants t on t.id = g.tenant_id and t.ativo\nleft join public.perfis pf on pf.usuario_id = pc.cliente_id\nwhere not exists (select 1 from public.agent_preferencias ap\n                  where ap.cliente_id = pc.cliente_id and ap.chave = 'promo_optout' and ap.valor = 'true')\n  and not exists (select 1 from public.promo_alert_envios e\n                  where e.promo_id = p.id and e.cliente_id = pc.cliente_id and e.canal = 'whatsapp_direto');",
+        "options": {
+          "queryReplacement": "={{ [$json.body.promo_id] }}"
+        }
+      },
+      "id": "gmpp-cross",
+      "name": "gmpp-cross",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [220, 300],
+      "credentials": {
+        "postgres": {
+          "id": "Ucn1qbvcmYC4XHpa",
+          "name": "CRED_POSTGRES_AGENTE"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Mensagem direta do cliente (pt-BR). Números via toLocaleString('pt-BR').\nconst j = $json\nconst fmt = (n) => Number(n).toLocaleString('pt-BR')\nconst mensagem =\n  `🎯 *Oportunidade pra você!*\\n\\n` +\n  `Você tem *${fmt(j.saldo)} ${j.origem}* e saiu *${fmt(j.bonus_numeric)}% de bônus* pra *${j.destino}* — daria *~${fmt(j.resultado)} ${j.destino}*.\\n\\n` +\n  `Confira as regras no site do programa antes de transferir.`\nreturn { json: { ...j, mensagem } }"
+      },
+      "id": "gmpp-msg",
+      "name": "gmpp-msg",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolution.gestmiles.com.br/message/sendText/{{ $json.instance }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "number", "value": "={{ $json.grupo_jid }}" },
+            { "name": "text", "value": "={{ $json.mensagem }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "gmpp-send",
+      "name": "gmpp-send",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "qzR4JN04NUY3GPeQ",
+          "name": "CRED_EVOLUTION_HEADER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Idempotência: grava só APÓS o send OK. $('gmpp-cross').item atravessa só Code+httpRequest 1:1 (seguro).\ninsert into public.promo_alert_envios (promo_id, cliente_id, canal)\nvalues ($1, $2, 'whatsapp_direto')\non conflict do nothing;",
+        "options": {
+          "queryReplacement": "={{ [$('gmpp-cross').item.json.promo_id, $('gmpp-cross').item.json.cliente_id] }}"
+        }
+      },
+      "id": "gmpp-ledger",
+      "name": "gmpp-ledger",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [880, 300],
+      "credentials": {
+        "postgres": {
+          "id": "Ucn1qbvcmYC4XHpa",
+          "name": "CRED_POSTGRES_AGENTE"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "gmpp-webhook": { "main": [[{ "node": "gmpp-cross", "type": "main", "index": 0 }]] },
+    "gmpp-cross": { "main": [[{ "node": "gmpp-msg", "type": "main", "index": 0 }]] },
+    "gmpp-msg": { "main": [[{ "node": "gmpp-send", "type": "main", "index": 0 }]] },
+    "gmpp-send": { "main": [[{ "node": "gmpp-ledger", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo"
+  }
+}
