@@ -31,7 +31,7 @@
       },
       "id": "gps-upsert", "name": "gps-upsert", "type": "n8n-nodes-base.postgres", "typeVersion": 2.4, "position": [660, 220],
       "credentials": { "postgres": { "id": "Ucn1qbvcmYC4XHpa", "name": "CRED_POSTGRES_AGENTE" } },
-      "notes": "queryReplacement defensivo: RSS preenche tiers/valid_from/details/cta_url/milheiro_*; Esfera omite -> null/''. SQL idêntico ao dos 2 produtores."
+      "notes": "queryReplacement defensivo: RSS preenche tiers/valid_from/details/cta_url/milheiro_*; Esfera omite -> null/''. SQL idêntico ao dos 2 produtores. ⚠️ Esfera confia na AUSÊNCIA dessas chaves (o prompt teaser não as emite); se o prompt da Esfera passar a emiti-las, serão persistidas (o path antigo forçava null explicitamente)."
     },
     {
       "parameters": {
@@ -54,7 +54,8 @@
         "options": { "queryReplacement": "={{ [$json.id] }}" }
       },
       "id": "gps-tenant", "name": "gps-tenant", "type": "n8n-nodes-base.postgres", "typeVersion": 2.4, "position": [1100, 140],
-      "credentials": { "postgres": { "id": "Ucn1qbvcmYC4XHpa", "name": "CRED_POSTGRES_AGENTE" } }
+      "credentials": { "postgres": { "id": "Ucn1qbvcmYC4XHpa", "name": "CRED_POSTGRES_AGENTE" } },
+      "notes": "$1 carrega só o id (uuid) da promo — texto rico (a mensagem) NÃO é confiável nos params deste node Postgres (quebrou com '*'). A mensagem é montada depois no gps-message (BFF)."
     },
     {
       "parameters": {

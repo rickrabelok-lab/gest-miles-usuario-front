@@ -77,7 +77,7 @@ A saída dos nós `*-parse` (RSS) / `*-parse-json` (Esfera) — que já existe h
 
 ### Mudança nos produtores
 
-- **`gm-promo-esfera`:** apaga `gme-is-promo, gme-upsert, gme-only-new, gme-tenant, gme-message, gme-notify`; adiciona `gme-sink` (`executeWorkflow`, `source=database`, `workflowId=<id do sink>`, modo run-once-for-all-items). Conexão: `gme-parse-json → gme-sink`.
+- **`gm-promo-esfera`:** apaga `gme-is-promo, gme-upsert, gme-only-new, gme-tenant, gme-message, gme-notify`; adiciona `gme-sink` (`executeWorkflow`, `source=database`, `workflowId=<id do sink>`, sem `mode` explícito — usa o default; **passthrough**, sem `workflowInputs`). Conexão: `gme-parse-json → gme-sink`.
 - **`gm-promo-ingest`:** apaga `gmpi-is-promo … gmpi-notify`; adiciona `gmpi-sink`. Conexão: `gmpi-parse → gmpi-sink`.
 
 ---

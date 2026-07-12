@@ -4,7 +4,7 @@
 
 **Goal:** Extrair o downstream duplicado (is-promo → upsert → only-new → tenant → message → notify) dos 2 produtores de card (`gm-promo-ingest` RSS e `gm-promo-esfera`) num único sub-workflow n8n `gm-promo-sink`, invocado por ambos via Execute Sub-workflow.
 
-**Architecture:** `gm-promo-sink` recebe o item parseado via um input `payload` (string JSON), desembrulha com `JSON.parse`, e roda os 6 nós hoje duplicados (byte-idênticos, com um `queryReplacement` defensivo no upsert que serve RSS-cheio e Esfera-null). Cada produtor troca seus 6 nós por 1 nó `executeWorkflow` que passa `payload = JSON.stringify($json)`. Rollout em ordem estrita sobre pipelines VIVOS: sink inativo → smoke isolado → troca Esfera → troca RSS → commit.
+**Architecture:** `gm-promo-sink` recebe o item parseado inteiro via trigger **passthrough** (o sub lê `$json.category` etc. direto) e roda os 6 nós hoje duplicados (byte-idênticos, com um `queryReplacement` defensivo no upsert que serve RSS-cheio e Esfera-null). Cada produtor troca seus 6 nós por 1 nó `executeWorkflow` (sem `workflowInputs`) que passa o item adiante. Rollout em ordem estrita sobre pipelines VIVOS: sink ativo (publicado) → smoke isolado → troca Esfera → troca RSS → commit. **NOTA (corrigido no smoke):** o design inicial usava um input `payload` string + `JSON.parse` num nó `gps-unwrap`, mas o resource-mapper do n8n entregava null — o que vale é o passthrough abaixo.
 
 **Tech Stack:** n8n (self-hosted, atrás de Cloudflare), Postgres (Supabase compartilhado), Evolution API (WhatsApp), BFF Express. Push via `scripts/n8n/push-workflow.mjs`.
 
@@ -40,7 +40,7 @@
 - Create: `scripts/n8n/gm-promo-sink.workflow.json`
 
 **Interfaces:**
-- Consumes: item com um campo `payload` (string) = `JSON.stringify(<saída do nó parse do produtor>)`.
+- Consumes: o item parseado do produtor inteiro (passthrough) — o sub lê `$json.category`, `$json.tiers`, etc.
 - Produces: o workflow id `<SINK_ID>` (impresso pelo push), consumido pelas Tasks 3 e 4.
 
 - [ ] **Step 1: Criar o arquivo do sink**
@@ -52,16 +52,9 @@ Create `scripts/n8n/gm-promo-sink.workflow.json`:
   "name": "gm-promo-sink",
   "nodes": [
     {
-      "parameters": { "workflowInputs": { "values": [ { "name": "payload" } ] } },
+      "parameters": { "inputSource": "passthrough" },
       "id": "gps-in", "name": "gps-in", "type": "n8n-nodes-base.executeWorkflowTrigger", "typeVersion": 1.1, "position": [0, 300],
-      "notes": "Entrada única: payload (string JSON = saída do nó parse do produtor). Passthrough não existe nesta instância; por isso 1 campo string + JSON.parse no gps-unwrap."
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "// Desembrulha o item do produtor. Depois deste nó, os 6 nós seguintes são\n// byte-idênticos aos de hoje (leem $json.category, $json.tiers, etc.).\nreturn { json: JSON.parse($json.payload) }"
-      },
-      "id": "gps-unwrap", "name": "gps-unwrap", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [220, 300]
+      "notes": "Entrada passthrough: recebe o item parseado do produtor como $json inteiro (sem mapper). Os 6 nós seguintes leem $json.category, $json.tiers, etc. direto."
     },
     {
       "parameters": {
@@ -144,8 +137,7 @@ Create `scripts/n8n/gm-promo-sink.workflow.json`:
     }
   ],
   "connections": {
-    "gps-in": { "main": [[{ "node": "gps-unwrap", "type": "main", "index": 0 }]] },
-    "gps-unwrap": { "main": [[{ "node": "gps-is-promo", "type": "main", "index": 0 }]] },
+    "gps-in": { "main": [[{ "node": "gps-is-promo", "type": "main", "index": 0 }]] },
     "gps-is-promo": { "main": [[{ "node": "gps-upsert", "type": "main", "index": 0 }], []] },
     "gps-upsert": { "main": [[{ "node": "gps-only-new", "type": "main", "index": 0 }]] },
     "gps-only-new": { "main": [[{ "node": "gps-tenant", "type": "main", "index": 0 }], []] },
@@ -161,7 +153,7 @@ Create `scripts/n8n/gm-promo-sink.workflow.json`:
 Run: `node scripts/n8n/push-workflow.mjs scripts/n8n/gm-promo-sink.workflow.json`
 Expected: `ok: workflow <SINK_ID> (gm-promo-sink)`. Anotar `<SINK_ID>`.
 
-- [ ] **Step 3: Round-trip — confirmar que os 8 nós importaram sem nó desconhecido**
+- [ ] **Step 3: Round-trip — confirmar que os 7 nós importaram sem nó desconhecido**
 
 Run:
 ```bash
@@ -175,7 +167,7 @@ fetch(N8N_URL.replace(/\/\$/,'')+'/api/v1/workflows/<SINK_ID>', { headers:H }).t
 });
 "
 ```
-Expected: `active: false | nodes: 8`; a lista contém `gps-in (executeWorkflowTrigger v1.1)`, `gps-unwrap`, `gps-is-promo`, `gps-upsert`, `gps-only-new`, `gps-tenant`, `gps-message`, `gps-notify`. Nenhum tipo aparece como `n8n-nodes-base.noOp`/desconhecido.
+Expected: `nodes: 7`; a lista contém `gps-in (executeWorkflowTrigger v1.1, inputSource passthrough)`, `gps-is-promo`, `gps-upsert`, `gps-only-new`, `gps-tenant`, `gps-message`, `gps-notify`. Nenhum tipo aparece como `n8n-nodes-base.noOp`/desconhecido. (⚠️ o sink DEVE ficar ativo/publicado — ver Global Constraints — então após o create, ativar via `POST /activate`.)
 
 - [ ] **Step 4: Confirmar que está inativo (não dispara sozinho)**
 
@@ -231,7 +223,6 @@ Create `scripts/n8n/_tmp-sink-smoke.workflow.json`:
       "parameters": {
         "source": "database",
         "workflowId": { "__rl": true, "value": "<SINK_ID>", "mode": "list", "cachedResultName": "gm-promo-sink" },
-        "workflowInputs": { "mappingMode": "defineBelow", "value": { "payload": "={{ JSON.stringify($json) }}" }, "matchingColumns": [], "schema": [] },
         "options": { "waitForSubWorkflow": true }
       },
       "id": "t-sink", "name": "t-sink", "type": "n8n-nodes-base.executeWorkflow", "typeVersion": 1.1, "position": [440, 300]
@@ -559,5 +550,5 @@ gh pr create --title "refactor(usuario): sub-workflow gm-promo-sink (DRY do down
 
 - **Cobertura do spec:** sink inativo (T1), smoke 2-formas+idempotência (T2), troca Esfera (T3), troca RSS (T4), commit+memória (T5). Todos os itens do spec têm task.
 - **Placeholders:** `<SINK_ID>`/`<TMP_ID>`/`<CLONE_ID>`/`<external_id>` são valores capturados em runtime (documentados no Global Constraints), não pendências. JSON completo inline.
-- **Consistência de tipos:** o contrato produtor→sink é `payload` (string) nos 3 lugares (gps-in input, t-sink/gme-sink/gmpi-sink `value.payload`); `gps-unwrap` faz `JSON.parse`; campos lidos batem com o `queryReplacement` defensivo. IDs de credencial idênticos em todos os nós.
+- **Consistência de tipos:** o contrato produtor→sink é **passthrough** (o item parseado inteiro; sem `workflowInputs` nos callers, `inputSource:"passthrough"` no `gps-in`); os campos lidos pelo `queryReplacement` defensivo batem com a saída dos nós parse. IDs de credencial idênticos em todos os nós. (O design `payload`+`gps-unwrap`+`JSON.stringify` foi abandonado no smoke: o resource-mapper entregava null.)
 ```
