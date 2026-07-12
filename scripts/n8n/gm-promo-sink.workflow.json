@@ -2,16 +2,9 @@
   "name": "gm-promo-sink",
   "nodes": [
     {
-      "parameters": { "workflowInputs": { "values": [ { "name": "payload" } ] } },
+      "parameters": { "inputSource": "passthrough" },
       "id": "gps-in", "name": "gps-in", "type": "n8n-nodes-base.executeWorkflowTrigger", "typeVersion": 1.1, "position": [0, 300],
-      "notes": "Entrada única: payload (string JSON = saída do nó parse do produtor). Passthrough não existe nesta instância; por isso 1 campo string + JSON.parse no gps-unwrap."
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "// Desembrulha o item do produtor. Depois deste nó, os 6 nós seguintes são\n// byte-idênticos aos de hoje (leem $json.category, $json.tiers, etc.).\nreturn { json: JSON.parse($json.payload) }"
-      },
-      "id": "gps-unwrap", "name": "gps-unwrap", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [220, 300]
+      "notes": "Entrada passthrough: recebe o item parseado do produtor como $json inteiro (sem mapper). Os 6 nós seguintes leem $json.category, $json.tiers, etc. direto."
     },
     {
       "parameters": {
@@ -94,8 +87,7 @@
     }
   ],
   "connections": {
-    "gps-in": { "main": [[{ "node": "gps-unwrap", "type": "main", "index": 0 }]] },
-    "gps-unwrap": { "main": [[{ "node": "gps-is-promo", "type": "main", "index": 0 }]] },
+    "gps-in": { "main": [[{ "node": "gps-is-promo", "type": "main", "index": 0 }]] },
     "gps-is-promo": { "main": [[{ "node": "gps-upsert", "type": "main", "index": 0 }], []] },
     "gps-upsert": { "main": [[{ "node": "gps-only-new", "type": "main", "index": 0 }]] },
     "gps-only-new": { "main": [[{ "node": "gps-tenant", "type": "main", "index": 0 }], []] },
