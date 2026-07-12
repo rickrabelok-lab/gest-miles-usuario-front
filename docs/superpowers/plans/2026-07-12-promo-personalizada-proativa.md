@@ -169,14 +169,19 @@ git commit -m "feat(usuario): migration da promoção personalizada proativa (al
 2. **Postgres `gmpp-cross`** (`queryReplacement` = `={{ [$json.body.promo_id] }}`): o cross direto —
 
 ```sql
+-- ✅ PROVADO contra prod (2026-07-12, cenário sintético isolado): retorna cliente+grupo+instance,
+-- calcula resultado, respeita opt-out e o anti-join do ledger. Rick (847 Livelo real) e a conta de
+-- teste (82k) casaram; opt-out removeu a conta de teste.
 with promo as (
-  select id, source_program, target_program, bonus_numeric, valid_until
+  select id, source_program, target_program, bonus_numeric
   from promo_alerts
   where id = $1 and category = 'transfer' and status = 'approved'
     and (valid_until is null or valid_until >= current_date)
+    and bonus_numeric is not null
 )
 select pc.cliente_id,
        g.grupo_jid,
+       t.instance,
        coalesce(v.nome_exibicao, pf.nome, pf.nome_completo, 'você') as cliente_nome,
        pc.saldo::bigint as saldo,
        p.source_program as origem,
@@ -189,9 +194,9 @@ join program_aliases al on al.alias_norm = promo_norm(p.source_program)
 join programas_cliente pc on pc.program_id = al.program_id and pc.saldo > 0
 join agent_vinculos v on v.cliente_id = pc.cliente_id and v.ativo
 join agent_grupos g on g.id = v.grupo_id and g.ativo
+join agent_tenants t on t.id = g.tenant_id and t.ativo
 left join perfis pf on pf.usuario_id = pc.cliente_id
-where p.bonus_numeric is not null
-  and not exists (select 1 from agent_preferencias ap
+where not exists (select 1 from agent_preferencias ap
                   where ap.cliente_id = pc.cliente_id and ap.chave = 'promo_optout' and ap.valor = 'true')
   and not exists (select 1 from promo_alert_envios e
                   where e.promo_id = p.id and e.cliente_id = pc.cliente_id and e.canal = 'whatsapp_direto');
@@ -223,6 +228,8 @@ where p.bonus_numeric is not null
 2. **Postgres `gmpd-cross`** (por tenant ativo; para o piloto, tenant id 3):
 
 ```sql
+-- ✅ PROVADO contra prod (2026-07-12): 56 matches reais na equipe do tenant piloto pra 1 Livelo->Smiles
+-- 100% (ordenados por resultado desc). Equipe join + alias + saldo>0 + opt-out OK.
 select pc.cliente_id,
        coalesce(pf.nome, pf.nome_completo, 'Cliente') as cliente_nome,
        pc.saldo::bigint as saldo,
@@ -230,7 +237,7 @@ select pc.cliente_id,
        p.target_program as destino,
        p.bonus_numeric,
        round(pc.saldo * (1 + p.bonus_numeric / 100.0))::bigint as resultado,
-       t.grupo_interno_jid
+       t.grupo_interno_jid, t.instance
 from agent_tenants t
 join perfis pf on pf.equipe_id = t.equipe_id
 join programas_cliente pc on pc.cliente_id = pf.usuario_id and pc.saldo > 0
@@ -244,6 +251,8 @@ where t.ativo and t.grupo_interno_jid is not null
                   where ap.cliente_id = pc.cliente_id and ap.chave = 'promo_optout' and ap.valor = 'true')
 order by t.grupo_interno_jid, resultado desc;
 ```
+
+> ⚠️ **Digest longo:** 1 promo Livelo→Smiles casou **56 clientes** no piloto (owner OK'ou sem teto). O Code node `gmpd-msg` deve aguentar dezenas de linhas por grupo. Se ficar grande demais na prática, o teto vira follow-up.
 
 3. **Code `gmpd-msg`** (`runOnceForAllItems`): agrupa por `grupo_interno_jid`; monta 1 mensagem por grupo —
    cabeçalho `*📊 Promoções que batem com carteiras (24h)*` + linhas `• {cliente_nome} — {saldo} {origem} → ~{resultado} {destino} ({bonus}%)` (pt-BR). Sem itens → sem output (noop, não manda vazio).
