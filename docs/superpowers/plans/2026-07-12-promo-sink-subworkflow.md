@@ -10,7 +10,9 @@
 
 ## Global Constraints
 
-- **Schema n8n desta instância (provado nos `[RRV] sub_*`):** `executeWorkflowTrigger` **typeVersion 1.1** com `parameters.workflowInputs.values`; `executeWorkflow` **typeVersion 1.1** com `source:"database"`, `workflowId.__rl` (mode `list` + `cachedResultName`), `workflowInputs.mappingMode:"defineBelow"`, `options.waitForSubWorkflow:true`.
+- **Schema n8n desta instância (CORRIGIDO no smoke da Task 2):** o trigger do sink usa `executeWorkflowTrigger` **typeVersion 1.1** com `parameters.inputSource:"passthrough"` (o sub recebe o item parseado inteiro como `$json`). O caller usa `executeWorkflow` **typeVersion 1.1** com `source:"database"`, `workflowId.__rl` (mode `list` + `cachedResultName`), `options.waitForSubWorkflow:true`, **e SEM `workflowInputs`** (passthrough não mapeia campos). ⚠️ O resource-mapper `workflowInputs.mappingMode:"defineBelow"` entrega **null** nesta instância mesmo com ref simples (`$json.title`) — NÃO usar.
+- **O sink DEVE ficar ATIVO (published):** esta instância recusa ativar um workflow que referencia um sub-workflow não publicado (`Cannot publish workflow: Node references workflow which is not published`). O sink só tem `executeWorkflowTrigger` (sem cron/webhook próprio) → ativo ≠ roda sozinho; só o torna chamável.
+- **PUT (push de update) DESATIVA o workflow:** após CADA `push-workflow.mjs <arquivo> <id>`, o workflow volta a `active:false`. Nos produtores VIVOS (Task 3/4) isso derruba o pipeline até re-ativar → **re-ativar imediatamente** via `POST /api/v1/workflows/<id>/activate` (gap de ≤1 ciclo de cron, inofensivo). Sempre confirmar `active:true` no round-trip.
 - **Credenciais SEMPRE por id, nunca plaintext no JSON:** `CRED_POSTGRES_AGENTE`=`Ucn1qbvcmYC4XHpa`, `CRED_RESUMO_APIKEY`=`8JJba9f768EANZ33`, `CRED_EVOLUTION_HEADER`=`qzR4JN04NUY3GPeQ`.
 - **API do n8n exige User-Agent de browser** (Cloudflare 1010) — o `push-workflow.mjs` já embute; qualquer fetch manual idem.
 - **API pública do n8n NÃO executa workflow** — testar via clone com trigger Webhook: push → `POST /api/v1/workflows/<id>/activate` → chamar `${N8N_URL}/webhook/<path>` → ler `GET /api/v1/executions?workflowId=<id>&includeData=true` → `DELETE /api/v1/workflows/<id>`.
@@ -354,17 +356,16 @@ rm scripts/n8n/_tmp-sink-smoke.workflow.json
 Em `scripts/n8n/gm-promo-esfera.workflow.json`:
 
 1. **Remover do array `nodes`** os objetos: `gme-is-promo`, `gme-upsert`, `gme-only-new`, `gme-tenant`, `gme-message`, `gme-notify`.
-2. **Adicionar ao array `nodes`** (posição à direita do `gme-parse-json` [1100,300]):
+2. **Adicionar ao array `nodes`** (posição à direita do `gme-parse-json` [1100,300]) — PASSTHROUGH, sem `workflowInputs`:
 ```json
 {
   "parameters": {
     "source": "database",
-    "workflowId": { "__rl": true, "value": "<SINK_ID>", "mode": "list", "cachedResultName": "gm-promo-sink" },
-    "workflowInputs": { "mappingMode": "defineBelow", "value": { "payload": "={{ JSON.stringify($json) }}" }, "matchingColumns": [], "schema": [] },
+    "workflowId": { "__rl": true, "value": "PR1iXHITz9GcjsYN", "mode": "list", "cachedResultName": "gm-promo-sink" },
     "options": { "waitForSubWorkflow": true }
   },
   "id": "gme-sink", "name": "gme-sink", "type": "n8n-nodes-base.executeWorkflow", "typeVersion": 1.1, "position": [1320, 300],
-  "notes": "Downstream (is-promo->notify) agora vive em gm-promo-sink. Entrega o item parseado como payload string."
+  "notes": "Downstream (is-promo->notify) vive em gm-promo-sink (passthrough). Passa o item parseado inteiro; o sink lê $json.category etc. direto."
 }
 ```
 3. **Em `connections`**, substituir o bloco `"gme-parse-json": { "main": [[{ "node": "gme-is-promo", ... }]] }` por:
@@ -381,10 +382,13 @@ node -e "const w=require('./scripts/n8n/gm-promo-esfera.workflow.json'); const n
 ```
 Expected: `deviam-sumir presentes: []`; `tem gme-sink: true`; `parse->` aponta pra `gme-sink`.
 
-- [ ] **Step 3: Publicar (update) o `gm-promo-esfera`**
+- [ ] **Step 3: Publicar (update) o `gm-promo-esfera` E RE-ATIVAR**
 
+⚠️ O PUT desativa o workflow — re-ativar na sequência (o sink já está ativo).
 Run: `node scripts/n8n/push-workflow.mjs scripts/n8n/gm-promo-esfera.workflow.json p2wC2fzENv1OpHau`
 Expected: `ok: workflow p2wC2fzENv1OpHau (gm-promo-esfera)`.
+Run (re-ativar): `POST /api/v1/workflows/p2wC2fzENv1OpHau/activate` (via node fetch com UA browser).
+Expected: status 200.
 
 - [ ] **Step 4: Round-trip — confirmar estrutura e que segue ativo**
 
@@ -454,17 +458,16 @@ git commit -m "refactor(usuario): gm-promo-esfera usa gm-promo-sink (remove down
 Em `scripts/n8n/gm-promo-ingest.workflow.json`:
 
 1. **Remover do array `nodes`** os objetos: `gmpi-is-promo`, `gmpi-upsert`, `gmpi-only-new`, `gmpi-tenant`, `gmpi-message`, `gmpi-notify`.
-2. **Adicionar ao array `nodes`** (à direita do `gmpi-parse` [1320,300]):
+2. **Adicionar ao array `nodes`** (à direita do `gmpi-parse` [1320,300]) — PASSTHROUGH, sem `workflowInputs`:
 ```json
 {
   "parameters": {
     "source": "database",
-    "workflowId": { "__rl": true, "value": "<SINK_ID>", "mode": "list", "cachedResultName": "gm-promo-sink" },
-    "workflowInputs": { "mappingMode": "defineBelow", "value": { "payload": "={{ JSON.stringify($json) }}" }, "matchingColumns": [], "schema": [] },
+    "workflowId": { "__rl": true, "value": "PR1iXHITz9GcjsYN", "mode": "list", "cachedResultName": "gm-promo-sink" },
     "options": { "waitForSubWorkflow": true }
   },
   "id": "gmpi-sink", "name": "gmpi-sink", "type": "n8n-nodes-base.executeWorkflow", "typeVersion": 1.1, "position": [1540, 300],
-  "notes": "Downstream (is-promo->notify) agora vive em gm-promo-sink. Entrega o item parseado como payload string."
+  "notes": "Downstream (is-promo->notify) vive em gm-promo-sink (passthrough). Passa o item parseado inteiro."
 }
 ```
 3. **Em `connections`**, substituir `"gmpi-parse": { "main": [[{ "node": "gmpi-is-promo", ... }]] }` por:
@@ -481,10 +484,13 @@ node -e "const w=require('./scripts/n8n/gm-promo-ingest.workflow.json'); const n
 ```
 Expected: `deviam-sumir presentes: []`; `tem gmpi-sink: true`; `parse->` aponta pra `gmpi-sink`.
 
-- [ ] **Step 3: Publicar (update) o `gm-promo-ingest`**
+- [ ] **Step 3: Publicar (update) o `gm-promo-ingest` E RE-ATIVAR**
 
+⚠️ O PUT desativa o workflow — re-ativar na sequência (o sink já está ativo).
 Run: `node scripts/n8n/push-workflow.mjs scripts/n8n/gm-promo-ingest.workflow.json kf33adWMPKMAEv4C`
 Expected: `ok: workflow kf33adWMPKMAEv4C (gm-promo-ingest)`.
+Run (re-ativar): `POST /api/v1/workflows/kf33adWMPKMAEv4C/activate` (via node fetch com UA browser).
+Expected: status 200.
 
 - [ ] **Step 4: Round-trip — confirmar estrutura e que segue ativo**
 
