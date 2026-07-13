@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { isNativePlatform } from "@/lib/nativeAuth";
+import { isShareCancelledError } from "@/lib/pdfDelivery";
 
 export type AccountInfo = {
   id: string;
@@ -149,16 +151,44 @@ export async function gatherUserData(
   return bundle;
 }
 
-export function downloadJson(bundle: DataExportBundle): void {
+/**
+ * Entrega o JSON de dados por plataforma (mesmo motivo do PDF em `pdfDelivery`).
+ * Web: download normal por blob-anchor. App nativo: o WebView IGNORA download de
+ * blob (nada seria salvo), então grava no cache (Filesystem) e abre o share sheet
+ * (Share). Retorna "cancelled" quando o usuário fecha o share sheet.
+ */
+export async function deliverJson(bundle: DataExportBundle): Promise<"delivered" | "cancelled"> {
   const json = JSON.stringify(bundle, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const data = bundle.exportadoEm.slice(0, 10); // AAAA-MM-DD
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `gest-miles-meus-dados-${data}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  const filename = `gest-miles-meus-dados-${bundle.exportadoEm.slice(0, 10)}.json`;
+
+  if (!isNativePlatform()) {
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    return "delivered";
+  }
+
+  const { Filesystem, Directory, Encoding } = await import("@capacitor/filesystem");
+  const { Share } = await import("@capacitor/share");
+
+  const written = await Filesystem.writeFile({
+    path: filename,
+    data: json,
+    directory: Directory.Cache,
+    encoding: Encoding.UTF8,
+  });
+
+  try {
+    await Share.share({ title: filename, url: written.uri });
+  } catch (err) {
+    if (isShareCancelledError(err)) return "cancelled";
+    throw err;
+  }
+  return "delivered";
 }

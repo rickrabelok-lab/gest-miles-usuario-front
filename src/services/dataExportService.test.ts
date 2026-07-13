@@ -1,6 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { downloadJson, gatherUserData } from "./dataExportService";
+import { deliverJson, gatherUserData, type DataExportBundle } from "./dataExportService";
+
+// Plataforma + plugins nativos controláveis por teste (deliverJson roteia por elas).
+const h = vi.hoisted(() => ({ native: false, writeFile: vi.fn(), share: vi.fn() }));
+vi.mock("@/lib/nativeAuth", () => ({ isNativePlatform: () => h.native }));
+vi.mock("@capacitor/filesystem", () => ({
+  Filesystem: { writeFile: (...a: unknown[]) => h.writeFile(...a) },
+  Directory: { Cache: "CACHE" },
+  Encoding: { UTF8: "utf8" },
+}));
+vi.mock("@capacitor/share", () => ({ Share: { share: (...a: unknown[]) => h.share(...a) } }));
 
 // Mock chainável do Supabase client. Cada tabela tem um resultado em `results`
 // (chave = nome da tabela, ou "rpc:<nome>"). Registra chamadas em `calls`.
@@ -126,13 +136,35 @@ describe("gatherUserData", () => {
   });
 });
 
-describe("downloadJson", () => {
+const mkBundle = (exportadoEm: string): DataExportBundle => ({
+  exportadoEm,
+  aplicacao: "Gest Miles — app do cliente",
+  conta: ACCOUNT,
+  perfil: null,
+  programas: [],
+  demandas: [],
+  preferencias: null,
+  timeline: [],
+  npsAvaliacoes: [],
+  csatAvaliacoes: [],
+  alertas: [],
+  mensagensContato: [],
+  indicacoes: null,
+  observacoes: [],
+});
+
+describe("deliverJson", () => {
+  beforeEach(() => {
+    h.native = false;
+    h.writeFile.mockReset();
+    h.share.mockReset();
+  });
   afterEach(() => {
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
-  it("nomeia o arquivo com a data do export e dispara o download", () => {
+  it("web: nomeia o arquivo com a data do export e dispara o download por blob", async () => {
     vi.useFakeTimers();
 
     const createSpy = vi.fn().mockReturnValue("blob:fake");
@@ -153,29 +185,16 @@ describe("downloadJson", () => {
       .mockReturnValue(mockAnchor as never);
     const appendSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => mockAnchor as never);
 
-    downloadJson({
-      exportadoEm: "2026-06-25T10:00:00.000Z",
-      aplicacao: "Gest Miles — app do cliente",
-      conta: ACCOUNT,
-      perfil: null,
-      programas: [],
-      demandas: [],
-      preferencias: null,
-      timeline: [],
-      npsAvaliacoes: [],
-      csatAvaliacoes: [],
-      alertas: [],
-      mensagensContato: [],
-      indicacoes: null,
-      observacoes: [],
-    });
+    const outcome = await deliverJson(mkBundle("2026-06-25T10:00:00.000Z"));
 
+    expect(outcome).toBe("delivered");
     expect(createElementSpy).toHaveBeenCalledWith("a");
     expect(mockAnchor.download).toBe("gest-miles-meus-dados-2026-06-25.json");
     expect(appendSpy).toHaveBeenCalledWith(mockAnchor);
     expect(mockAnchor.click).toHaveBeenCalled();
     expect(mockAnchor.remove).toHaveBeenCalled();
     expect(createSpy).toHaveBeenCalled();
+    expect(h.writeFile).not.toHaveBeenCalled();
 
     // revoke é adiado via setTimeout — não deve ter rodado ainda
     expect(revokeSpy).not.toHaveBeenCalled();
@@ -183,5 +202,37 @@ describe("downloadJson", () => {
     // dispara o timer pendente e confirma que o revoke foi chamado com a URL correta
     vi.runAllTimers();
     expect(revokeSpy).toHaveBeenCalledWith("blob:fake");
+  });
+
+  it("nativo: grava no cache (Filesystem) e abre o share sheet — não usa blob", async () => {
+    h.native = true;
+    h.writeFile.mockResolvedValue({ uri: "file:///cache/x.json" });
+    h.share.mockResolvedValue(undefined);
+    const createElementSpy = vi.spyOn(document, "createElement");
+
+    const outcome = await deliverJson(mkBundle("2026-06-25T10:00:00.000Z"));
+
+    expect(outcome).toBe("delivered");
+    expect(h.writeFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "gest-miles-meus-dados-2026-06-25.json",
+        directory: "CACHE",
+        encoding: "utf8",
+      }),
+    );
+    expect(h.share).toHaveBeenCalledWith(
+      expect.objectContaining({ url: "file:///cache/x.json" }),
+    );
+    expect(createElementSpy).not.toHaveBeenCalled();
+  });
+
+  it("nativo: cancelar o share sheet devolve 'cancelled' (não é erro)", async () => {
+    h.native = true;
+    h.writeFile.mockResolvedValue({ uri: "file:///cache/x.json" });
+    h.share.mockRejectedValue(new Error("Share canceled"));
+
+    const outcome = await deliverJson(mkBundle("2026-06-25T10:00:00.000Z"));
+
+    expect(outcome).toBe("cancelled");
   });
 });
