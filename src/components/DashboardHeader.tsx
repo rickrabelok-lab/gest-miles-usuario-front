@@ -35,7 +35,8 @@ import { resolveOptionalHeaderWordmarkImageUrl } from "@/lib/gestMilesBranding";
 import { useBrandingConfig } from "@/hooks/useBrandingConfig";
 import { useBonusPromotions } from "@/hooks/useBonusPromotions";
 import { toast } from "sonner";
-import { gatherUserData, downloadJson } from "@/services/dataExportService";
+import { gatherUserData, deliverJson } from "@/services/dataExportService";
+import { isNativePlatform } from "@/lib/nativeAuth";
 import NotificationsDropdown from "@/components/notifications/NotificationsDropdown";
 
 const getInitials = (email: string | undefined) => {
@@ -96,8 +97,15 @@ const DashboardHeader = () => {
         email: user.email ?? null,
         criadoEm: (user as { created_at?: string }).created_at ?? null,
       });
-      downloadJson(bundle);
-      toast.success("Pronto! Seu arquivo foi baixado.", { id: toastId });
+      const outcome = await deliverJson(bundle);
+      if (outcome === "cancelled") {
+        toast.dismiss(toastId);
+      } else {
+        toast.success(
+          isNativePlatform() ? "Pronto! Seu arquivo de dados foi gerado." : "Pronto! Seu arquivo foi baixado.",
+          { id: toastId },
+        );
+      }
     } catch {
       toast.error("Não foi possível gerar seu arquivo agora. Tente novamente.", { id: toastId });
     } finally {
