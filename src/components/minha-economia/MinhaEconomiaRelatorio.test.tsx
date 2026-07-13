@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { MinhaEconomiaRelatorio } from "@/components/minha-economia/MinhaEconomiaRelatorio";
-import type { RelatorioEconomia } from "@/lib/relatorio-economia";
+import type { RelatorioEconomia, RelatorioEventoEmissao } from "@/lib/relatorio-economia";
 
 const data: RelatorioEconomia = {
   kpis: {
@@ -80,6 +80,22 @@ describe("MinhaEconomiaRelatorio", () => {
     render(<MinhaEconomiaRelatorio periodoLabel="tudo" data={data} />);
     expect(screen.getByText(/resumo consolidado/i)).toBeInTheDocument();
     expect(screen.getByText(/7\.454,6[23]/)).toBeInTheDocument();
+  });
+
+  it("economia negativa: rótulo Resultado, sem duplo sinal '+-R$'", () => {
+    const emissaoNeg = { ...(data.eventos[0] as RelatorioEventoEmissao), economia: -2899.36 };
+    const neg: RelatorioEconomia = {
+      kpis: { ...data.kpis, numEmissoes: 1, economiaEmissoes: -2899.36, economiaTotal: -2899.36 },
+      eventos: [emissaoNeg],
+      caseDestaque: null,
+    };
+    render(<MinhaEconomiaRelatorio periodoLabel="tudo" data={neg} />);
+    // nunca renderiza o duplo sinal quebrado
+    expect(screen.queryByText(/\+-\s?R\$/)).not.toBeInTheDocument();
+    // rótulo muda pra "Resultado" (badge + headline)
+    expect(screen.getAllByText(/resultado/i).length).toBeGreaterThanOrEqual(1);
+    // o valor negativo aparece com o "-" do formatBRL
+    expect(screen.getAllByText(/-\s?R\$\s?2\.899,36/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("sem eventos mostra estado vazio amigável", () => {
