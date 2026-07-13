@@ -33,6 +33,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/s
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveOptionalHeaderWordmarkImageUrl } from "@/lib/gestMilesBranding";
 import { useBrandingConfig } from "@/hooks/useBrandingConfig";
+import { useBonusPromotions } from "@/hooks/useBonusPromotions";
 import { toast } from "sonner";
 import { gatherUserData, downloadJson } from "@/services/dataExportService";
 import NotificationsDropdown from "@/components/notifications/NotificationsDropdown";
@@ -59,6 +60,15 @@ const DashboardHeader = () => {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
+
+  // Banner de bônus: usa o feed real (mesma query da seção abaixo — cache compartilhado).
+  const { promotions: transferPromos } = useBonusPromotions("transfer");
+  const maxTransferBonus = useMemo(() => {
+    const nums = transferPromos
+      .map((p) => p.bonusNumeric)
+      .filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n > 0);
+    return nums.length ? Math.max(...nums) : null;
+  }, [transferPromos]);
   const { user, signOut } = useAuth();
 
   const { data: brandingData } = useBrandingConfig();
@@ -397,16 +407,22 @@ const DashboardHeader = () => {
         </div>
       </div>
 
-      {bannerVisible && (
+      {bannerVisible && maxTransferBonus != null && (
         <div className="mx-5 mb-2.5 flex items-center gap-2 rounded-[14px] bg-warning-soft px-3 py-2 text-[11px] text-warning-strong">
-          <Zap size={14} className="shrink-0" aria-hidden />
-          <p className="flex-1 text-[11px] font-medium leading-snug">
-            Bônus de até <span className="font-bold">133%</span> na transferência. Confira
-          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/bonus-offers")}
+            className="flex flex-1 items-center gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8A05BE]"
+          >
+            <Zap size={14} className="shrink-0" aria-hidden />
+            <span className="text-[11px] font-medium leading-snug">
+              Bônus de até <span className="font-bold">{maxTransferBonus}%</span> na transferência. Confira
+            </span>
+          </button>
           <button
             onClick={() => setBannerVisible(false)}
             className="shrink-0 opacity-60 hover:opacity-100"
-            aria-label="Fechar"
+            aria-label="Fechar banner de bônus"
             type="button"
           >
             ✕

@@ -14,6 +14,9 @@ router.get("/", async (_req, res) => {
       .select(
         "id, category, source_program, source_program_id, target_program, title, bonus_value, bonus_numeric, tiers, valid_from, valid_until, details, cta_url, source_links, milheiro_cost, milheiro_note",
       )
+      // Defense-in-depth: a RLS (anon) já entrega só approved+vigente, mas
+      // filtramos explícito p/ não vazar promo pending se a policy mudar.
+      .eq("status", "approved")
       .order("bonus_numeric", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
     if (error) {
