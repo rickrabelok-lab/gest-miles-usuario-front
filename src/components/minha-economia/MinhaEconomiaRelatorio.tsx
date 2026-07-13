@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import {
   COTACAO_STATUS_LABELS,
   TIPO_EVENTO_LABELS,
+  apresentacaoEconomia,
   custoComGestaoEmissao,
   formatBRL,
   formatMilhasBR,
@@ -52,6 +53,12 @@ export function MinhaEconomiaRelatorio({ periodoLabel, data }: MinhaEconomiaRela
 
   const subtotal = emissoes.reduce((s, e) => s + (e.economia ?? 0), 0);
 
+  // Economia pode ser negativa (prejuízo): apresenta com sinal/cor corretos.
+  const economiaTotalAp = apresentacaoEconomia(kpis.economiaTotal);
+  const subtotalAp = apresentacaoEconomia(subtotal);
+  const snapshotEconomiaAp =
+    snapshot?.economia != null ? apresentacaoEconomia(Number(snapshot.economia)) : null;
+
   return (
     <div className="space-y-4">
       {/* Hero compacto Clean Stripe */}
@@ -62,10 +69,12 @@ export function MinhaEconomiaRelatorio({ periodoLabel, data }: MinhaEconomiaRela
             Minha economia · {periodoLabel}
           </p>
           <div className="mt-1.5 flex flex-wrap items-baseline gap-2">
-            <p className="text-3xl font-extrabold leading-none text-green-600">
-              {formatBRL(kpis.economiaTotal)}
+            <p className={cn("text-3xl font-extrabold leading-none", economiaTotalAp.classe)}>
+              {economiaTotalAp.texto}
             </p>
-            <p className="text-xs text-gray-500">economizados com a gestão</p>
+            <p className="text-xs text-gray-500">
+              {economiaTotalAp.negativo ? "resultado no período" : "economizados com a gestão"}
+            </p>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <div className="rounded-xl border border-[#f0e9f7] px-3 py-2">
@@ -114,6 +123,7 @@ export function MinhaEconomiaRelatorio({ periodoLabel, data }: MinhaEconomiaRela
                 const emissao = ev.origem === "emissao" ? (ev as RelatorioEventoEmissao) : null;
                 const manual = ev.origem === "manual" ? (ev as RelatorioEventoManual) : null;
                 const status = manual?.tipo === "cotacao" ? ((manual.payload.status as CotacaoStatus) ?? "entregue") : null;
+                const economiaAp = emissao?.economia != null ? apresentacaoEconomia(emissao.economia) : null;
                 return (
                   <li key={`${ev.origem}-${ev.id}`} className="rounded-2xl border border-gray-100 bg-white px-3.5 py-3 shadow-nubank">
                     <div className="flex items-start justify-between gap-3">
@@ -152,10 +162,15 @@ export function MinhaEconomiaRelatorio({ periodoLabel, data }: MinhaEconomiaRela
                           <p className="mt-0.5 text-[11px] text-gray-500">{manual.descricao}</p>
                         )}
                       </div>
-                      {emissao?.economia != null && (
+                      {economiaAp && (
                         <div className="shrink-0 text-right">
-                          <p className="text-[8.5px] font-bold uppercase tracking-widest text-green-700/70">Economia</p>
-                          <p className="text-[13px] font-extrabold text-green-600">+{formatBRL(emissao.economia)}</p>
+                          <p className={cn(
+                            "text-[8.5px] font-bold uppercase tracking-widest",
+                            economiaAp.negativo ? "text-red-700/70" : "text-green-700/70",
+                          )}>
+                            {economiaAp.rotulo}
+                          </p>
+                          <p className={cn("text-[13px] font-extrabold", economiaAp.classe)}>{economiaAp.texto}</p>
                         </div>
                       )}
                     </div>
@@ -214,11 +229,13 @@ export function MinhaEconomiaRelatorio({ periodoLabel, data }: MinhaEconomiaRela
                   </p>
                   <p className="text-[9px] text-gray-500">das milhas a custo zero</p>
                 </div>
-                <div className="rounded-xl bg-green-50 px-3 py-2">
-                  <p className="text-[13px] font-extrabold text-green-600">
-                    {snapshot.economia != null ? `+${formatBRL(Number(snapshot.economia))}` : "—"}
+                <div className={cn("rounded-xl px-3 py-2", snapshotEconomiaAp?.negativo ? "bg-red-50" : "bg-green-50")}>
+                  <p className={cn("text-[13px] font-extrabold", snapshotEconomiaAp ? snapshotEconomiaAp.classe : "text-gray-400")}>
+                    {snapshotEconomiaAp ? snapshotEconomiaAp.texto : "—"}
                   </p>
-                  <p className="text-[9px] text-gray-500">economia nesta emissão</p>
+                  <p className="text-[9px] text-gray-500">
+                    {snapshotEconomiaAp?.negativo ? "resultado nesta emissão" : "economia nesta emissão"}
+                  </p>
                 </div>
               </div>
             )}
@@ -242,6 +259,7 @@ export function MinhaEconomiaRelatorio({ periodoLabel, data }: MinhaEconomiaRela
             <tbody>
               {emissoes.map((e) => {
                 const custo = custoComGestaoEmissao(e);
+                const economiaAp = e.economia != null ? apresentacaoEconomia(e.economia) : null;
                 return (
                   <tr key={e.id} className="border-b border-gray-50">
                     <td className="py-1.5 pr-2 whitespace-nowrap">{fmtData(e.dataEvento)}</td>
@@ -250,8 +268,8 @@ export function MinhaEconomiaRelatorio({ periodoLabel, data }: MinhaEconomiaRela
                       {e.emissaoFornecedor ? " (fornecedor)" : ""}
                     </td>
                     <td className="py-1.5 pr-2 text-right">{custo != null ? formatBRL(custo) : "—"}</td>
-                    <td className="py-1.5 text-right font-semibold text-green-600">
-                      {e.economia != null ? `+${formatBRL(e.economia)}` : "—"}
+                    <td className={cn("py-1.5 text-right font-semibold", economiaAp ? economiaAp.classe : "text-gray-400")}>
+                      {economiaAp ? economiaAp.texto : "—"}
                     </td>
                   </tr>
                 );
@@ -260,7 +278,7 @@ export function MinhaEconomiaRelatorio({ periodoLabel, data }: MinhaEconomiaRela
                 <td colSpan={3} className="py-2 pr-2 text-right text-[10px] font-bold uppercase tracking-wide text-gray-400">
                   Total
                 </td>
-                <td className="py-2 text-right text-[13px] font-extrabold text-green-600">+{formatBRL(subtotal)}</td>
+                <td className={cn("py-2 text-right text-[13px] font-extrabold", subtotalAp.classe)}>{subtotalAp.texto}</td>
               </tr>
             </tbody>
           </table>

@@ -6,6 +6,7 @@ import {
   resumoEvento,
   nomePrograma,
   formatBRL,
+  apresentacaoEconomia,
   type RelatorioEvento,
   type RelatorioEventoEmissao,
   type RelatorioEventoManual,
@@ -117,5 +118,31 @@ describe("nomePrograma", () => {
 describe("formatBRL", () => {
   it("formata moeda pt-BR", () => {
     expect(formatBRL(1266.32)).toMatch(/R\$\s?1\.266,32/);
+  });
+});
+
+describe("apresentacaoEconomia", () => {
+  it("positivo: rótulo Economia, prefixo +, verde", () => {
+    const ap = apresentacaoEconomia(1266.32);
+    expect(ap.rotulo).toBe("Economia");
+    expect(ap.texto).toMatch(/^\+R\$\s?1\.266,32/);
+    expect(ap.classe).toContain("green");
+    expect(ap.negativo).toBe(false);
+  });
+
+  it("negativo: rótulo Resultado, sem duplo sinal, vermelho", () => {
+    const ap = apresentacaoEconomia(-2899.36);
+    expect(ap.rotulo).toBe("Resultado");
+    expect(ap.texto).toMatch(/^-R\$\s?2\.899,36/);
+    expect(ap.texto).not.toContain("+");
+    expect(ap.classe).toContain("red");
+    expect(ap.negativo).toBe(true);
+  });
+
+  it("zero conta como economia (não negativo)", () => {
+    const ap = apresentacaoEconomia(0);
+    expect(ap.rotulo).toBe("Economia");
+    expect(ap.negativo).toBe(false);
+    expect(ap.texto).toMatch(/^\+R\$\s?0,00/);
   });
 });

@@ -94,6 +94,28 @@ export const formatBRL = (v: number): string =>
 
 export const formatMilhasBR = (v: number): string => v.toLocaleString("pt-BR");
 
+/**
+ * Apresentação de um valor de economia. Economia é `tarifa − custo real` e PODE
+ * ser negativa (emissão que custou mais que a tarifa paga = prejuízo). O positivo
+ * é "Economia" (verde, com "+"); o negativo é "Resultado" (vermelho, com o "-" que
+ * o próprio formatBRL já traz — sem "+" pra não sair "+-R$").
+ */
+export function apresentacaoEconomia(v: number): {
+  rotulo: "Economia" | "Resultado";
+  texto: string;
+  classe: string;
+  negativo: boolean;
+} {
+  const n = Number(v);
+  const negativo = Number.isFinite(n) && n < 0;
+  return {
+    rotulo: negativo ? "Resultado" : "Economia",
+    texto: (negativo ? "" : "+") + formatBRL(negativo ? n : Number.isFinite(n) ? n : 0),
+    classe: negativo ? "text-red-600" : "text-green-600",
+    negativo,
+  };
+}
+
 const num = (v: unknown): number | null => {
   if (v === null || v === undefined || v === "") return null;
   const n = Number(v);
