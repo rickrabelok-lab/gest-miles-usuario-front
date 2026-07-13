@@ -28,6 +28,8 @@ type AuthContextValue = {
   planoAtivo: boolean | null;
   /** null enquanto carrega ou sem perfil; string conforme coluna subscription_status do perfil. */
   subscriptionStatus: string | null;
+  /** null enquanto carrega/sem perfil; ISO da coluna subscription_current_period_end (gate de acesso). */
+  subscriptionPeriodEnd: string | null;
   roleLoading: boolean;
   roleError: string | null;
   signInWithPassword: (email: string, password: string) => Promise<boolean>;
@@ -84,6 +86,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [equipeId, setEquipeId] = useState<string | null>(null);
   const [planoAtivo, setPlanoAtivo] = useState<boolean | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [subscriptionPeriodEnd, setSubscriptionPeriodEnd] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
   const [roleError, setRoleError] = useState<string | null>(null);
   const lastFetchedUserIdRef = useRef<string | null>(null);
@@ -94,6 +97,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       setEquipeId(null);
       setPlanoAtivo(null);
       setSubscriptionStatus(null);
+      setSubscriptionPeriodEnd(null);
       setRoleError(null);
       setRoleLoading(false);
       lastFetchedUserIdRef.current = null;
@@ -105,13 +109,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
     setRoleError(null);
     lastFetchedUserIdRef.current = userId;
-    let data: { role?: string; equipe_id?: string | null; plano_ativo?: boolean | null; subscription_status?: string | null } | null = null;
+    let data: { role?: string; equipe_id?: string | null; plano_ativo?: boolean | null; subscription_status?: string | null; subscription_current_period_end?: string | null } | null = null;
 
     try {
       const full = await queryWithTimeout((signal) =>
         supabase
           .from("perfis")
-          .select("role, equipe_id, plano_ativo, subscription_status")
+          .select("role, equipe_id, plano_ativo, subscription_status, subscription_current_period_end")
           .eq("usuario_id", userId)
           .abortSignal(signal)
           .maybeSingle(),
@@ -123,6 +127,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           setEquipeId(null);
           setPlanoAtivo(null);
           setSubscriptionStatus(null);
+          setSubscriptionPeriodEnd(null);
           setRoleError(ROLE_LOAD_ERROR_MESSAGE);
           return;
         }
@@ -140,6 +145,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           setEquipeId(null);
           setPlanoAtivo(null);
           setSubscriptionStatus(null);
+          setSubscriptionPeriodEnd(null);
           setRoleError(ROLE_LOAD_ERROR_MESSAGE);
           return;
         }
@@ -152,6 +158,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       setEquipeId(null);
       setPlanoAtivo(null);
       setSubscriptionStatus(null);
+      setSubscriptionPeriodEnd(null);
       setRoleError(ROLE_LOAD_ERROR_MESSAGE);
       return;
     } finally {
@@ -162,6 +169,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     setEquipeId((data?.equipe_id as string | null | undefined) ?? null);
     setPlanoAtivo((data?.plano_ativo as boolean | null | undefined) ?? null);
     setSubscriptionStatus((data?.subscription_status as string | null | undefined) ?? null);
+    setSubscriptionPeriodEnd((data?.subscription_current_period_end as string | null | undefined) ?? null);
     setRoleError(null);
   }, []);
 
@@ -307,6 +315,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       equipeId,
       planoAtivo,
       subscriptionStatus,
+      subscriptionPeriodEnd,
       roleLoading,
       roleError,
       signInWithPassword,
@@ -325,6 +334,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       equipeId,
       planoAtivo,
       subscriptionStatus,
+      subscriptionPeriodEnd,
       roleLoading,
       roleError,
       signInWithPassword,

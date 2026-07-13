@@ -29,6 +29,14 @@ router.post("/webhook", async (req, res) => {
 
   try {
     const sb = assertSupabaseService();
+
+    if (result.action === "revoke") {
+      // TRANSFER: revoga o acesso das contas de origem (mata o grant fantasma).
+      const { error } = await sb.from("perfis").update(result.patch).in("usuario_id", result.usuarioIds);
+      if (error) throw error;
+      return res.json({ received: true, revoked: result.usuarioIds.length });
+    }
+
     let query = sb.from("perfis").update(result.patch).eq("usuario_id", result.usuarioId);
     if (result.guardPeriodEnd) {
       // EXPIRATION reentregue pelo retry do RC não pode derrubar uma re-assinatura
