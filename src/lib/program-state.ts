@@ -154,7 +154,8 @@ export function reconstruirLotesDeMovimentos(movimentos: Movimento[]): LoteMilha
     const milhas = Number(m.milhas) || 0;
     if (m.tipo === "entrada" && m.validadeLote && milhas > 0) {
       porValidade.set(m.validadeLote, (porValidade.get(m.validadeLote) ?? 0) + milhas);
-    } else if (m.tipo === "saida" && milhas > 0) {
+    } else if (m.tipo === "saida" && milhas > 0 && !m.emissaoFornecedor) {
+      // Emissão por fornecedor não debita milhas (não consome lotes).
       let restante = milhas;
       const comSaldo = [...porValidade.entries()]
         .filter(([, q]) => q > 0)

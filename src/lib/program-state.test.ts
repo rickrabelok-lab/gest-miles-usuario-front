@@ -103,6 +103,14 @@ describe("reconstruirLotesDeMovimentos", () => {
     expect(somaLotes(lotes)).toBe(60000);
   });
 
+  it("saída por fornecedor não debita lotes (não consome milhas)", () => {
+    const lotes = reconstruirLotesDeMovimentos([
+      entrada("2026-01-01", "2027-01-01", 100000),
+      saida("2026-02-01", 30000, { emissaoFornecedor: true }),
+    ]);
+    expect(somaLotes(lotes)).toBe(100000);
+  });
+
   it("array vazio → sem lotes", () => {
     expect(reconstruirLotesDeMovimentos([])).toEqual([]);
   });
