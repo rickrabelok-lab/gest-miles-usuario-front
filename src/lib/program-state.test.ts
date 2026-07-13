@@ -103,11 +103,49 @@ describe("reconstruirLotesDeMovimentos", () => {
     expect(somaLotes(lotes)).toBe(60000);
   });
 
+  it("saída com milhas negativas (convenção antiga) debita pela magnitude", () => {
+    const lotes = reconstruirLotesDeMovimentos([
+      entrada("2026-01-01", "2027-01-01", 100000),
+      saida("2026-02-01", -30000),
+    ]);
+    expect(somaLotes(lotes)).toBe(70000);
+  });
+
   it("saída por fornecedor não debita lotes (não consome milhas)", () => {
     const lotes = reconstruirLotesDeMovimentos([
       entrada("2026-01-01", "2027-01-01", 100000),
       saida("2026-02-01", 30000, { emissaoFornecedor: true }),
     ]);
+    expect(somaLotes(lotes)).toBe(100000);
+  });
+
+  it("saldoMax apara o excedente (movimentos fora de ordem) pelos que vencem antes", () => {
+    // Saída datada ANTES da entrada (data de emissão < crédito): replay não debita,
+    // então sum(lotes) passaria do saldo. O teto apara o excedente pelo FIFO.
+    const lotes = reconstruirLotesDeMovimentos(
+      [
+        entrada("2026-05-06", "2026-06-30", 30000), // vence antes
+        entrada("2026-05-06", "2028-05-06", 20000), // vence depois
+        saida("2026-05-05", 30000), // registrada 1 dia antes → não debita no replay
+      ],
+      20000, // saldo real
+    );
+    expect(somaLotes(lotes)).toBe(20000);
+    // Apara os que vencem antes: 2026-06-30 é cortado, sobra o de 2028.
+    expect(porValidade(lotes, "2026-06-30")).toBe(0);
+    expect(porValidade(lotes, "2028-05-06")).toBe(20000);
+  });
+
+  it("saldoMax=0 → sem lotes", () => {
+    const lotes = reconstruirLotesDeMovimentos(
+      [entrada("2026-01-01", "2027-01-01", 100000)],
+      0,
+    );
+    expect(lotes).toEqual([]);
+  });
+
+  it("sem saldoMax não apara (compatível)", () => {
+    const lotes = reconstruirLotesDeMovimentos([entrada("2026-01-01", "2027-01-01", 100000)]);
     expect(somaLotes(lotes)).toBe(100000);
   });
 

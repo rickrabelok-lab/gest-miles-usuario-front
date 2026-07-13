@@ -128,8 +128,15 @@ function comparaValidade(a: string, b: string): number {
  * Replay CRONOLÓGICO (por data): garante que uma saída só debita os lotes que já
  * existiam quando ela ocorreu. Sem isso, a reconstrução antiga somava só entradas
  * e ignorava saídas → `sum(lotes) > saldo` (milhas já emitidas apareciam "a vencer").
+ *
+ * `saldoMax` (quando informado): apara o excedente pra que `sum(lotes) ≤ saldoMax`.
+ * O saldo é a verdade; movimentos incompletos/fora de ordem (data de emissão antes
+ * do crédito) podem super-contar — o excedente é aparado pelos que vencem antes.
  */
-export function reconstruirLotesDeMovimentos(movimentos: Movimento[]): LoteMilhas[] {
+export function reconstruirLotesDeMovimentos(
+  movimentos: Movimento[],
+  saldoMax?: number,
+): LoteMilhas[] {
   const ordenados = (Array.isArray(movimentos) ? movimentos : [])
     .map((m, i) => ({ m, i }))
     .sort((a, b) => {
@@ -154,9 +161,10 @@ export function reconstruirLotesDeMovimentos(movimentos: Movimento[]): LoteMilha
     const milhas = Number(m.milhas) || 0;
     if (m.tipo === "entrada" && m.validadeLote && milhas > 0) {
       porValidade.set(m.validadeLote, (porValidade.get(m.validadeLote) ?? 0) + milhas);
-    } else if (m.tipo === "saida" && milhas > 0 && !m.emissaoFornecedor) {
-      // Emissão por fornecedor não debita milhas (não consome lotes).
-      let restante = milhas;
+    } else if (m.tipo === "saida" && !m.emissaoFornecedor) {
+      // Emissão por fornecedor não debita milhas (não consome lotes). A saída pode
+      // vir com sinal negativo (convenção antiga de importação) — debita pela magnitude.
+      let restante = Math.abs(milhas);
       const comSaldo = [...porValidade.entries()]
         .filter(([, q]) => q > 0)
         .sort((a, b) => comparaValidade(a[0], b[0])); // FIFO por vencimento
@@ -170,10 +178,33 @@ export function reconstruirLotesDeMovimentos(movimentos: Movimento[]): LoteMilha
     }
   }
 
-  return [...porValidade.entries()]
+  const resultado = [...porValidade.entries()]
     .filter(([, q]) => q > 0)
     .sort((a, b) => comparaValidade(a[0], b[0]))
     .map(([validadeLote, quantidade]) => ({ id: validadeLote, validadeLote, quantidade }));
+
+  // Invariante de domínio: lotes não podem somar mais que o saldo real. Apara o
+  // excedente pelos que vencem antes (FIFO) — os que sobrariam já teriam saído.
+  if (typeof saldoMax === "number" && Number.isFinite(saldoMax)) {
+    const teto = Math.max(0, saldoMax);
+    let excedente = resultado.reduce((s, l) => s + l.quantidade, 0) - teto;
+    if (excedente > 0) {
+      const aparado: LoteMilhas[] = [];
+      for (const lote of resultado) {
+        if (excedente <= 0) {
+          aparado.push(lote);
+          continue;
+        }
+        const corte = Math.min(lote.quantidade, excedente);
+        excedente -= corte;
+        const q = lote.quantidade - corte;
+        if (q > 0) aparado.push({ ...lote, quantidade: q });
+      }
+      return aparado;
+    }
+  }
+
+  return resultado;
 }
 
 export const parseMovimentoDate = (value?: string) => {

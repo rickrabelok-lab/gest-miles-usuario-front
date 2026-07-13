@@ -513,7 +513,13 @@ const LoyaltyProgramDetails = () => {
     } else {
       // Sem lotes persistidos: reconstrói do histórico (entradas − saídas via FIFO),
       // NÃO só das entradas — senão sum(lotes) > saldo (milhas já emitidas "a vencer").
-      setLotes(reconstruirLotesDeMovimentos(nextState?.movimentos ?? initialMovimentos));
+      // Passa o saldo como teto: movimentos incompletos não podem inflar os lotes.
+      setLotes(
+        reconstruirLotesDeMovimentos(
+          nextState?.movimentos ?? initialMovimentos,
+          nextState?.saldo ?? saldoInicial,
+        ),
+      );
     }
     setCustoSaldo(nextState?.custoSaldo ?? CUSTO_SALDO_BASE_INICIAL);
     setCustoMedioMilheiro(
