@@ -14,6 +14,7 @@ const evento = (extra) => ({
   expiration_at_ms: FUTURO,
   period_type: "NORMAL",
   store: "PLAY_STORE",
+  environment: "PRODUCTION",
   ...extra,
 });
 
@@ -62,9 +63,54 @@ test("app_user_id anônimo do RC é ignorado", () => {
   assert.equal(r.action, "skip");
 });
 
-test("eventos TEST e TRANSFER são ignorados", () => {
+test("evento TEST é ignorado", () => {
   assert.equal(mapRevenueCatEvent(evento({ type: "TEST" }), NOW).action, "skip");
-  assert.equal(mapRevenueCatEvent(evento({ type: "TRANSFER" }), NOW).action, "skip");
+});
+
+test("environment SANDBOX é ignorado (tester não vira acesso em prod)", () => {
+  const r = mapRevenueCatEvent(evento({ environment: "SANDBOX" }), NOW);
+  assert.equal(r.action, "skip");
+});
+
+test("environment ausente é ignorado (fail-closed)", () => {
+  const r = mapRevenueCatEvent(evento({ environment: undefined }), NOW);
+  assert.equal(r.action, "skip");
+});
+
+test("TRANSFER revoga as contas de origem (transferred_from)", () => {
+  const OUTRO = "9f1e2d3c-4b5a-4c6d-8e7f-0a1b2c3d4e5f";
+  const r = mapRevenueCatEvent(
+    evento({ type: "TRANSFER", app_user_id: undefined, transferred_from: [UID, OUTRO], transferred_to: ["x"] }),
+    NOW,
+  );
+  assert.equal(r.action, "revoke");
+  assert.deepEqual(r.usuarioIds, [UID, OUTRO]);
+  assert.equal(r.patch.subscription_status, "canceled");
+});
+
+test("TRANSFER filtra app_user_id inválido/anônimo do transferred_from", () => {
+  const r = mapRevenueCatEvent(
+    evento({ type: "TRANSFER", app_user_id: undefined, transferred_from: [UID, "$RCAnonymousID:z", ""] }),
+    NOW,
+  );
+  assert.equal(r.action, "revoke");
+  assert.deepEqual(r.usuarioIds, [UID]);
+});
+
+test("TRANSFER sem transferred_from válido é ignorado", () => {
+  const r = mapRevenueCatEvent(
+    evento({ type: "TRANSFER", app_user_id: undefined, transferred_from: ["$RCAnonymousID:z"] }),
+    NOW,
+  );
+  assert.equal(r.action, "skip");
+});
+
+test("TRANSFER em SANDBOX é ignorado (gate de environment vale antes)", () => {
+  const r = mapRevenueCatEvent(
+    evento({ type: "TRANSFER", environment: "SANDBOX", app_user_id: undefined, transferred_from: [UID] }),
+    NOW,
+  );
+  assert.equal(r.action, "skip");
 });
 
 test("payload sem event é ignorado", () => {

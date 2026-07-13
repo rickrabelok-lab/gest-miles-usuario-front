@@ -40,7 +40,26 @@ export function webhookAuthOk(headerValue, secret) {
  */
 export function mapRevenueCatEvent(event, nowMs) {
   if (!event || typeof event !== "object") return { action: "skip", reason: "payload sem event" };
+
+  // Fail-closed: só produção vira acesso. SANDBOX (tester) ou environment ausente
+  // é ignorado — money-path não concede no ambíguo. RC não retenta em 2xx.
+  if (event.environment !== "PRODUCTION") {
+    return { action: "skip", reason: `environment ${event.environment ?? "ausente"} ignorado (não-produção)` };
+  }
+
   const type = event.type;
+
+  // TRANSFER move a assinatura entre app_user_ids. Revoga só a ORIGEM
+  // (transferred_from) pra matar o acesso fantasma; NÃO concede ao destino aqui
+  // (o payload não traz expiração/produto) — o destino ganha no próximo evento.
+  if (type === "TRANSFER") {
+    const from = Array.isArray(event.transferred_from) ? event.transferred_from.filter(isUuid) : [];
+    if (from.length === 0) {
+      return { action: "skip", reason: "TRANSFER sem transferred_from válido" };
+    }
+    return { action: "revoke", usuarioIds: from, patch: { subscription_status: "canceled" } };
+  }
+
   if (!UPDATE_EVENTS.has(type)) {
     return { action: "skip", reason: `evento ${type ?? "desconhecido"} ignorado` };
   }
