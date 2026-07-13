@@ -104,6 +104,109 @@ export function stripPersistedMetaForServer(state: PersistedProgramState): Persi
   };
 }
 
+/** Data usada pra ordenar o replay: saída usa quando foi registrada (dataEmissao), senão a data do movimento. */
+function dataOrdenacaoMovimento(m: Movimento): Date | null {
+  const bruto = m.tipo === "saida" ? (m.dataEmissao ?? m.data) : m.data;
+  return parseMovimentoDate(bruto);
+}
+
+/** Ordena duas validades por vencimento (menor primeiro); não-parseáveis vão pro fim. */
+function comparaValidade(a: string, b: string): number {
+  const da = parseMovimentoDate(a);
+  const db = parseMovimentoDate(b);
+  if (da && db) return da.getTime() - db.getTime();
+  if (da) return -1;
+  if (db) return 1;
+  return a.localeCompare(b);
+}
+
+/**
+ * Reconstrói os lotes (milhas com validade) a partir do histórico de movimentos,
+ * reproduzindo a MESMA regra viva do app: cada entrada com validade soma no seu
+ * lote; cada saída debita FIFO dos lotes que vencem antes (`handleSalvarSaida`).
+ *
+ * Replay CRONOLÓGICO (por data): garante que uma saída só debita os lotes que já
+ * existiam quando ela ocorreu. Sem isso, a reconstrução antiga somava só entradas
+ * e ignorava saídas → `sum(lotes) > saldo` (milhas já emitidas apareciam "a vencer").
+ *
+ * `saldoMax` (quando informado): apara o excedente pra que `sum(lotes) ≤ saldoMax`.
+ * O saldo é a verdade; movimentos incompletos/fora de ordem (data de emissão antes
+ * do crédito) podem super-contar — o excedente é aparado pelos que vencem antes.
+ */
+export function reconstruirLotesDeMovimentos(
+  movimentos: Movimento[],
+  saldoMax?: number,
+): LoteMilhas[] {
+  const ordenados = (Array.isArray(movimentos) ? movimentos : [])
+    .map((m, i) => ({ m, i }))
+    .sort((a, b) => {
+      const da = dataOrdenacaoMovimento(a.m);
+      const db = dataOrdenacaoMovimento(b.m);
+      if (da && db) {
+        const delta = da.getTime() - db.getTime();
+        if (delta !== 0) return delta;
+      } else if (da && !db) {
+        return -1;
+      } else if (!da && db) {
+        return 1;
+      }
+      return a.i - b.i; // estável quando as datas empatam ou faltam
+    })
+    .map((x) => x.m);
+
+  // Map preserva a ordem de inserção (1ª aparição da validade); qty por validade.
+  const porValidade = new Map<string, number>();
+
+  for (const m of ordenados) {
+    const milhas = Number(m.milhas) || 0;
+    if (m.tipo === "entrada" && m.validadeLote && milhas > 0) {
+      porValidade.set(m.validadeLote, (porValidade.get(m.validadeLote) ?? 0) + milhas);
+    } else if (m.tipo === "saida" && !m.emissaoFornecedor) {
+      // Emissão por fornecedor não debita milhas (não consome lotes). A saída pode
+      // vir com sinal negativo (convenção antiga de importação) — debita pela magnitude.
+      let restante = Math.abs(milhas);
+      const comSaldo = [...porValidade.entries()]
+        .filter(([, q]) => q > 0)
+        .sort((a, b) => comparaValidade(a[0], b[0])); // FIFO por vencimento
+      for (const [validade, qtd] of comSaldo) {
+        if (restante <= 0) break;
+        const debitado = Math.min(qtd, restante);
+        porValidade.set(validade, qtd - debitado);
+        restante -= debitado;
+      }
+      // Sobra (saída > lotes) consumiu saldo sem validade — descartada.
+    }
+  }
+
+  const resultado = [...porValidade.entries()]
+    .filter(([, q]) => q > 0)
+    .sort((a, b) => comparaValidade(a[0], b[0]))
+    .map(([validadeLote, quantidade]) => ({ id: validadeLote, validadeLote, quantidade }));
+
+  // Invariante de domínio: lotes não podem somar mais que o saldo real. Apara o
+  // excedente pelos que vencem antes (FIFO) — os que sobrariam já teriam saído.
+  if (typeof saldoMax === "number" && Number.isFinite(saldoMax)) {
+    const teto = Math.max(0, saldoMax);
+    let excedente = resultado.reduce((s, l) => s + l.quantidade, 0) - teto;
+    if (excedente > 0) {
+      const aparado: LoteMilhas[] = [];
+      for (const lote of resultado) {
+        if (excedente <= 0) {
+          aparado.push(lote);
+          continue;
+        }
+        const corte = Math.min(lote.quantidade, excedente);
+        excedente -= corte;
+        const q = lote.quantidade - corte;
+        if (q > 0) aparado.push({ ...lote, quantidade: q });
+      }
+      return aparado;
+    }
+  }
+
+  return resultado;
+}
+
 export const parseMovimentoDate = (value?: string) => {
   if (!value) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {

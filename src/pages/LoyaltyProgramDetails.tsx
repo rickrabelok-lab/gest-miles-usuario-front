@@ -51,6 +51,7 @@ import { parseYmdToLocalDate } from "@/lib/dateYmd";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 import {
   normalizePersistedProgramState,
+  reconstruirLotesDeMovimentos,
   stripPersistedMetaForServer,
   type PersistedProgramState,
 } from "@/lib/program-state";
@@ -510,21 +511,14 @@ const LoyaltyProgramDetails = () => {
     if (nextState?.lotes?.length) {
       setLotes(nextState.lotes);
     } else {
-      // Migração simples: se não houver lotes persistidos, recria a partir das entradas com validade.
-      const lotesMigrados = (nextState?.movimentos ?? initialMovimentos)
-        .filter((m) => m.tipo === "entrada" && !!m.validadeLote && m.milhas > 0)
-        .reduce<Record<string, number>>((acc, m) => {
-          const key = m.validadeLote!;
-          acc[key] = (acc[key] ?? 0) + m.milhas;
-          return acc;
-        }, {});
-
+      // Sem lotes persistidos: reconstrói do histórico (entradas − saídas via FIFO),
+      // NÃO só das entradas — senão sum(lotes) > saldo (milhas já emitidas "a vencer").
+      // Passa o saldo como teto: movimentos incompletos não podem inflar os lotes.
       setLotes(
-        Object.entries(lotesMigrados).map(([validadeLote, quantidade]) => ({
-          id: `${validadeLote}-${quantidade}`,
-          validadeLote,
-          quantidade,
-        })),
+        reconstruirLotesDeMovimentos(
+          nextState?.movimentos ?? initialMovimentos,
+          nextState?.saldo ?? saldoInicial,
+        ),
       );
     }
     setCustoSaldo(nextState?.custoSaldo ?? CUSTO_SALDO_BASE_INICIAL);
