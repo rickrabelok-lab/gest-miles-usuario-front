@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Bell,
   ChevronRight,
   CreditCard,
   HelpCircle,
@@ -182,6 +183,12 @@ const PerfilPage = () => {
           <div className="rounded-[20px] bg-white p-1 shadow-nubank-card">
             {menuRow(Sparkles, "Preferências de sugestões", () =>
               navigate("/preferencias-sugestoes"),
+            )}
+            {role === "cliente_gestao" && (
+              <>
+                {divider}
+                {menuRow(Bell, "Notificações", () => navigate("/notificacoes"))}
+              </>
             )}
           </div>
         </div>
