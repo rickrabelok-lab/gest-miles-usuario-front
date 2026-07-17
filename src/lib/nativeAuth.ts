@@ -37,8 +37,10 @@ export type AuthCallbackResult =
 
 /**
  * Interpreta a URL recebida via appUrlOpen. Função pura (sem Capacitor nem
- * Supabase): aceita `?code=` (PKCE), tokens no fragment (usado tb no E2E via
- * adb) e `error`/`error_description` do GoTrue (query ou fragment).
+ * Supabase): trata `?code=` (PKCE) e `error`/`error_description` do GoTrue
+ * (query ou fragment) sempre. Tokens no fragment (`access_token`, `refresh_token`)
+ * só são honorados quando `allowTokenInjection` for true (default false), que
+ * gates a rota de injeção de sessão em produção contra session-fixation.
  * Não usa `new URL()` de propósito — parsing de host em scheme custom varia.
  */
 export function parseAuthCallbackUrl(

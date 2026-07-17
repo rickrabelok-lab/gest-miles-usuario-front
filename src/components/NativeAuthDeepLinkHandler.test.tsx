@@ -54,7 +54,6 @@ vi.mock("@/lib/nativeAuth", async (importOriginal) => {
 import NativeAuthDeepLinkHandler, {
   __resetHandledAuthUrlsForTests,
 } from "./NativeAuthDeepLinkHandler";
-import { isTokenInjectionAllowed } from "@/lib/nativeAuth";
 
 const DEEP_LINK = "br.com.gestmiles.app://auth-callback";
 
