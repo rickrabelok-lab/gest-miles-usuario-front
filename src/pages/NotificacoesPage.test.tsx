@@ -69,4 +69,10 @@ describe("NotificacoesPage", () => {
     fireEvent.click(screen.getByRole("switch", { name: "Promoções no WhatsApp" }));
     await waitFor(() => expect(toastError).toHaveBeenCalled());
   });
+
+  it("desabilita o switch enquanto está salvando", () => {
+    hookState.saving = true;
+    renderPage();
+    expect(screen.getByRole("switch", { name: "Promoções no WhatsApp" })).toBeDisabled();
+  });
 });

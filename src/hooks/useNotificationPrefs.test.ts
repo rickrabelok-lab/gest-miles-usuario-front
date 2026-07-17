@@ -29,16 +29,16 @@ describe("useNotificationPrefs", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("toggle otimista confirma pelo retorno do backend", async () => {
+  it("toggle re-sincroniza enabled pelo retorno do backend (vence o otimista)", async () => {
     getPref.mockResolvedValue({ enabled: true });
-    setPref.mockResolvedValue({ enabled: false });
+    setPref.mockResolvedValue({ enabled: true });
     const { result } = renderHook(() => useNotificationPrefs());
     await waitFor(() => expect(result.current.loading).toBe(false));
     await act(async () => {
       await result.current.toggle(false);
     });
     expect(setPref).toHaveBeenCalledWith("tok", false);
-    expect(result.current.enabled).toBe(false);
+    expect(result.current.enabled).toBe(true);
   });
 
   it("toggle reverte e relança em erro do backend", async () => {
