@@ -43,6 +43,7 @@ const ConvideAmigosPage = lazy(() => import("./pages/ConvideAmigosPage"));
 const DuvidasPage = lazy(() => import("./pages/DuvidasPage"));
 const FaleConoscoPage = lazy(() => import("./pages/FaleConoscoPage"));
 const PreferenciasSugestoesPage = lazy(() => import("./pages/PreferenciasSugestoesPage"));
+const NotificacoesPage = lazy(() => import("./pages/NotificacoesPage"));
 const SimularCompraMilhasPage = lazy(() => import("./pages/SimularCompraMilhasPage"));
 const RadarOportunidadesPage = lazy(() => import("./pages/RadarOportunidadesPage"));
 const ClienteInsightsPage = lazy(() => import("./pages/ClienteInsightsPage"));
@@ -225,6 +226,14 @@ const App = () => {
                   element={
                     <ClienteOnly>
                       <PreferenciasSugestoesPage />
+                    </ClienteOnly>
+                  }
+                />
+                <Route
+                  path="/notificacoes"
+                  element={
+                    <ClienteOnly>
+                      <NotificacoesPage />
                     </ClienteOnly>
                   }
                 />
