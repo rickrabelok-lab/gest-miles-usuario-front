@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   AUTH_DEEP_LINK,
   authRedirectUrl,
   isNativePlatform,
+  isTokenInjectionAllowed,
   parseAuthCallbackUrl,
 } from "./nativeAuth";
 
@@ -115,5 +116,26 @@ describe("parseAuthCallbackUrl", () => {
       `${AUTH_DEEP_LINK}#error=server_error&error_description=Oops`,
     );
     expect(result).toEqual({ kind: "error", message: "Oops" });
+  });
+});
+
+describe("isTokenInjectionAllowed", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("é true só quando VITE_ALLOW_TOKEN_DEEPLINK === 'true'", () => {
+    vi.stubEnv("VITE_ALLOW_TOKEN_DEEPLINK", "true");
+    expect(isTokenInjectionAllowed()).toBe(true);
+  });
+
+  it("é false quando a flag é 'false'", () => {
+    vi.stubEnv("VITE_ALLOW_TOKEN_DEEPLINK", "false");
+    expect(isTokenInjectionAllowed()).toBe(false);
+  });
+
+  it("é false quando a flag está ausente", () => {
+    vi.stubEnv("VITE_ALLOW_TOKEN_DEEPLINK", "");
+    expect(isTokenInjectionAllowed()).toBe(false);
   });
 });

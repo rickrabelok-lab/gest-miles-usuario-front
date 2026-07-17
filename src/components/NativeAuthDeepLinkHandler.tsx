@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { isNativePlatform, parseAuthCallbackUrl } from "@/lib/nativeAuth";
+import { isNativePlatform, isTokenInjectionAllowed, parseAuthCallbackUrl } from "@/lib/nativeAuth";
 import { supabase } from "@/lib/supabase";
 
 // Estado de módulo (sobrevive a re-runs do efeito e a remounts):
@@ -45,7 +45,7 @@ const NativeAuthDeepLinkHandler = () => {
     };
 
     const handleUrl = async (url: string) => {
-      const parsed = parseAuthCallbackUrl(url);
+      const parsed = parseAuthCallbackUrl(url, isTokenInjectionAllowed());
       if (parsed.kind === "ignore") return;
       // No cold start o mesmo deep link pode chegar por getLaunchUrl E appUrlOpen.
       if (handledUrls.has(url)) return;

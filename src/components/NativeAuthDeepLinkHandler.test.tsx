@@ -43,9 +43,18 @@ vi.mock("sonner", () => ({
   toast: { error: (...args: unknown[]) => toastErrorMock(...args) },
 }));
 
+vi.mock("@/lib/nativeAuth", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/nativeAuth")>();
+  return {
+    ...original,
+    isTokenInjectionAllowed: vi.fn(() => true),
+  };
+});
+
 import NativeAuthDeepLinkHandler, {
   __resetHandledAuthUrlsForTests,
 } from "./NativeAuthDeepLinkHandler";
+import { isTokenInjectionAllowed } from "@/lib/nativeAuth";
 
 const DEEP_LINK = "br.com.gestmiles.app://auth-callback";
 

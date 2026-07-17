@@ -15,6 +15,15 @@ export function isNativePlatform(): boolean {
   return Boolean(cap?.isNativePlatform?.());
 }
 
+/**
+ * Flag de build (pública): habilita o ramo de injeção de sessão por tokens no
+ * deep link. Off no `.env.mobile` (loja); on só no build E2E. Ver
+ * parseAuthCallbackUrl(url, allowTokenInjection).
+ */
+export function isTokenInjectionAllowed(): boolean {
+  return import.meta.env.VITE_ALLOW_TOKEN_DEEPLINK === "true";
+}
+
 export function authRedirectUrl(path: string): string {
   if (isNativePlatform()) return AUTH_DEEP_LINK;
   return `${window.location.origin}${path}`;
