@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.gestmiles.app",
+      "sha256_cert_fingerprints": [
+        "52:F0:14:66:4F:2E:0E:F4:71:4B:09:CD:16:C2:86:0B:6A:F2:BA:8A:BF:D9:FE:78:10:EA:C9:A4:B6:A8:72:94",
+        "REPLACE_WITH_PLAY_APP_SIGNING_SHA256_FROM_PLAY_CONSOLE"
+      ]
+    }
+  }
+]
