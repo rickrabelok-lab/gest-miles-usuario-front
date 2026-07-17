@@ -136,11 +136,21 @@ já é PKCE (`?code=`), então o ramo só serve o E2E.
 
 ### 3. Logs no release
 
-- **`capacitor.config.ts`:** adicionar `android: { loggingBehavior: 'production' }`. A
-  bridge nativa do Capacitor para de logar `appUrlOpen`/URL do deep link em release (só
-  loga em debug). Web inalterada.
-- **Verificação:** grep no código do handler/AuthContext garantindo que nenhum
-  `console.log`/`logger` nosso cospe a URL do callback ou tokens.
+Correção sobre a semântica do Capacitor (`loggingBehavior` é **top-level**, não
+`android.*`, e os valores são: `'none'` = nunca loga; `'debug'` = loga só em builds
+debug **[default]**; `'production'` = loga em debug E release). O default `'debug'` já
+**silencia** a bridge em release — então o objetivo (release não logar a URL do deep
+link) já vem de fábrica; a ação é **pinar o default explicitamente** pra evitar flip
+acidental pra `'production'` e documentar a intenção, mantendo o log em debug pro E2E.
+
+- **`capacitor.config.ts`:** adicionar `loggingBehavior: 'debug'` (top-level). Pin
+  defensivo; nenhuma mudança de comportamento vs. o default. Web inalterada.
+- **Nosso código:** o handler (`NativeAuthDeepLinkHandler.tsx`) **não loga a URL** em
+  nenhum ponto; o único log é `console.warn` do objeto de erro na falha de sessão (linha
+  ~75) — não contém URL nem token (é o `AuthError` do supabase-js). Fica.
+- **Verificação:** build de release + `logcat` ao abrir um deep link, confirmando que a
+  URL/tokens não aparecem (bridge silenciosa em release; nosso warn só dispara em erro,
+  sem URL).
 
 ### 4. Build + verificação
 
