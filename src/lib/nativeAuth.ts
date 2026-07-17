@@ -32,7 +32,10 @@ export type AuthCallbackResult =
  * adb) e `error`/`error_description` do GoTrue (query ou fragment).
  * Não usa `new URL()` de propósito — parsing de host em scheme custom varia.
  */
-export function parseAuthCallbackUrl(url: string): AuthCallbackResult {
+export function parseAuthCallbackUrl(
+  url: string,
+  allowTokenInjection = false,
+): AuthCallbackResult {
   if (!url.startsWith(AUTH_DEEP_LINK)) return { kind: "ignore" };
 
   const rest = url.slice(AUTH_DEEP_LINK.length);
@@ -55,13 +58,18 @@ export function parseAuthCallbackUrl(url: string): AuthCallbackResult {
   const code = queryParams.get("code");
   if (code) return { kind: "code", code };
 
-  const accessToken = fragmentParams.get("access_token");
-  const refreshToken = fragmentParams.get("refresh_token");
-  if (accessToken && refreshToken) {
-    return { kind: "tokens", accessToken, refreshToken };
-  }
-  if (accessToken || refreshToken) {
-    return { kind: "error", message: "Resposta de login incompleta." };
+  // Injeção de sessão por tokens no fragment: só é habilitada por build (E2E).
+  // Em produção/loja o flag vem `false` e este ramo fica inerte — evita
+  // session-fixation via deep link. Fluxo real de auth é PKCE (`?code=`) acima.
+  if (allowTokenInjection) {
+    const accessToken = fragmentParams.get("access_token");
+    const refreshToken = fragmentParams.get("refresh_token");
+    if (accessToken && refreshToken) {
+      return { kind: "tokens", accessToken, refreshToken };
+    }
+    if (accessToken || refreshToken) {
+      return { kind: "error", message: "Resposta de login incompleta." };
+    }
   }
 
   return { kind: "ignore" };
