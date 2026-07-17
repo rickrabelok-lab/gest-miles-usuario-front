@@ -15,6 +15,15 @@ export function isNativePlatform(): boolean {
   return Boolean(cap?.isNativePlatform?.());
 }
 
+/**
+ * Flag de build (pública): habilita o ramo de injeção de sessão por tokens no
+ * deep link. Off no `.env.mobile` (loja); on só no build E2E. Ver
+ * parseAuthCallbackUrl(url, allowTokenInjection).
+ */
+export function isTokenInjectionAllowed(): boolean {
+  return import.meta.env.VITE_ALLOW_TOKEN_DEEPLINK === "true";
+}
+
 export function authRedirectUrl(path: string): string {
   if (isNativePlatform()) return AUTH_DEEP_LINK;
   return `${window.location.origin}${path}`;
@@ -28,11 +37,16 @@ export type AuthCallbackResult =
 
 /**
  * Interpreta a URL recebida via appUrlOpen. Função pura (sem Capacitor nem
- * Supabase): aceita `?code=` (PKCE), tokens no fragment (usado tb no E2E via
- * adb) e `error`/`error_description` do GoTrue (query ou fragment).
+ * Supabase): trata `?code=` (PKCE) e `error`/`error_description` do GoTrue
+ * (query ou fragment) sempre. Tokens no fragment (`access_token`, `refresh_token`)
+ * só são honorados quando `allowTokenInjection` for true (default false), que
+ * gates a rota de injeção de sessão em produção contra session-fixation.
  * Não usa `new URL()` de propósito — parsing de host em scheme custom varia.
  */
-export function parseAuthCallbackUrl(url: string): AuthCallbackResult {
+export function parseAuthCallbackUrl(
+  url: string,
+  allowTokenInjection = false,
+): AuthCallbackResult {
   if (!url.startsWith(AUTH_DEEP_LINK)) return { kind: "ignore" };
 
   const rest = url.slice(AUTH_DEEP_LINK.length);
@@ -55,13 +69,18 @@ export function parseAuthCallbackUrl(url: string): AuthCallbackResult {
   const code = queryParams.get("code");
   if (code) return { kind: "code", code };
 
-  const accessToken = fragmentParams.get("access_token");
-  const refreshToken = fragmentParams.get("refresh_token");
-  if (accessToken && refreshToken) {
-    return { kind: "tokens", accessToken, refreshToken };
-  }
-  if (accessToken || refreshToken) {
-    return { kind: "error", message: "Resposta de login incompleta." };
+  // Injeção de sessão por tokens no fragment: só é habilitada por build (E2E).
+  // Em produção/loja o flag vem `false` e este ramo fica inerte — evita
+  // session-fixation via deep link. Fluxo real de auth é PKCE (`?code=`) acima.
+  if (allowTokenInjection) {
+    const accessToken = fragmentParams.get("access_token");
+    const refreshToken = fragmentParams.get("refresh_token");
+    if (accessToken && refreshToken) {
+      return { kind: "tokens", accessToken, refreshToken };
+    }
+    if (accessToken || refreshToken) {
+      return { kind: "error", message: "Resposta de login incompleta." };
+    }
   }
 
   return { kind: "ignore" };

@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   AUTH_DEEP_LINK,
   authRedirectUrl,
   isNativePlatform,
+  isTokenInjectionAllowed,
   parseAuthCallbackUrl,
 } from "./nativeAuth";
 
@@ -60,17 +61,47 @@ describe("parseAuthCallbackUrl", () => {
     });
   });
 
-  it("extrai tokens do fragment", () => {
+  it("extrai tokens do fragment quando allowTokenInjection=true", () => {
     expect(
-      parseAuthCallbackUrl(`${AUTH_DEEP_LINK}#access_token=at&refresh_token=rt&token_type=bearer`),
+      parseAuthCallbackUrl(
+        `${AUTH_DEEP_LINK}#access_token=at&refresh_token=rt&token_type=bearer`,
+        true,
+      ),
     ).toEqual({ kind: "tokens", accessToken: "at", refreshToken: "rt" });
   });
 
-  it("trata fragment com token incompleto como erro", () => {
-    expect(parseAuthCallbackUrl(`${AUTH_DEEP_LINK}#access_token=at`)).toEqual({
+  it("trata token incompleto como erro quando allowTokenInjection=true", () => {
+    expect(parseAuthCallbackUrl(`${AUTH_DEEP_LINK}#access_token=at`, true)).toEqual({
       kind: "error",
       message: "Resposta de login incompleta.",
     });
+  });
+
+  it("IGNORA tokens do fragment quando allowTokenInjection=false", () => {
+    expect(
+      parseAuthCallbackUrl(
+        `${AUTH_DEEP_LINK}#access_token=at&refresh_token=rt&token_type=bearer`,
+        false,
+      ),
+    ).toEqual({ kind: "ignore" });
+  });
+
+  it("IGNORA token incompleto quando allowTokenInjection=false", () => {
+    expect(parseAuthCallbackUrl(`${AUTH_DEEP_LINK}#access_token=at`, false)).toEqual({
+      kind: "ignore",
+    });
+  });
+
+  it("por default (sem 2º arg) NÃO injeta tokens — ignora", () => {
+    expect(
+      parseAuthCallbackUrl(`${AUTH_DEEP_LINK}#access_token=at&refresh_token=rt`),
+    ).toEqual({ kind: "ignore" });
+  });
+
+  it("erro do GoTrue no fragment é reportado mesmo com allowTokenInjection=false", () => {
+    expect(
+      parseAuthCallbackUrl(`${AUTH_DEEP_LINK}#error=server_error&error_description=Oops`, false),
+    ).toEqual({ kind: "error", message: "Oops" });
   });
 
   it("prioriza erro do GoTrue na query", () => {
@@ -85,5 +116,26 @@ describe("parseAuthCallbackUrl", () => {
       `${AUTH_DEEP_LINK}#error=server_error&error_description=Oops`,
     );
     expect(result).toEqual({ kind: "error", message: "Oops" });
+  });
+});
+
+describe("isTokenInjectionAllowed", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("é true só quando VITE_ALLOW_TOKEN_DEEPLINK === 'true'", () => {
+    vi.stubEnv("VITE_ALLOW_TOKEN_DEEPLINK", "true");
+    expect(isTokenInjectionAllowed()).toBe(true);
+  });
+
+  it("é false quando a flag é 'false'", () => {
+    vi.stubEnv("VITE_ALLOW_TOKEN_DEEPLINK", "false");
+    expect(isTokenInjectionAllowed()).toBe(false);
+  });
+
+  it("é false quando a flag está ausente", () => {
+    vi.stubEnv("VITE_ALLOW_TOKEN_DEEPLINK", "");
+    expect(isTokenInjectionAllowed()).toBe(false);
   });
 });
