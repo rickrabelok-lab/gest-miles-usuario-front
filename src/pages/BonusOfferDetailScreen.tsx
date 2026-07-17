@@ -217,8 +217,10 @@ export default function BonusOfferDetailScreen() {
               </div>
             )}
 
-            {/* Custo do milheiro — o número decisório do combo carrinho + transferência */}
-            {promo.milheiroCost && (
+            {/* Custo do milheiro — o número decisório do combo carrinho + transferência.
+                Zero-Trust: o valor vem do pipeline; guarda `> 0` evita renderizar lixo
+                (negativo/NaN) e mantém consistência com o badge (bonusBadge usa `> 0`). */}
+            {typeof promo.milheiroCost === 'number' && promo.milheiroCost > 0 && (
               <div className="rounded-[20px] bg-white p-4 shadow-nubank">
                 <p className="section-label mb-1.5">Custo do milheiro</p>
                 <p className="font-display text-[26px] font-bold leading-none tracking-tight tabular-nums text-primary">

@@ -64,4 +64,14 @@ describe('BonusOfferDetailScreen — custo do milheiro', () => {
     expect(screen.queryByText('Custo do milheiro')).not.toBeInTheDocument()
     expect(screen.getByText('até 70%')).toBeInTheDocument()
   })
+
+  it('milheiro inválido (<= 0) não renderiza o bloco — guarda Zero-Trust', () => {
+    state.promotions = [{ ...basePromo, milheiroCost: -5 }]
+    renderDetail()
+    expect(screen.queryByText('Custo do milheiro')).not.toBeInTheDocument()
+
+    state.promotions = [{ ...basePromo, milheiroCost: 0 }]
+    renderDetail()
+    expect(screen.queryByText('Custo do milheiro')).not.toBeInTheDocument()
+  })
 })
