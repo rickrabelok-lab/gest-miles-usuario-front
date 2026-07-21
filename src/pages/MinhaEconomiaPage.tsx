@@ -76,7 +76,7 @@ export default function MinhaEconomiaPage({ useHook = useMinhaEconomia }: MinhaE
   };
 
   return (
-    <div className="min-h-screen bg-nubank-bg pb-10">
+    <div className="min-h-screen bg-nubank-bg pb-10 pt-[var(--gm-safe-top)]">
       {/* Header — some na impressão */}
       <div className="print-hidden mx-auto max-w-md">
         <div className="flex items-center justify-between gap-3 px-5 pb-1 pt-4">

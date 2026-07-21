@@ -1620,7 +1620,7 @@ const Index = () => {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28 pt-[var(--gm-safe-top)]">
       <DashboardHeader />
 
 

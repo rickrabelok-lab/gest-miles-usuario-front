@@ -293,7 +293,7 @@ const ClientProfile = () => {
   if (!loading && !user) return <Navigate to="/auth" replace />;
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-background px-4 pb-24 pt-5">
+    <div className="mx-auto min-h-screen w-full max-w-md bg-background px-4 pb-24 pt-[calc(1.25rem+var(--gm-safe-top))]">
       <Button
         type="button"
         variant="ghost"

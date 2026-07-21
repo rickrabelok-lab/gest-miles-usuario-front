@@ -16,7 +16,7 @@ export default function HistoricoRotasScreen() {
   const rotas = data ?? []
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pt-[var(--gm-safe-top)]">
       <div className="flex items-center gap-2.5 px-5 pb-1 pt-4">
         <button
           type="button"

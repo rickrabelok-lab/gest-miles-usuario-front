@@ -108,7 +108,7 @@ export default function AssinaturaAppScreen({
   };
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-nubank-bg px-4 pb-10 pt-4">
+    <div className="mx-auto min-h-screen w-full max-w-md bg-nubank-bg px-4 pb-10 pt-[calc(1rem+var(--gm-safe-top))]">
       <button
         type="button"
         onClick={() => navigate(-1)}

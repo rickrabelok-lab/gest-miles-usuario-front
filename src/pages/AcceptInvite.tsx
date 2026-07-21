@@ -83,7 +83,7 @@ const AcceptInvite = () => {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center bg-nubank-bg p-5">
+    <div className="mx-auto flex min-h-screen w-full max-w-md items-center justify-center bg-nubank-bg p-5 pt-[calc(1.25rem+var(--gm-safe-top))]">
       <Card className="w-full max-w-sm gradient-card-subtle shadow-nubank">
         <CardHeader>
           <CardTitle className="text-xl text-nubank-text">Convite - cliente gestão</CardTitle>

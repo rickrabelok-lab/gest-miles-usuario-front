@@ -114,7 +114,7 @@ const PerfilPage = () => {
   const divider = <div className="mx-3.5 h-px bg-[#F1F0F3]" />;
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28 pt-[var(--gm-safe-top)]">
       <div className="flex flex-col items-center px-5 pt-8 text-center">
         <span className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-gradient-to-br from-[#8A05BE] to-[#B56CFF] font-display text-2xl font-bold text-white shadow-[0_6px_18px_-4px_rgba(138,5,190,0.5)]">
           {getInitials(displayName || user?.email || "?")}

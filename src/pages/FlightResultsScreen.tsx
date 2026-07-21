@@ -121,7 +121,7 @@ export default function FlightResultsScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-nubank-bg">
+    <div className="min-h-screen bg-nubank-bg pt-[var(--gm-safe-top)]">
       {/* Hero */}
       <div style={{ background: "linear-gradient(135deg,#8A05BE 0%,#6A00A3 100%)" }}
            className="px-5 pb-5 pt-3 text-white">
@@ -345,7 +345,7 @@ export default function FlightResultsScreen() {
 
       {/* Sticky bottom bar */}
       {selectedDepartFlight ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-nubank-border bg-white/97 backdrop-blur-sm shadow-lg">
+        <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-nubank-border bg-white/97 backdrop-blur-sm shadow-lg pb-[var(--gm-safe-bottom)]">
           <div className="mx-auto w-full max-w-md px-4 pt-2.5 pb-2">
             <div className="mb-2 flex items-center justify-between rounded-[10px] bg-purple-50 px-3 py-2">
               <div>
@@ -381,7 +381,7 @@ export default function FlightResultsScreen() {
           <BottomNav showClientSelector={isGestor} clients={[]} />
         </div>
       ) : (
-        <div className="fixed inset-x-0 bottom-0 z-40">
+        <div className="fixed inset-x-0 bottom-0 z-40 pb-[var(--gm-safe-bottom)]">
           <BottomNav showClientSelector={isGestor} clients={[]} />
         </div>
       )}

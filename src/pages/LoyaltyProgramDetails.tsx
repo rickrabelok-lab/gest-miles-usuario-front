@@ -993,7 +993,7 @@ const LoyaltyProgramDetails = () => {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-nubank-bg text-nubank-text">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-nubank-bg text-nubank-text pt-[var(--gm-safe-top)]">
       {/* Header */}
       <header className="px-5 pb-3 pt-4">
         <div className="flex items-center justify-between gap-2">

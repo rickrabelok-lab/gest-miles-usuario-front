@@ -204,7 +204,7 @@ const AssinaturaClientePage = () => {
 
   if (!hasApiUrl()) {
     return (
-      <div className="mx-auto min-h-screen max-w-md bg-nubank-bg p-5">
+      <div className="mx-auto min-h-screen max-w-md bg-nubank-bg p-5 pt-[calc(1.25rem+var(--gm-safe-top))]">
         <div className="flex items-center gap-2.5 pt-1">
           <button
             type="button"
@@ -250,7 +250,7 @@ const AssinaturaClientePage = () => {
       : "Gratuito";
 
   return (
-    <div className="mx-auto min-h-screen max-w-md space-y-3.5 bg-nubank-bg p-5 pb-24">
+    <div className="mx-auto min-h-screen max-w-md space-y-3.5 bg-nubank-bg p-5 pb-24 pt-[calc(1.25rem+var(--gm-safe-top))]">
       <div className="flex items-center gap-2.5">
         <button
           type="button"

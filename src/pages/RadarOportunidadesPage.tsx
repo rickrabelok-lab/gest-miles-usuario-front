@@ -160,7 +160,7 @@ const RadarOportunidadesPage = () => {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28 pt-[var(--gm-safe-top)]">
       <header className="flex items-center justify-between gap-3 px-5 pb-1 pt-4">
         <div className="flex items-center gap-2.5">
           <button
