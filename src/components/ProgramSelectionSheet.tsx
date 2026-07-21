@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BonusProgramLogo, hasCuratedProgramMark } from "@/components/bonus/BonusProgramLogo";
 import {
   CATEGORY_META,
   categoryOf,
@@ -320,9 +321,9 @@ export function ProgramSelectionSheet({
 // ── Sub-componentes internos ──────────────────────────────────────────────────
 
 /**
- * Logo do programa: tile branco com a imagem (asset/branding/CDN) e, em caso de
- * falha de carregamento ou ausência de URL, cai num badge com a cor da marca +
- * o monograma. Exportado para teste.
+ * Logo do programa: tile branco com a imagem (branding/admin) e, em caso de
+ * falha de carregamento ou ausência de URL, cai no tile-padrão do app
+ * (wordmark curado ou chip de iniciais na cor da marca). Exportado para teste.
  */
 export function ProgramLogo({
   logoImageUrl,
@@ -341,27 +342,32 @@ export function ProgramLogo({
     setFailed(false);
   }, [logoImageUrl]);
 
-  const showImage = Boolean(logoImageUrl) && !failed;
+  // Símbolo SVG empacotado vence a imagem do branding (qualidade garantida).
+  const showImage = Boolean(logoImageUrl) && !failed && !hasCuratedProgramMark(name);
+
+  if (!showImage) {
+    return (
+      <BonusProgramLogo
+        program={name}
+        size={40}
+        fallbackInitials={logo}
+        fallbackColor={logoColor}
+      />
+    );
+  }
 
   return (
-    <div
-      className={cn(
-        "flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl",
-        showImage && "border border-[#ECECEC] bg-white",
-      )}
-      style={showImage ? undefined : { background: logoColor }}
-    >
-      {showImage ? (
-        <img
-          src={logoImageUrl}
-          alt={name}
-          loading="lazy"
-          onError={() => setFailed(true)}
-          className="h-full w-full object-contain p-1"
-        />
-      ) : (
-        <span className="font-display text-[12px] font-bold text-white">{logo}</span>
-      )}
+    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#ECECEC] bg-white">
+      <img
+        src={logoImageUrl}
+        alt={name}
+        width={32}
+        height={32}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+        className="h-full w-full object-contain p-1"
+      />
     </div>
   );
 }

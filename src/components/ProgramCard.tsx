@@ -1,19 +1,8 @@
 import { AlertCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AirlineLogo from "@/components/AirlineLogo";
+import { BonusProgramLogo, hasCuratedProgramMark } from "@/components/bonus/BonusProgramLogo";
 
-/**
- * Programas que mapeam diretamente para um asset curado (`AirlineLogo`):
- *  - garantem ratio/qualidade consistentes;
- *  - sobrepõem a logo subida no Admin SE essa for genérica/com fundo;
- *  - se preferires usar a logo subida pelo admin, basta o admin definir uma
- *    logo dedicada nesse programa (ex.: wordmark «Smiles» da própria marca).
- */
-const PROGRAM_TO_AIRLINE: Record<string, string> = {
-  "latam-pass": "LATAM",
-  smiles: "GOL",
-  "tudo-azul": "AZUL",
-};
 
 interface ProgramCardProps {
   programId?: string;
@@ -82,9 +71,15 @@ const ProgramCard = (props: ProgramCardProps) => {
     }
   };
 
-  const curatedAirline = programId ? PROGRAM_TO_AIRLINE[programId] : undefined;
-  const useCuratedAirline = !logoImageUrl && Boolean(curatedAirline);
-  const hasBrandImage = Boolean(logoImageUrl) || useCuratedAirline;
+  // Símbolo SVG empacotado vence tudo (qualidade garantida); depois a logo
+  // custom (admin/branding); se faltar ou falhar o carregamento, cai no
+  // tile-padrão (wordmark curado ou chip de iniciais) — nunca quebra.
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => {
+    setImageFailed(false);
+  }, [logoImageUrl]);
+  const showBrandImage =
+    Boolean(logoImageUrl) && !imageFailed && !hasCuratedProgramMark(programId ?? name);
 
   // Badge de vencimento no canto (design 2a): -30d urgente, -60d atenção, -90d informativo.
   const expiringBadgeClass =
@@ -107,33 +102,30 @@ const ProgramCard = (props: ProgramCardProps) => {
       )}
 
       <div className="flex items-center justify-between">
-        <div
-          className={
-            hasBrandImage
-              ? "flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-nubank-border bg-white p-0.5"
-              : "flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-xl text-[11px] font-bold ring-1 ring-black/[0.04]"
-          }
-          style={
-            hasBrandImage
-              ? undefined
-              : { backgroundColor: logoColor + "1A", color: logoColor }
-          }
-          aria-hidden
-        >
-          {logoImageUrl ? (
+        {showBrandImage ? (
+          <div
+            className="flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-nubank-border bg-white p-0.5"
+            aria-hidden
+          >
             <img
               src={logoImageUrl}
               alt={`Logo ${name}`}
+              width={30}
+              height={30}
               className="h-full w-full object-contain mix-blend-multiply"
               loading="lazy"
               decoding="async"
+              onError={() => setImageFailed(true)}
             />
-          ) : useCuratedAirline ? (
-            <AirlineLogo airline={curatedAirline as string} size={30} />
-          ) : (
-            <span>{logo}</span>
-          )}
-        </div>
+          </div>
+        ) : (
+          <BonusProgramLogo
+            program={programId ?? name}
+            size={38}
+            fallbackInitials={logo}
+            fallbackColor={logoColor}
+          />
+        )}
 
         {expiringTag ? (
           <span className={`rounded-full px-2 py-1 text-[10.5px] font-bold leading-none ${expiringBadgeClass}`}>

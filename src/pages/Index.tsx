@@ -237,7 +237,7 @@ const PROGRAM_META_MAP: Record<string, Omit<ProgramMeta, "slug">> = {
   livelo: { name: "Livelo", logo: "Lv", logoColor: "#e91e63" },
   esfera: { name: "Esfera", logo: "Es", logoColor: "#333333" },
   smiles: { name: "Smiles", logo: "Sm", logoColor: "#f59e42" },
-  kmv: { name: "KMV", logo: "KM", logoColor: "#2e7d32" },
+  kmv: { name: "KMV", logo: "KM", logoColor: "#0046AD" },
   "tudo-azul": { name: "Tudo Azul", logo: "TA", logoColor: "#1d4ed8" },
   iberia: { name: "Ibéria", logo: "IB", logoColor: "#b91c1c" },
   "copa-airlines": { name: "Copa Airlines", logo: "CM", logoColor: "#00458c" },
@@ -551,7 +551,7 @@ const AVAILABLE_PROGRAM_OPTIONS: Array<{
     programId: "kmv",
     name: "KMV",
     logo: "KM",
-    logoColor: "#2e7d32",
+    logoColor: "#0046AD",
   },
   {
     programId: "uau-caixa",
@@ -590,34 +590,6 @@ const AVAILABLE_PROGRAM_OPTIONS: Array<{
     logoColor: "#006FCF",
   },
 ];
-
-/** Domínio da marca por programa, para resolver a logo via CDN (Clearbit). */
-const PROGRAM_LOGO_DOMAIN: Record<string, string> = {
-  "latam-pass": "latam.com",
-  smiles: "smiles.com.br",
-  "tudo-azul": "voeazul.com.br",
-  iberia: "iberia.com",
-  "copa-airlines": "copaair.com",
-  finnair: "finnair.com",
-  "qatar-airways": "qatarairways.com",
-  "british-airways": "britishairways.com",
-  tap: "flytap.com",
-  "american-airlines": "aa.com",
-  livelo: "livelo.com.br",
-  esfera: "esfera.com.vc",
-  itau: "itau.com.br",
-  "inter-loop": "bancointer.com.br",
-  amex: "americanexpress.com",
-  "atomos-c6": "c6bank.com.br",
-  "uau-caixa": "caixa.gov.br",
-  "brb-dux": "brb.com.br",
-  "all-accor": "all.accor.com",
-};
-
-const cdnLogoForProgram = (programId: string): string | undefined => {
-  const domain = PROGRAM_LOGO_DOMAIN[programId];
-  return domain ? `https://logo.clearbit.com/${domain}` : undefined;
-};
 
 const basePrograms: ProgramCardData[] = AVAILABLE_PROGRAM_OPTIONS.filter((option) =>
   ["latam-pass", "livelo", "esfera", "smiles", "iberia", "tudo-azul"].includes(
@@ -781,13 +753,6 @@ const Index = () => {
     const out: Record<string, string> = { ...brandingConfig.data.programCardLogos };
     for (const [k, v] of Object.entries(optionLogoImages)) {
       if (typeof v === "string" && v.trim()) out[k] = v.trim();
-    }
-    // Fallback de logo via CDN só onde não há logo custom (branding/localStorage).
-    for (const option of AVAILABLE_PROGRAM_OPTIONS) {
-      if (!out[option.programId]) {
-        const cdn = cdnLogoForProgram(option.programId);
-        if (cdn) out[option.programId] = cdn;
-      }
     }
     return out;
   }, [brandingConfig.data.programCardLogos, optionLogoImages]);

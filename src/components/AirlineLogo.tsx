@@ -21,6 +21,10 @@ const AIRLINE_LOGO_BY_CODE: Record<string, { src: string; removeDarkBg?: boolean
 
 const normalizeAirline = (airline: string) => airline.trim().toUpperCase();
 
+// Resultado do processamento (remoção do fundo escuro) por src — evita
+// redecodificar/reprocessar o PNG via canvas a cada mount em listas.
+const processedSrcCache = new Map<string, string>();
+
 type AirlineLogoProps = {
   airline: string | null | undefined;
   size?: number;
@@ -30,11 +34,19 @@ const AirlineLogo = ({ airline, size = 16 }: AirlineLogoProps) => {
   const normalized = airline ? normalizeAirline(airline) : "";
   const logoMeta = normalized ? AIRLINE_LOGO_BY_CODE[normalized] : undefined;
   const logoSrc = logoMeta?.src;
-  const [processedSrc, setProcessedSrc] = useState<string | null>(null);
+  const [processedSrc, setProcessedSrc] = useState<string | null>(() =>
+    logoSrc ? processedSrcCache.get(logoSrc) ?? null : null,
+  );
 
   useEffect(() => {
     if (!logoMeta?.removeDarkBg || !logoSrc) {
       setProcessedSrc(null);
+      return;
+    }
+
+    const cached = processedSrcCache.get(logoSrc);
+    if (cached) {
+      setProcessedSrc(cached);
       return;
     }
 
@@ -69,7 +81,9 @@ const AirlineLogo = ({ airline, size = 16 }: AirlineLogoProps) => {
       }
 
       context.putImageData(imageData, 0, 0);
-      setProcessedSrc(canvas.toDataURL("image/png"));
+      const processed = canvas.toDataURL("image/png");
+      processedSrcCache.set(logoSrc, processed);
+      setProcessedSrc(processed);
     };
 
     image.onerror = () => {
