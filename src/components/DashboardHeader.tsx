@@ -211,9 +211,9 @@ const DashboardHeader = () => {
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="flex h-full w-3/4 flex-col overflow-hidden p-0 sm:max-w-xs [&>button]:right-4 [&>button]:top-4 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:hover:text-white"
+            className="flex h-full w-3/4 flex-col overflow-hidden p-0 sm:max-w-xs [&>button]:right-4 [&>button]:top-4 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:hover:text-white [&>button]:top-[calc(1rem+var(--gm-safe-top))]"
           >
-            <div className="flex shrink-0 items-center justify-between bg-[#8A05BE] px-4 py-4 pr-12">
+            <div className="flex shrink-0 items-center justify-between bg-[#8A05BE] px-4 py-4 pr-12 pt-[calc(1rem+var(--gm-safe-top))]">
               <div className="flex items-center gap-2">
                 <GestMilesLogo size={24} variant="light" className="shrink-0" />
                 <span className="font-display text-lg font-bold tracking-tight text-white">
@@ -222,7 +222,7 @@ const DashboardHeader = () => {
               </div>
             </div>
 
-            <div className="flex flex-1 flex-col overflow-y-auto bg-white px-4 py-5 dark:bg-gray-50">
+            <div className="flex flex-1 flex-col overflow-y-auto bg-white px-4 py-5 pb-[var(--gm-safe-bottom)] dark:bg-gray-50">
               {user ? (
                 <>
                   <section className="mb-5">
