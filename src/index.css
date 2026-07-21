@@ -58,6 +58,13 @@
 
     --radius: 1rem;
 
+    /* Safe-areas (edge-to-edge Android/iOS): o Capacitor 8 injeta --safe-area-inset-*
+       no nativo; env() cobre WebView >= 140; na web tudo resolve 0px. */
+    --gm-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    --gm-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+    --gm-safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+    --gm-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+
     --header-bg: 283 95% 38%;
     --header-foreground: 0 0% 100%;
 
