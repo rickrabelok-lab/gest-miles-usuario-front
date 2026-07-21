@@ -1,25 +1,4 @@
-import {
-  User,
-  Menu,
-  Zap,
-  LogIn,
-  LogOut,
-  FileEdit,
-  Bell,
-  Info,
-  UserPlus,
-  HelpCircle,
-  MessageCircle,
-  Calculator,
-  Radio,
-  CreditCard,
-  TrendingUp,
-  ShieldCheck,
-  FileText,
-  Cookie,
-  Download,
-} from "lucide-react";
-import GestMilesLogo from "@/components/GestMilesLogo";
+import { User, Zap, LogIn, LogOut, CreditCard } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -29,14 +8,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveOptionalHeaderWordmarkImageUrl } from "@/lib/gestMilesBranding";
 import { useBrandingConfig } from "@/hooks/useBrandingConfig";
 import { useBonusPromotions } from "@/hooks/useBonusPromotions";
-import { toast } from "sonner";
-import { gatherUserData, deliverJson } from "@/services/dataExportService";
-import { isNativePlatform } from "@/lib/nativeAuth";
 import NotificationsDropdown from "@/components/notifications/NotificationsDropdown";
 
 const getInitials = (email: string | undefined) => {
@@ -59,7 +34,6 @@ const getDisplayName = (user: { email?: string; user_metadata?: Record<string, u
 
 const DashboardHeader = () => {
   const [bannerVisible, setBannerVisible] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
 
   // Banner de bônus: usa o feed real (mesma query da seção abaixo — cache compartilhado).
@@ -84,32 +58,6 @@ const DashboardHeader = () => {
       navigate("/");
     } catch {
       navigate("/");
-    }
-  };
-
-  const handleExportData = async () => {
-    if (!user || isExporting) return;
-    setIsExporting(true);
-    const toastId = toast.loading("Gerando seu arquivo de dados…");
-    try {
-      const bundle = await gatherUserData(user.id, {
-        id: user.id,
-        email: user.email ?? null,
-        criadoEm: (user as { created_at?: string }).created_at ?? null,
-      });
-      const outcome = await deliverJson(bundle);
-      if (outcome === "cancelled") {
-        toast.dismiss(toastId);
-      } else {
-        toast.success(
-          isNativePlatform() ? "Pronto! Seu arquivo de dados foi gerado." : "Pronto! Seu arquivo foi baixado.",
-          { id: toastId },
-        );
-      }
-    } catch {
-      toast.error("Não foi possível gerar seu arquivo agora. Tente novamente.", { id: toastId });
-    } finally {
-      setIsExporting(false);
     }
   };
 
@@ -199,219 +147,6 @@ const DashboardHeader = () => {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Sheet>
-          <SheetTrigger asChild>
-            <button
-              type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-nubank-border bg-white text-[#54535A] shadow-nubank transition-colors hover:bg-nubank-bg active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              aria-label="Abrir menu"
-            >
-              <Menu size={20} strokeWidth={1.75} />
-            </button>
-          </SheetTrigger>
-          <SheetContent
-            side="right"
-            className="flex h-full w-3/4 flex-col overflow-hidden p-0 sm:max-w-xs [&>button]:right-4 [&>button]:top-4 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:hover:text-white [&>button]:top-[calc(1rem+var(--gm-safe-top))]"
-          >
-            <div className="flex shrink-0 items-center justify-between bg-[#8A05BE] px-4 py-4 pr-12 pt-[calc(1rem+var(--gm-safe-top))]">
-              <div className="flex items-center gap-2">
-                <GestMilesLogo size={24} variant="light" className="shrink-0" />
-                <span className="font-display text-lg font-bold tracking-tight text-white">
-                  Gest Miles
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-1 flex-col overflow-y-auto bg-white px-4 py-5 pb-[var(--gm-safe-bottom)] dark:bg-gray-50">
-              {user ? (
-                <>
-                  <section className="mb-5">
-                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A05BE]">
-                      Ações rápidas
-                    </p>
-                    <div className="space-y-0.5">
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/registrar-emissao")}
-                        >
-                          <FileEdit className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Registrar Emissão</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/alertas/novo")}
-                        >
-                          <Bell className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Adicionar Alerta</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/simular-compra-milhas")}
-                        >
-                          <Calculator className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Compra de Milhas</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/radar-oportunidades")}
-                        >
-                          <Radio className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Radar de Oportunidades</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/minha-economia")}
-                        >
-                          <TrendingUp className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Minha Economia</span>
-                        </button>
-                      </SheetClose>
-                    </div>
-                  </section>
-
-                  <section className="mb-5">
-                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A05BE]">
-                      Saiba mais
-                    </p>
-                    <div className="space-y-0.5">
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/sobre")}
-                        >
-                          <Info className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Sobre a GestMiles</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/convide-amigos")}
-                        >
-                          <UserPlus className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Convide Amigos</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/duvidas")}
-                        >
-                          <HelpCircle className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Dúvidas</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/fale-conosco")}
-                        >
-                          <MessageCircle className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Fale Conosco</span>
-                        </button>
-                      </SheetClose>
-                    </div>
-                  </section>
-
-                  <section className="mb-5">
-                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A05BE]">
-                      Legal
-                    </p>
-                    <div className="space-y-0.5">
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/privacidade")}
-                        >
-                          <ShieldCheck className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Privacidade</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/termos")}
-                        >
-                          <FileText className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Termos de Uso</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={() => navigate("/cookies")}
-                        >
-                          <Cookie className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>Cookies</span>
-                        </button>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <button
-                          type="button"
-                          disabled={isExporting}
-                          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm text-gray-800 transition-colors hover:bg-gray-100 disabled:opacity-60 dark:text-gray-900 dark:hover:bg-gray-200/80"
-                          onClick={handleExportData}
-                        >
-                          <Download className="h-5 w-5 shrink-0 text-[#8A05BE]" />
-                          <span>{isExporting ? "Gerando…" : "Baixar meus dados"}</span>
-                        </button>
-                      </SheetClose>
-                    </div>
-                  </section>
-
-                  <div className="mt-auto border-t border-gray-200 pt-4 dark:border-gray-200">
-                    <SheetClose asChild>
-                      <button
-                        type="button"
-                        className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-950/30"
-                        onClick={handleLogout}
-                      >
-                        <LogOut className="h-5 w-5 shrink-0" />
-                        <span>Sair</span>
-                      </button>
-                    </SheetClose>
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-1 flex-col justify-center">
-                  <p className="mb-4 text-sm text-gray-600 dark:text-gray-600">
-                    Entre ou crie uma conta para acessar todos os recursos da GestMiles.
-                  </p>
-                  <SheetClose asChild>
-                    <button
-                      type="button"
-                      className="w-full rounded-xl bg-[#8A05BE] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-95"
-                      onClick={() => navigate("/auth")}
-                    >
-                      Entrar ou criar conta
-                    </button>
-                  </SheetClose>
-                </div>
-              )}
-            </div>
-          </SheetContent>
-          </Sheet>
         </div>
       </div>
 

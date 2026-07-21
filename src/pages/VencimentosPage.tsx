@@ -1,6 +1,6 @@
 import { useState, useMemo, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BellRing, Plus, Search, Zap, X } from "lucide-react";
+import { ArrowLeft, BellRing, ChevronRight, Plus, Radio, Search, Zap, X } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGestor } from "@/hooks/useGestor";
@@ -355,6 +355,25 @@ const VencimentosPage = () => {
       </header>
 
       <main className="flex flex-col gap-3 px-5 py-3">
+        {!isGestor && (
+          <button
+            type="button"
+            onClick={() => navigate("/radar-oportunidades")}
+            className="flex items-center gap-3 rounded-[20px] bg-white p-4 text-left shadow-nubank-card transition-colors hover:bg-nubank-bg/60"
+          >
+            <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px] bg-nubank-tint text-nubank-primary">
+              <Radio size={20} strokeWidth={1.75} aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-nubank-text">Radar de Oportunidades</span>
+              <span className="block text-[12.5px] text-nubank-text-secondary">
+                Sugestões pra aproveitar suas milhas
+              </span>
+            </span>
+            <ChevronRight size={17} strokeWidth={2} className="shrink-0 text-[#C4C3C9]" aria-hidden />
+          </button>
+        )}
+
         {/* Demanda banner */}
         {showBanner && (
           <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-800">

@@ -36,7 +36,6 @@ const BonusOfferDetailScreen = lazy(() => import("./pages/BonusOfferDetailScreen
 const HistoricoRotasScreen = lazy(() => import("./pages/HistoricoRotasScreen"));
 const VencimentosPage = lazy(() => import("./pages/VencimentosPage"));
 const MinhaEconomiaPage = lazy(() => import("./pages/MinhaEconomiaPage"));
-const RegistrarEmissaoPage = lazy(() => import("./pages/RegistrarEmissaoPage"));
 const CriarAlertaPage = lazy(() => import("./pages/CriarAlertaPage"));
 const SobreGestMilesPage = lazy(() => import("./pages/SobreGestMilesPage"));
 const ConvideAmigosPage = lazy(() => import("./pages/ConvideAmigosPage"));
@@ -186,14 +185,6 @@ const App = () => {
                   element={
                     <ClienteOnly>
                       <BonusOfferDetailScreen />
-                    </ClienteOnly>
-                  }
-                />
-                <Route
-                  path="/registrar-emissao"
-                  element={
-                    <ClienteOnly>
-                      <RegistrarEmissaoPage />
                     </ClienteOnly>
                   }
                 />

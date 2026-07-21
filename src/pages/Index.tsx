@@ -4,10 +4,12 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
+  Calculator,
   ChevronDown,
   ChevronRight,
   Clock,
   Download,
+  FileText,
   Plane,
   Plus,
   Search,
@@ -1754,6 +1756,23 @@ const Index = () => {
             </button>
           )}
 
+          <button
+            type="button"
+            onClick={() => navigate("/simular-compra-milhas")}
+            className="mx-5 mt-3 flex items-center gap-3 rounded-[20px] bg-white p-4 text-left shadow-nubank-card transition-colors hover:bg-nubank-bg/60"
+          >
+            <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px] bg-nubank-tint text-nubank-primary">
+              <Calculator size={20} strokeWidth={1.75} aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-nubank-text">Simular compra de milhas</span>
+              <span className="block text-[12.5px] text-nubank-text-secondary">
+                Compare o custo do milheiro antes de comprar
+              </span>
+            </span>
+            <ChevronRight size={17} strokeWidth={2} className="shrink-0 text-[#C4C3C9]" aria-hidden />
+          </button>
+
           {vencimentoCritico && (
             <div className="mx-5 mt-5 flex items-center gap-3 rounded-[20px] border-l-4 border-[#E4574A] bg-white p-4 shadow-nubank-card">
               <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px] bg-destructive-soft text-destructive">
@@ -2276,14 +2295,24 @@ const Index = () => {
                 );
               })}
             </div>
-            <button
-              type="button"
-              onClick={handleDownloadEconomiaPdf}
-              className="inline-flex items-center gap-1 rounded-full border border-nubank-border bg-white px-3 py-1.5 text-xs font-semibold text-nubank-text shadow-nubank transition-colors hover:bg-white/90"
-            >
-              <Download size={14} />
-              Baixar PDF
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate("/minha-economia")}
+                className="inline-flex items-center gap-1 rounded-full border border-nubank-border bg-white px-3 py-1.5 text-xs font-semibold text-nubank-text shadow-nubank transition-colors hover:bg-white/90"
+              >
+                <FileText size={14} />
+                Relatório completo
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadEconomiaPdf}
+                className="inline-flex items-center gap-1 rounded-full border border-nubank-border bg-white px-3 py-1.5 text-xs font-semibold text-nubank-text shadow-nubank transition-colors hover:bg-white/90"
+              >
+                <Download size={14} />
+                Baixar PDF
+              </button>
+            </div>
           </div>
           <div ref={economiaReportRef} className="space-y-3">
             <div className="rounded-2xl border border-nubank-border bg-white p-4 shadow-nubank">
