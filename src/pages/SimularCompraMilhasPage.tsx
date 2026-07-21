@@ -304,7 +304,7 @@ const SimularCompraMilhasPage = () => {
     <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
       <DashboardHeader />
 
-      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur-sm pt-[var(--gm-safe-top)]">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             type="button"

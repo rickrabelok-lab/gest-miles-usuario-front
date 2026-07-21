@@ -120,7 +120,7 @@ export default function EmissionDetailsScreen() {
 
   return (
     <div className="min-h-screen bg-nubank-bg">
-      <header className="sticky top-0 z-40 border-b border-nubank-border bg-white/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-nubank-border bg-white/90 backdrop-blur-sm pt-[var(--gm-safe-top)]">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
           <button type="button" onClick={() => navigate(-1)}
             className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-nubank-text-secondary hover:bg-nubank-bg">
@@ -188,7 +188,7 @@ export default function EmissionDetailsScreen() {
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-nubank-border bg-white/95 backdrop-blur-sm">
+      <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-nubank-border bg-white/95 backdrop-blur-sm pb-[var(--gm-safe-bottom)]">
         <div className="mx-auto w-full max-w-md px-4 pt-3 pb-2">
           <button
             type="button"
