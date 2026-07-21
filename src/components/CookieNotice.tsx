@@ -29,7 +29,7 @@ export default function CookieNotice() {
     <div
       role="region"
       aria-label="Aviso de cookies"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-nubank-border bg-white/95 px-4 py-3 backdrop-blur dark:bg-nubank-bg/95"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-nubank-border bg-white/95 px-4 py-3 pb-[calc(0.75rem+var(--gm-safe-bottom))] backdrop-blur dark:bg-nubank-bg/95"
     >
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 sm:flex-row sm:justify-between">
         <p className="text-xs leading-relaxed text-nubank-text-secondary">

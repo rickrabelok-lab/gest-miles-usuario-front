@@ -12,7 +12,7 @@ interface LegalShellProps {
 export function LegalShell({ title, updatedAt, children }: LegalShellProps) {
   return (
     <div className="min-h-screen bg-nubank-bg text-nubank-text">
-      <header className="border-b border-nubank-border bg-white">
+      <header className="border-b border-nubank-border bg-white pt-[var(--gm-safe-top)]">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
           <Link
             to="/"
