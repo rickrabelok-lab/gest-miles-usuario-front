@@ -87,6 +87,22 @@ const WORDMARKS: Record<string, Wordmark> = {
   allaccor: { parts: [{ text: 'ALL', color: '#050033' }], fontSize: 11 },
   // Km de Vantagens (Ipiranga) — azul institucional; catálogo antigo dizia verde (errado).
   kmv: { parts: [{ text: 'KMV', color: '#0046AD' }], fontSize: 10 },
+  // Uau CAIXA — identidade própria do programa (índigo/azul elétrico do site oficial uaucaixa.com.br).
+  uaucaixa: {
+    stacked: true,
+    parts: [
+      { text: 'Uau', color: '#181887', fontSize: 10 },
+      { text: 'CAIXA', color: '#251EEC', fontSize: 4.5 },
+    ],
+  },
+  // DUX (BRB) — cartão premium preto; azul institucional do BRB (brbcard.com.br).
+  brbdux: {
+    stacked: true,
+    parts: [
+      { text: 'DUX', color: '#1A1A1A', fontSize: 10 },
+      { text: 'BRB', color: '#0078BF', fontSize: 4.5 },
+    ],
+  },
 }
 
 /** Normaliza id/nome pra chave de wordmark: minúsculas, sem acentos, só [a-z0-9]. */
