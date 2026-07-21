@@ -108,7 +108,7 @@ type ActionPlanDemandItem = {
 
 const ACTION_PLAN_PROGRAM_LABELS = [
   ["latam", "Latam Pass"],
-  ["azul", "Tudo Azul"],
+  ["azul", "Azul Fidelidade"],
   ["smiles", "Smiles"],
   ["avios", "Avios"],
 ] as const;
@@ -238,7 +238,7 @@ const PROGRAM_META_MAP: Record<string, Omit<ProgramMeta, "slug">> = {
   esfera: { name: "Esfera", logo: "Es", logoColor: "#333333" },
   smiles: { name: "Smiles", logo: "Sm", logoColor: "#f59e42" },
   kmv: { name: "KMV", logo: "KM", logoColor: "#0046AD" },
-  "tudo-azul": { name: "Tudo Azul", logo: "TA", logoColor: "#1d4ed8" },
+  "tudo-azul": { name: "Azul Fidelidade", logo: "TA", logoColor: "#1d4ed8" },
   iberia: { name: "Ibéria", logo: "IB", logoColor: "#b91c1c" },
   "copa-airlines": { name: "Copa Airlines", logo: "CM", logoColor: "#00458c" },
   finnair: { name: "Finnair", logo: "FN", logoColor: "#2563eb" },
@@ -495,7 +495,7 @@ const AVAILABLE_PROGRAM_OPTIONS: Array<{
   },
   {
     programId: "tudo-azul",
-    name: "Tudo azul",
+    name: "Azul Fidelidade",
     logo: "TA",
     logoColor: "#1d4ed8",
   },
@@ -2380,7 +2380,7 @@ const Index = () => {
                     }`}
                     onClick={() => setEmissoesProgramFilter("tudoazul")}
                   >
-                    TudoAzul
+                    Azul Fidelidade
                   </button>
                   <button
                     type="button"

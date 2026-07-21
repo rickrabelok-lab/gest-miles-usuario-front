@@ -28,7 +28,7 @@ export type OportunidadeVoo = {
 const PROGRAMAS = [
   "LATAM Pass",
   "Smiles",
-  "TudoAzul",
+  "Azul Fidelidade",
   "Flying Blue",
   "Iberia Plus",
 ] as const;

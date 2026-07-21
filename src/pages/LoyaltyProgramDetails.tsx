@@ -130,7 +130,7 @@ type SaveSyncState = "local_only" | "saving" | "synced";
 
 const ACTION_PLAN_LABEL_BY_KEY = {
   latam: "Latam Pass",
-  azul: "Tudo Azul",
+  azul: "Azul Fidelidade",
   smiles: "Smiles",
   avios: "Avios",
 } as const;
