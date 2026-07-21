@@ -4,6 +4,8 @@ import {
   Bell,
   ChevronRight,
   CreditCard,
+  Download,
+  FileText,
   HelpCircle,
   Info,
   LogOut,
@@ -13,10 +15,13 @@ import {
   User,
   UserPlus,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { gatherUserData, deliverJson } from "@/services/dataExportService";
+import { isNativePlatform } from "@/lib/nativeAuth";
 
 type GestorInfo = { nome: string };
 
@@ -81,6 +86,34 @@ const PerfilPage = () => {
       await signOut();
     } finally {
       navigate("/auth");
+    }
+  };
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportData = async () => {
+    if (!user || isExporting) return;
+    setIsExporting(true);
+    const toastId = toast.loading("Gerando seu arquivo de dados…");
+    try {
+      const bundle = await gatherUserData(user.id, {
+        id: user.id,
+        email: user.email ?? null,
+        criadoEm: (user as { created_at?: string }).created_at ?? null,
+      });
+      const outcome = await deliverJson(bundle);
+      if (outcome === "cancelled") {
+        toast.dismiss(toastId);
+      } else {
+        toast.success(
+          isNativePlatform() ? "Pronto! Seu arquivo de dados foi gerado." : "Pronto! Seu arquivo foi baixado.",
+          { id: toastId },
+        );
+      }
+    } catch {
+      toast.error("Não foi possível gerar seu arquivo agora. Tente novamente.", { id: toastId });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -205,6 +238,10 @@ const PerfilPage = () => {
             {menuRow(Info, "Sobre a GestMiles", () => navigate("/sobre"))}
             {divider}
             {menuRow(ShieldCheck, "Privacidade e LGPD", () => navigate("/privacidade"))}
+            {divider}
+            {menuRow(FileText, "Termos de Uso", () => navigate("/termos"))}
+            {divider}
+            {menuRow(Download, isExporting ? "Gerando…" : "Baixar meus dados", () => void handleExportData())}
           </div>
         </div>
 
