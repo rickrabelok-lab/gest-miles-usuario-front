@@ -23,4 +23,10 @@ describe("CookieNotice", () => {
     render(<CookieNotice />);
     expect(screen.queryByText(/cookies essenciais/i)).toBeNull();
   });
+
+  it("empilha ACIMA da BottomNav (z-[100]) — Entendi tocável em telas logadas", () => {
+    render(<CookieNotice />);
+    const region = screen.getByRole("region", { name: /aviso de cookies/i });
+    expect(region.className).toContain("z-[110]");
+  });
 });
