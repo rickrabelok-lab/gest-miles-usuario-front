@@ -15,6 +15,7 @@ import iberiaMark from '@/assets/programs/iberia.svg'
  */
 const CURATED_MARKS: Record<string, string> = {
   tudoazul: tudoAzulMark,
+  azulfidelidade: tudoAzulMark,
   copaairlines: copaAirlinesMark,
   iberia: iberiaMark,
 }
@@ -36,6 +37,14 @@ const WORDMARKS: Record<string, Wordmark> = {
       { text: 'azul', color: '#00A5E0' },
     ],
     fontSize: 8.5,
+  },
+  // Rebrand abr/2024: TudoAzul virou Azul Fidelidade (mesma marca Azul).
+  azulfidelidade: {
+    stacked: true,
+    parts: [
+      { text: 'Azul', color: '#0A4DA2', fontSize: 10 },
+      { text: 'FIDELIDADE', color: '#00A5E0', fontSize: 4 },
+    ],
   },
   latampass: {
     stacked: true,
