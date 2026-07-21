@@ -40,3 +40,12 @@ describe("BottomNav — aba Passagens", () => {
     expect(navigateMock).toHaveBeenCalledWith("/search-flights?clientId=abc");
   });
 });
+
+describe("BottomNav — safe-area", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("spacer do rodapé usa a cadeia --gm-safe-bottom (barra de gestos no edge-to-edge)", () => {
+    const { container } = renderNav("/");
+    expect(container.querySelector('[class="h-[var(--gm-safe-bottom)]"]')).not.toBeNull();
+  });
+});

@@ -54,7 +54,7 @@ export default function PurchaseOptionsScreen() {
 
   return (
     <div className="min-h-screen bg-nubank-bg">
-      <header className="sticky top-0 z-40 border-b border-nubank-border bg-white/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-nubank-border bg-white/90 backdrop-blur-sm pt-[var(--gm-safe-top)]">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
           <button type="button" onClick={() => navigate(-1)}
             className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-nubank-text-secondary hover:bg-nubank-bg">
@@ -160,7 +160,7 @@ export default function PurchaseOptionsScreen() {
 
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40">
+      <div className="fixed inset-x-0 bottom-0 z-40 pb-[var(--gm-safe-bottom)]">
         <BottomNav showClientSelector={isGestor} clients={[]} />
       </div>
     </div>

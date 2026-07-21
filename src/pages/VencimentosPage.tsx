@@ -319,7 +319,7 @@ const VencimentosPage = () => {
   );
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pb-28 pt-[var(--gm-safe-top)]">
       {/* Header */}
       <header className="flex items-start justify-between gap-3 px-5 pb-1 pt-4">
         <div className="min-w-0">

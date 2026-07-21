@@ -78,7 +78,7 @@ const PriceCalendarScreen = () => {
 
   return (
     <div className="mx-auto min-h-screen max-w-[480px] bg-nubank-bg">
-      <header className="fixed inset-x-0 top-0 z-40 flex justify-center bg-nubank-bg/95 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-40 flex justify-center bg-nubank-bg/95 backdrop-blur pt-[var(--gm-safe-top)]">
         <div className="w-full max-w-[480px] px-4 pb-3 pt-4">
           <div className="grid grid-cols-[40px_1fr_40px] items-center">
             <button
@@ -117,7 +117,7 @@ const PriceCalendarScreen = () => {
         </div>
       </header>
 
-      <main className="px-4 pb-28 pt-[132px]">
+      <main className="px-4 pb-28 pt-[calc(132px+var(--gm-safe-top))]">
         <div className="mb-5 flex items-center justify-between">
           <button
             type="button"
@@ -208,7 +208,7 @@ const PriceCalendarScreen = () => {
         )}
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center bg-gradient-to-t from-nubank-bg via-nubank-bg to-transparent pt-6">
+      <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center bg-gradient-to-t from-nubank-bg via-nubank-bg to-transparent pt-6 pb-[var(--gm-safe-bottom)]">
         <div className="w-full max-w-[480px] px-4 pb-5">
           <Button
             className="h-14 w-full rounded-[16px] gradient-primary text-base font-semibold text-white shadow-nubank transition-all duration-300 ease-out hover:shadow-nubank-hover active:scale-[0.98]"

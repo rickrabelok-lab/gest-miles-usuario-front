@@ -189,7 +189,7 @@ const SearchFlightsScreen = () => {
     date ? format(date, "EEEE", { locale: ptBR }) : null
 
   return (
-    <div className="min-h-screen bg-nubank-bg">
+    <div className="min-h-screen bg-nubank-bg pt-[var(--gm-safe-top)]">
       <header className="mx-auto max-w-md px-5 pt-4">
         <h1 className="font-display text-2xl font-bold tracking-tight text-nubank-text">
           Passagens
@@ -506,7 +506,7 @@ const SearchFlightsScreen = () => {
       </main>
 
       {/* Fixed CTA */}
-      <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-[100] flex flex-col border-t border-[#F1F0F3] bg-white/95 backdrop-blur-sm">
+      <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-[100] flex flex-col border-t border-[#F1F0F3] bg-white/95 backdrop-blur-sm pb-[var(--gm-safe-bottom)]">
         <div className="mx-auto w-full max-w-md px-5 pb-2 pt-3">
           <Button
             type="button"

@@ -190,7 +190,7 @@ const BottomNav: FC<BottomNavProps> = () => {
           );
         })}
       </div>
-      <div className="h-[env(safe-area-inset-bottom)]" />
+      <div className="h-[var(--gm-safe-bottom)]" />
     </div>
   );
 };

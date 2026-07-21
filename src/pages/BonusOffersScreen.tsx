@@ -54,7 +54,7 @@ export default function BonusOffersScreen() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg">
+    <div className="mx-auto min-h-screen max-w-md bg-nubank-bg pt-[var(--gm-safe-top)]">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 px-5 pb-1 pt-4">
         <div className="flex items-center gap-2.5">
@@ -80,7 +80,7 @@ export default function BonusOffersScreen() {
 
       {/* Pills */}
       <div
-        className="sticky top-0 z-10 flex gap-2 overflow-x-auto bg-nubank-bg/95 px-5 py-2.5 backdrop-blur-sm scrollbar-hide"
+        className="sticky top-[var(--gm-safe-top)] z-10 flex gap-2 overflow-x-auto bg-nubank-bg/95 px-5 py-2.5 backdrop-blur-sm scrollbar-hide"
       >
         {PILLS.filter((pill) => pill.id !== 'pravoce' || hasPersonalized).map(pill => (
           <button

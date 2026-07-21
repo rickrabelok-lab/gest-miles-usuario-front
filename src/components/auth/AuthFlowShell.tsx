@@ -18,7 +18,7 @@ export function AuthFlowShell({ title, description, children, className }: AuthF
   return (
     <div
       className={cn(
-        "mx-auto flex min-h-screen w-full max-w-md flex-col justify-center bg-nubank-bg px-6 py-10 antialiased",
+        "mx-auto flex min-h-screen w-full max-w-md flex-col justify-center bg-nubank-bg px-6 py-10 pt-[calc(2.5rem+var(--gm-safe-top))] antialiased",
         className,
       )}
     >
