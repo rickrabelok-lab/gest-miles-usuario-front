@@ -89,7 +89,7 @@ export async function getPromoHistoricoRotas(): Promise<HistoricoRotaLista[]> {
   const { data, error } = await supabase.rpc('promo_historico_rotas')
   if (error) throw error
   if (!Array.isArray(data)) return []
-  return data.map((row: any) => ({
+  return data.map((row: Record<string, unknown>) => ({
     sourceId: String(row.source_id ?? ''),
     targetId: String(row.target_id ?? ''),
     sourceNome: typeof row.source_nome === 'string' && row.source_nome ? row.source_nome : String(row.source_id ?? ''),

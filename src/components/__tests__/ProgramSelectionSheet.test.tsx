@@ -125,21 +125,42 @@ describe("ProgramLogo", () => {
     expect(screen.queryByText("LP")).toBeNull();
   });
 
-  it("cai no badge (monograma) quando a imagem falha", () => {
+  it("cai no wordmark curado quando a imagem falha", () => {
     render(
       <ProgramLogo
-        logoImageUrl="https://logo.clearbit.com/inexistente.zzz"
+        logoImageUrl="https://exemplo.invalido/logo.png"
         logo="QA"
         logoColor="#5a1f3d"
         name="Qatar Airways"
       />,
     );
     fireEvent.error(screen.getByAltText("Qatar Airways"));
-    expect(screen.getByText("QA")).toBeTruthy();
+    expect(screen.getByText("QATAR")).toBeTruthy();
+    expect(screen.queryByAltText("Qatar Airways")).toBeNull();
   });
 
-  it("mostra o badge quando não há URL", () => {
+  it("mostra o chip de iniciais quando não há URL nem wordmark curado", () => {
     render(<ProgramLogo logo="CP" logoColor="#2d6a4f" name="Coopera" />);
     expect(screen.getByText("CP")).toBeTruthy();
+  });
+
+  it("mostra o wordmark curado quando não há URL (ex.: Itaú)", () => {
+    render(<ProgramLogo logo="It" logoColor="#EC7000" name="Itaú" />);
+    expect(screen.getByText("itaú")).toBeTruthy();
+  });
+
+  it("símbolo SVG empacotado vence a imagem do branding (ex.: Copa Airlines)", () => {
+    const { container } = render(
+      <ProgramLogo
+        logoImageUrl="https://exemplo.invalido/connectmiles.png"
+        logo="CM"
+        logoColor="#00458c"
+        name="Copa Airlines"
+      />,
+    );
+    expect(screen.queryByAltText("Copa Airlines")).toBeNull();
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img).toBeTruthy();
+    expect(img.src).toContain("copa-airlines");
   });
 });

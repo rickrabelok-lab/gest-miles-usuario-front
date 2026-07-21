@@ -37,28 +37,25 @@ export default function BonusPromotionsSection() {
         </button>
       </div>
 
-      {/* Destaque do dia — o cartão-assinatura da seção: marca em primeiro plano */}
+      {/* Destaque do dia — se destaca pelo tint roxo suave; o CTA é o único ponto de cor forte */}
       {highlight && (
         <button
           onClick={() => navigate(`/bonus-offers/${highlight.id}`)}
-          className="relative mb-3 w-full overflow-hidden rounded-[24px] p-5 text-left shadow-[0_12px_28px_-10px_rgba(106,0,163,0.55)] transition-transform active:scale-[0.99]"
-          style={{ background: 'linear-gradient(135deg, #8A05BE 0%, #6A00A3 55%, #500A82 100%)' }}
+          className="relative mb-3 w-full overflow-hidden rounded-[24px] border border-nubank-primary/[0.14] bg-nubank-tint p-5 text-left shadow-nubank transition-transform active:scale-[0.99]"
         >
           {/* brilho sutil no canto — profundidade sem ruído */}
           <span
             aria-hidden
             className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full"
-            style={{ background: 'radial-gradient(closest-side, rgba(181,108,255,0.45), transparent)' }}
+            style={{ background: 'radial-gradient(closest-side, rgba(138,5,190,0.07), transparent)' }}
           />
           <span className="relative flex items-center gap-3">
-            <span className="flex-none rounded-full bg-white p-0.5">
-              <BonusProgramLogo program={highlight.targetProgram} />
-            </span>
+            <BonusProgramLogo program={highlight.targetProgram} />
             <span className="min-w-0 flex-1">
-              <span className="block text-[11px] font-bold uppercase tracking-[0.12em] text-white/80">
+              <span className="block text-[11px] font-bold uppercase tracking-[0.12em] text-nubank-primary">
                 Destaque do dia
               </span>
-              <span className="mt-0.5 block text-[12px] font-medium text-white/70">
+              <span className="mt-0.5 block text-[12px] font-medium text-nubank-text-secondary">
                 {CATEGORY_CONFIG[highlight.category].label}
               </span>
             </span>
@@ -66,8 +63,8 @@ export default function BonusPromotionsSection() {
               <span
                 className={`flex-none rounded-full px-2.5 py-1 text-[10.5px] font-bold ${
                   isExpiringToday(highlight.expiresAt)
-                    ? 'bg-white text-destructive-strong'
-                    : 'bg-white/15 text-white backdrop-blur-sm'
+                    ? 'bg-destructive-soft text-destructive-strong'
+                    : 'bg-white text-nubank-dark'
                 }`}
               >
                 {highlightExpiry}
@@ -75,17 +72,17 @@ export default function BonusPromotionsSection() {
             )}
           </span>
 
-          <span className="relative mt-3.5 block font-display text-[22px] font-bold leading-snug tracking-tight text-white">
+          <span className="relative mt-3.5 block font-display text-[22px] font-bold leading-snug tracking-tight text-nubank-text">
             {highlight.title}
           </span>
 
           {highlightBadge && (
             <span className="relative mt-2 flex flex-wrap items-baseline gap-2">
-              <span className="font-display text-[38px] font-bold leading-none tracking-tight tabular-nums text-white">
+              <span className="font-display text-[38px] font-bold leading-none tracking-tight tabular-nums text-nubank-dark">
                 {highlightBadge.value}
               </span>
               {highlightBadge.label && (
-                <span className="text-sm font-medium text-white/75">{highlightBadge.label}</span>
+                <span className="text-sm font-medium text-nubank-text-secondary">{highlightBadge.label}</span>
               )}
             </span>
           )}
@@ -95,7 +92,7 @@ export default function BonusPromotionsSection() {
               {highlight.participatingBanks.slice(0, 4).map(bank => (
                 <span
                   key={bank}
-                  className="rounded-full bg-white/15 px-2.5 py-1 text-[11.5px] font-semibold text-white backdrop-blur-sm"
+                  className="rounded-full bg-white px-2.5 py-1 text-[11.5px] font-semibold text-nubank-dark"
                 >
                   {bank}
                 </span>
@@ -103,7 +100,7 @@ export default function BonusPromotionsSection() {
             </span>
           )}
 
-          <span className="relative mt-4 flex h-12 w-full items-center justify-center rounded-[16px] bg-white text-sm font-bold text-nubank-dark shadow-[0_4px_14px_-4px_rgba(24,6,38,0.35)]">
+          <span className="relative mt-4 flex h-12 w-full items-center justify-center rounded-[16px] bg-nubank-primary text-sm font-bold text-white shadow-[0_6px_16px_-6px_rgba(138,5,190,0.5)]">
             Ver oferta completa
           </span>
         </button>
