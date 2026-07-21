@@ -44,8 +44,7 @@ const NAV: Array<{
       pathname.startsWith("/search-flights") ||
       pathname.startsWith("/price-calendar") ||
       pathname.startsWith("/bonus-offers") ||
-      pathname === "/passagens" ||
-      pathname === "/registrar-emissao",
+      pathname === "/passagens",
   },
   {
     id: "alertas",
