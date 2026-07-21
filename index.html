@@ -377,13 +377,10 @@
             }
           } catch (e) {}
         }
-        function barra(estilo, cor) {
+        function barra(estilo) {
           try {
-            if (plugins.StatusBar) {
-              plugins.StatusBar.setStyle({ style: estilo }).catch(function () {});
-              // Android 15+ pode ignorar a cor (edge-to-edge do sistema); o estilo
-              // dos ícones é o que garante o contraste.
-              plugins.StatusBar.setBackgroundColor({ color: cor }).catch(function () {});
+            if (plugins.SystemBars) {
+              plugins.SystemBars.setStyle({ style: estilo }).catch(function () {});
             }
           } catch (e) {}
         }
@@ -392,7 +389,7 @@
           // Sem o nó da abertura, a splash não pode ficar presa (launchAutoHide off).
           if (nativo) {
             esconderSplash(0);
-            barra("LIGHT", "#F7F7F8");
+            barra("LIGHT");
           }
           return;
         }
@@ -404,26 +401,25 @@
           if (nativo) {
             // Abertura pulada (reduced motion): destrava a splash e aplica a barra do app.
             esconderSplash(0);
-            barra("LIGHT", "#F7F7F8");
+            barra("LIGHT");
           }
           return;
         }
 
         el.classList.add("gm-ab-on");
-        // A abertura pinta ink no corpo da WebView, mas em Android 15+/SDK 36 o sistema
-        // força edge-to-edge: a faixa da status bar mostra o fundo claro da window (fora
-        // do alcance do CSS, com setBackgroundColor no-op). Só o contraste dos ícones é
-        // controlável — mantém a barra clara (ícones escuros) o tempo todo pra eles não
-        // ficarem ilegíveis sobre essa faixa.
+        // Edge-to-edge real (viewport-fit=cover + passthrough do Cap 8): a abertura
+        // cobre a tela inteira, incluindo a faixa da status bar. Ícones claros (DARK)
+        // durante a Constelação ink; volta pra LIGHT quando o app claro assume no fade.
         window.requestAnimationFrame(function () {
           window.requestAnimationFrame(function () {
             // 1º frame da abertura pintado -> solta a splash nativa (emenda sem flash).
             esconderSplash(150);
-            barra("LIGHT", "#F7F7F8");
+            barra("DARK");
           });
         });
         window.setTimeout(function () {
           el.classList.add("gm-ab-out");
+          barra("LIGHT");
         }, 4900);
         window.setTimeout(function () {
           if (el.parentNode) el.parentNode.removeChild(el);

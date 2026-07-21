@@ -27,4 +27,10 @@ describe("shell mobile — edge-to-edge", () => {
       "--gm-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));",
     );
   });
+
+  it("abertura controla as barras via SystemBars (core) — sem plugin StatusBar", () => {
+    expect(indexHtml).toContain("plugins.SystemBars");
+    expect(indexHtml).not.toContain("plugins.StatusBar");
+    expect(indexHtml).not.toContain("setBackgroundColor");
+  });
 });
